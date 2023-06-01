@@ -1,5 +1,4 @@
 import numpy as np
-from random import *
 from numpy import argmin
 from copy import copy
 from datetime import datetime
