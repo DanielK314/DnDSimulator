@@ -1,4 +1,5 @@
 from Entity_class import *
+from Dm_class import *
 from tkinter import *
 import ttkbootstrap as ttk
 from tkinter import messagebox
@@ -25,9 +26,16 @@ class Controller(Frame):
         #This is used multiple times, so it always calls master Controller
         self.DMG_Types = ['acid', 'cold', 'fire', 'force' , 'lightning', 'thunder', 'necrotic', 'poison', 'psychic' ,'radiant' ,'bludgeoning', 'piercing', 'slashing']
 
-        self.All_Spells = self.Heros[0].SpellNames #see Entity Class
+        self.All_Spells = self.Archive_Heros[0].SpellNames #see Entity Class
 
-        self.All_Abilities = ['UncannyDodge', 'CunningAction', 'WailsFromTheGrave', 'Rage', 'RecklessAttack', 'Frenzy', 'Smite', 'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell', 'WildShape', 'CombatWildShape', 'Inspiration', 'AgonizingBlast', 'DragonsBreath', 'SpiderWeb']
+        self.All_Abilities = ['ActionSurge', 'ImprovedCritical', 'SecondWind', 'Archery', 'GreatWeaponFighting', 'Interception',
+        'UncannyDodge', 'CunningAction', 'Assassinate', 'WailsFromTheGrave',
+        'Rage', 'RecklessAttack', 'Frenzy', 'BearTotem', 'EagleTotem', 'WolfTotem',
+        'Smite', 'AuraOfProtection', 'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
+        'WildShape', 'CombatWildShape', 'Inspiration', 'CuttingWords', 'CombatInspiration',
+        'AgonizingBlast','TurnUndead', 'DragonsBreath', 'SpiderWeb']
+
+        self.All_Types = ['normal', 'undead', 'beast']
 
         #Initialize the Pages, attention, Order matters
         self.ArchivePage = Archive(self)
@@ -201,18 +209,50 @@ class HomePage_cl(Frame):
         with open("simulation_parameters.json", "w") as f:  #write to json file
             json.dump({"simulation_parameters": simulation_parameters, "Entities": Entities}, f, indent=4)
 
-        infotext = str(repetitions) + ' repetitions were dones with: \n'
-        for i in self.master.Fighters:
-            infotext = infotext + i.name + '\n'
-
         #exec(open('run_full_stat_recap.py').read())  #run the external python script, which will load from json file
         #using subprocess functions to call script
         p = subprocess.run('python3 run_full_stat_recap.py', shell= True)
 
         text_result = open('simulation_result.txt').read()
         open('simulation_result.txt', 'w').write('')
+        self.open_message(text_result)
 
-        messagebox.showinfo('Simulation Info', infotext + '\n' + text_result)
+#        old Message Box
+#        messagebox.showinfo('Simulation Info', text_result)
+    
+    def open_message(self, text):
+        root = ttk.Toplevel()
+        root.geometry("600x800")
+        root.title('Simulation Info')
+        # Create A Main frame
+        MainFrame = Frame(root)
+        MainFrame.pack(fill=BOTH,expand=1, pady=10)
+        # Create A Canvas
+        MainCanvas = Canvas(MainFrame)
+        MainCanvas.pack(side=LEFT,fill=BOTH,expand=1)
+        # Add A Scrollbars to Canvas
+        YScrollbar = ttk.Scrollbar(MainFrame,orient=VERTICAL,command=MainCanvas.yview, bootstyle="warning-round")
+        YScrollbar.pack(side=RIGHT,fill=Y)
+        # Create Another Frame INSIDE the Canvas
+        MessageFrame = Frame(MainCanvas)
+        # Add that New Frame a Window In The Canvas
+        MainCanvas.create_window((0,0),window=MessageFrame, anchor="nw")
+
+        #Mouse Weel
+        def _on_mousewheel(event):
+            MainCanvas.yview_scroll(-1*(event.delta), "units")
+        MainCanvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Configure the canvas
+        MainCanvas.configure(yscrollcommand=YScrollbar.set)
+        MainCanvas.bind("<Configure>",lambda e: MainCanvas.config(scrollregion= MainCanvas.bbox(ALL))) 
+
+
+
+#        ttk.Button(MessageFrame, text='Back', bootstyle='outline').grid(row=0,column=0)
+        Label(MessageFrame, text=text).pack(expand=True, fill=BOTH, padx=10)
+        #Make the window jump above all
+        root.attributes('-topmost',True)
+        root.mainloop()
 
     def init_hero(self, Player):
         if Player in self.master.Fighters:
@@ -234,6 +274,11 @@ class EntityPage_cl(Frame):
     def __init__(self, root):
         Frame.__init__(self, root)
         self.name = 'New Character'
+
+        #Style
+        self.Entrybd = 2
+        self.Entrywidth= 4
+        self.AbilityScoreWidth = 2
 
         #The System of this page is, that the current stats are saved in the stats dictionary and with the fetch functions new stats can be loaded, the page must then be updated
 
@@ -281,11 +326,7 @@ class EntityPage_cl(Frame):
         self.b_delete.grid(row= 0, column=3, padx = 3)
         self.ButtonPage.grid(row=0, column=0, sticky='w', pady=5, columnspan=3)
 
-        #Style
-        self.Entrybd = 2
-        self.Entrywidth= 4
-        self.AbilityScoreWidth = 2
-        Framepadding = 6
+        Framepadding = 4
 
         #Character Name
         self.NameLabel = Label(self.MainPage, text='Character Name', font='bold')
@@ -297,21 +338,31 @@ class EntityPage_cl(Frame):
         self.LeftFrame = Frame(self.MainPage, width=100)
         self.BasicFrame = ttk.Labelframe(self.LeftFrame, text='Basic Stats', padding=Framepadding)
         self.BasicFrame.grid(row=0, column=0, sticky='w')
+        self.MidFrame = Frame(self.MainPage, width=200, padx=3)
         self.RightFrame = Frame(self.MainPage, width=200, padx=3)
+        
 
 
         #############Left Frame
         #Basic Stats
         self.BasicStatsFrame = Frame(self.BasicFrame,width=100)
-        #If you change this, u need to change also the update_Entity_stats function
-        self.BasicStatNames = ['Armor Class (AC)', 'Health Points (HP)', 'Proficiency', 'Attack Modifier', 'Number of Attacks', 'Damage', 'Level', 'Hero(0) or Villain(1)']
+        #If you change this, u need to change also the fetch_GUI_stats function
+        #Also in the update_page function
+        self.BasicStatNames = ['Armor Class (AC)', 'Health Points (HP)', 'Proficiency', 'Level', 'Hero(0) or Villain(1)']
         self.BasicStatLabels = [Label(self.BasicStatsFrame, text=labeltext, pady=3) for labeltext in self.BasicStatNames]
         self.BasicStatValues = [StringVar() for x in self.BasicStatNames]
         self.BasicStatEntries = [Entry(self.BasicStatsFrame, bd=self.Entrybd, width=self.Entrywidth, textvariable= self.BasicStatValues[i]) for i in range(0, len(self.BasicStatNames))]
         for i in range(0,len(self.BasicStatLabels)):
             self.BasicStatLabels[i].grid(row=i+1, column=0, sticky="w")
-            self.BasicStatEntries[i].grid(row=i+1, column=1)
+            self.BasicStatEntries[i].grid(row=i+1, column=1, padx=5)
         self.BasicStatsFrame.grid(row=0, column=0, sticky='w')
+        #Type Frame
+        self.TypeFrame = Frame(self.BasicFrame)
+        Label(self.TypeFrame, text='Character Type:  ').grid(row=0, column=0)
+        self.TypeEntry = ttk.Combobox(self.TypeFrame, values = self.master.All_Types, state='readonly', height=5, width=8) #Type Entry
+        self.TypeEntry.set(self.stats['Type'])
+        self.TypeEntry.grid(row=0, column=1, pady=5)
+        self.TypeFrame.grid(row=1, column=0, sticky='w')
 
 
         #Ability Scores
@@ -337,11 +388,11 @@ class EntityPage_cl(Frame):
             self.AbilityScoreValues[i].trace('w', partial(self.update_ability_mod, i))
             self.AbilityScoreProfList[i].trace('w', partial(self.update_ability_mod, i))
         self.BasicStatValues[self.BasicStatNames.index('Proficiency')].trace('w', self.update_all_ability_mod)
-        self.AbilityScoreFrame.grid(row=1, column=0, pady=5, sticky='w')
+        self.AbilityScoreFrame.grid(row=2, column=0, pady=5, sticky='w')
 
 
         #Spellcasting
-        self.SpellFrame = ttk.Labelframe(self.LeftFrame, text= 'Spellcasting', padding =Framepadding, width=100)
+        self.SpellFrame = ttk.Labelframe(self.LeftFrame, text= 'Spellcasting', padding=Framepadding, width=100)
         self.SpellTopFrame = Frame(self.SpellFrame, width=100)
 
         Label(self.SpellTopFrame, text='Spell Mod').grid(row=0, column=0, sticky="w")
@@ -361,7 +412,7 @@ class EntityPage_cl(Frame):
             self.SpellLevelEntries[i].grid(row=3, column=i+1, pady=3, padx=1)
         #Spell List Display
         self.SpellDisplayList = StringVar(value=[])
-        self.SpellDisplay = Listbox(self.SpellFrame, listvariable=self.SpellDisplayList, height=5)
+        self.SpellDisplay = Listbox(self.SpellFrame, listvariable=self.SpellDisplayList, height=6)
         self.SpellDisplay.grid(row=4, column=0, columnspan=9, sticky="w")
         #Scrollbar
         self.SpellScrollbar = ttk.Scrollbar(self.SpellFrame, orient='vertical', command=self.SpellDisplay.yview)
@@ -369,97 +420,111 @@ class EntityPage_cl(Frame):
         self.SpellScrollbar.grid(row=4, column=9, sticky='ns')
         #Spell Book
         ttk.Button(self.SpellFrame, text='Spell Book', bootstyle="outline", command= self.open_spell_book).grid(row=5, column=0, columnspan=6, sticky='w', pady=5)
-        self.SpellFrame.grid(row=1, column=0, pady=10, sticky='ew')
+        self.SpellFrame.grid(row=2, column=0, sticky='ew', pady=5)
 
 
 
 
-        ##########Right Frame
-        #Position Management
-        #Speed
-        self.PositionFrame = ttk.Labelframe(self.RightFrame, text='Movement', padding = Framepadding)
-        Label(self.PositionFrame, text='Speed in ft').grid(row=0, column=0, sticky='w')
-        self.SpeedEntry = Entry(self.PositionFrame, bd=self.Entrybd, width=self.Entrywidth)
-        self.SpeedEntry.grid(row=0, column=1)
+        ##########Mid Frame
+        #Attack Frame 
+        self.AttackFrame = ttk.Labelframe(self.MidFrame, text='Attacks', padding = Framepadding)
+        StatsFrame = Frame(self.AttackFrame)
+        Label(StatsFrame, text='Attack Modifier').grid(row=0, column=0, sticky='w')
+        Label(StatsFrame, text='Attack Damage').grid(row=1, column=0, sticky='w')
+        Label(StatsFrame, text='Attack Number').grid(row=2, column=0, sticky='w')
+        Label(StatsFrame, text='Off Hand Damage').grid(row=3, column=0, sticky='w')
+        self.ToHitEntry = Entry(StatsFrame, bd=self.Entrybd, width=self.Entrywidth)
+        self.ToHitEntry.grid(row=0, column=1, sticky='w', padx=5, pady=1)
+        self.DmgEntry = Entry(StatsFrame, bd=self.Entrybd, width=self.Entrywidth)
+        self.DmgEntry.grid(row=1, column=1, sticky='w', padx=5, pady=1)
+        self.AttackNumEntry = Entry(StatsFrame, bd=self.Entrybd, width=self.Entrywidth)
+        self.AttackNumEntry.grid(row=2, column=1, sticky='w', padx=5, pady=1)
+        self.OffHandEntry = Entry(StatsFrame, bd=self.Entrybd, width=self.Entrywidth)
+        self.OffHandEntry.grid(row=3, column=1, sticky='w', padx=5, pady=1)
         #Range
         self.Range_Attack_Value = IntVar()
-        ttk.Checkbutton(self.PositionFrame, text='Range Attacks',variable=self.Range_Attack_Value, onvalue=1, offvalue=0).grid(row=1,column=0, sticky='w', pady=5)
+        ttk.Checkbutton(self.AttackFrame, text='Range Attacks',variable=self.Range_Attack_Value, onvalue=1, offvalue=0).grid(row=1,column=0, sticky='w', pady=5, padx=4)
+
+        StatsFrame.grid(row=0, column=0, sticky='w')
+        self.AttackFrame.grid(row=0, column=0, sticky='ewn')
+
+        #Position Management
+        #Speed
+        self.PositionFrame = ttk.Labelframe(self. MidFrame, text='Position')
+        SpeedFrame = Frame(self.PositionFrame)
+        Label(SpeedFrame, text='Speed in ft').grid(row=0, column=0, sticky='nw', padx=5)
+        self.SpeedEntry = Entry(SpeedFrame, bd=self.Entrybd, width=self.Entrywidth)
+        self.SpeedEntry.grid(row=0, column=1, sticky='w', padx=3, pady=2)
+        SpeedFrame.grid(row=0, column=0, sticky='w')
         #Position Type
         self.PositionButtonsFrame = Frame(self.PositionFrame)
         self.PositionValue = IntVar()
-        ttk.Radiobutton(self.PositionButtonsFrame, text="Front Line", variable=self.PositionValue, value=0).grid(row=0, column=0)
-        ttk.Radiobutton(self.PositionButtonsFrame, text="Middle", variable=self.PositionValue, value=1).grid(row=0, column=1, padx=15)
-        ttk.Radiobutton(self.PositionButtonsFrame, text="Back Line", variable=self.PositionValue, value=2).grid(row=0, column=2)
+        ttk.Radiobutton(self.PositionButtonsFrame, text="Front", variable=self.PositionValue, value=0).grid(row=0, column=0, padx=5)
+        ttk.Radiobutton(self.PositionButtonsFrame, text="Middle", variable=self.PositionValue, value=1).grid(row=0, column=1, padx=20, pady=3)
+        ttk.Radiobutton(self.PositionButtonsFrame, text="Back", variable=self.PositionValue, value=2).grid(row=0, column=2)
         self.PositionButtonsFrame.grid(row=2,column=0, columnspan=3, sticky='w')
-        self.PositionFrame.grid(row=0, column=0, sticky='ewn')
-
-
+        self.PositionFrame.grid(row=1, column=0, pady=10, sticky='ew')
 
         #Damage Type
         self.DMGTypes = []
-        self.DMGFrame = ttk.Labelframe(self.RightFrame, text='DMG', padding=Framepadding)
-        self.DMGTypeEntry = ttk.Combobox(self.DMGFrame, values = self.master.DMG_Types, state='readonly')#Damage Type Entry
+        self.DMGFrame = ttk.Labelframe(self.MidFrame, text='DMG', padding=Framepadding)
+        self.DMGTypeEntry = ttk.Combobox(self.DMGFrame, values = self.master.DMG_Types, state='readonly', height=15, width=12)#Damage Type Entry
         self.DMGTypeEntry.set(self.stats['Damage_Type'])
         Label(self.DMGFrame, text='Damage Type').grid(row=0, column=0, sticky='w')
         self.DMGTypeEntry.grid(row=0,column=1)
         #Label for Res, Imm, Vul
         self.DMGListFrame = Frame(self.DMGFrame, width=200, height=100)
-        Label(self.DMGListFrame, text='Resistances').grid(row=0, column=0, sticky='w')
-        Label(self.DMGListFrame, text='Immunities').grid(row=0, column=1, sticky='w')
-        Label(self.DMGListFrame, text='Vulnerabilities').grid(row=0, column=2, sticky='w')
+        Label(self.DMGListFrame, text='Res.').grid(row=0, column=1, sticky='w')
+        Label(self.DMGListFrame, text='Imn.').grid(row=0, column=2, sticky='w')
+        Label(self.DMGListFrame, text='Vln.').grid(row=0, column=3, sticky='w')
         #Lists of Checkbutton
         #Res
         self.DMGResList = [IntVar() for i in self.master.DMG_Types]
+        for i in range(0, len(self.master.DMG_Types)):
+            Label(self.DMGListFrame, text=self.master.DMG_Types[i]).grid(row=1 + i, column=0, padx=5, sticky='w')
         #ddca67
-        self.ResCheckButton = [ttk.Checkbutton(self.DMGListFrame, text=self.master.DMG_Types[i],variable=self.DMGResList[i], onvalue=1, offvalue=0, bootstyle='warning') for i in range(0, len(self.master.DMG_Types))]
+        self.ResCheckButton = [ttk.Checkbutton(self.DMGListFrame, variable=self.DMGResList[i], onvalue=1, offvalue=0, bootstyle='warning') for i in range(0, len(self.master.DMG_Types))]
         for i in range(0,len(self.ResCheckButton)):
-            self.ResCheckButton[i].grid(row=1 + i, column=0, padx=5, sticky='w')
+            self.ResCheckButton[i].grid(row=1 + i, column=1, padx=5)
         #Imm  
         #7de46e
         self.DMGImmList = [IntVar() for i in self.master.DMG_Types]
-        self.ImmCheckButton = [ttk.Checkbutton(self.DMGListFrame, text=self.master.DMG_Types[i],variable=self.DMGImmList[i], onvalue=1, offvalue=0, bootstyle='danger') for i in range(0, len(self.master.DMG_Types))]
+        self.ImmCheckButton = [ttk.Checkbutton(self.DMGListFrame, variable=self.DMGImmList[i], onvalue=1, offvalue=0, bootstyle='danger') for i in range(0, len(self.master.DMG_Types))]
         for i in range(0,len(self.ImmCheckButton)):
-            self.ImmCheckButton[i].grid(row=1 + i, column=1, padx=5, sticky='w')
+            self.ImmCheckButton[i].grid(row=1 + i, column=2, padx=5)
         #Vul
         #e36e5e
         self.DMGVulList = [IntVar() for i in self.master.DMG_Types]
-        self.VulCheckButton = [ttk.Checkbutton(self.DMGListFrame, text=self.master.DMG_Types[i],variable=self.DMGVulList[i], onvalue=1, offvalue=0, bootstyle='success') for i in range(0, len(self.master.DMG_Types))]
+        self.VulCheckButton = [ttk.Checkbutton(self.DMGListFrame, variable=self.DMGVulList[i], onvalue=1, offvalue=0, bootstyle='success') for i in range(0, len(self.master.DMG_Types))]
         for i in range(0,len(self.VulCheckButton)):
-            self.VulCheckButton[i].grid(row=1 + i, column=2, padx=5, sticky='w')
+            self.VulCheckButton[i].grid(row=1 + i, column=3, padx=5)
         #Pack Frames
-        self.DMGListFrame.grid(row=1, column=0, columnspan=2, sticky='w')
-        self.DMGFrame.grid(row=1, column=0, pady=10, sticky='ew')
+        self.DMGListFrame.grid(row=1, column=0, columnspan=2, sticky='w', pady=4)
+        self.DMGFrame.grid(row=2, column=0, pady=5, sticky='ew')
 
+
+        ############Right Frame
         #Other Stuff
         self.OtherFrame = ttk.Labelframe(self.RightFrame, text= 'Other', padding = Framepadding)
         #Other Abilites
-        ttk.Button(self.OtherFrame, text='Other Abilites', bootstyle="outline", command= self.open_ability_page).grid(row=1, column=0, sticky = 'w')
+        ttk.Button(self.OtherFrame, text='Other Abilites', bootstyle="outline", command= self.open_ability_page).grid(row=1, column=0, sticky = 'w', pady=4)
 
         #Other Abilities List Display
         self.AbilityDisplayList = StringVar(value=[])
-        self.AbilityDisplay = Listbox(self.OtherFrame, listvariable=self.AbilityDisplayList, height=5)
+        self.AbilityDisplay = Listbox(self.OtherFrame, listvariable=self.AbilityDisplayList, height=6)
         self.AbilityDisplay.grid(row=0, column=0, columnspan=2, sticky="w", pady=4)
         #Scrollbar
         self.AbilityScrollbar = ttk.Scrollbar(self.OtherFrame, orient='vertical', command=self.AbilityDisplay.yview)
         self.AbilityDisplay['yscrollcommand'] = self.AbilityScrollbar.set
         self.AbilityScrollbar.grid(row=0, column=4, sticky='ns')
         #SneakAttackDmg
-        Label(self.OtherFrame, text='Sneak Attack Dmg').grid(row=2, column=0, sticky="w")
-        self.SneakAttackDmgEntry = Entry(self.OtherFrame, bd=self.Entrybd, width =self.AbilityScoreWidth)
-        self.SneakAttackDmgEntry.grid(row=2, column=1, sticky="w", pady=3)
-        #LayOnHands
-        Label(self.OtherFrame, text='Lay on Hands Pool').grid(row=3, column=0, sticky="w")
-        self.LayOnHandsEntry = Entry(self.OtherFrame, bd=self.Entrybd, width =self.AbilityScoreWidth)
-        self.LayOnHandsEntry.grid(row=3, column=1, sticky="w", pady=3)
-        #SorceryPoints
-        Label(self.OtherFrame, text='Sorcery Points').grid(row=4, column=0, sticky="w")
-        self.SorceryPointsEntry = Entry(self.OtherFrame, bd=self.Entrybd, width =self.AbilityScoreWidth)
-        self.SorceryPointsEntry.grid(row=4, column=1, sticky="w")
-        self.OtherFrame.grid(row=2, column=0,sticky='ew', pady=3)
+        self.OtherFrame.grid(row=0, column=0,sticky='nw')
+
 
         #Align Left and Right Frame
         self.LeftFrame.grid(row=2,column=0, columnspan=2, padx=5, sticky='n')
-        self.RightFrame.grid(row=2, column=2, padx=10, sticky='n')
+        self.MidFrame.grid(row=2, column=2, padx=10, sticky='n')
+        self.RightFrame.grid(row=2, column=3, padx=5, sticky='n')       
 
     def build_spell_book(self):
         self.SpellBookTopFrame = Frame(self.SpellBook)
@@ -473,7 +538,7 @@ class EntityPage_cl(Frame):
         self.SpellList = [IntVar() for i in self.master.All_Spells]
         self.SpellButton = []
         for i in range(0,len(self.SpellList)):
-            level = self.master.Heros[0].SpellBook[self.master.All_Spells[i]].spell_level #Find the Level of the Spell
+            level = self.master.Archive_Heros[0].SpellBook[self.master.All_Spells[i]].spell_level #Find the Level of the Spell
             button = ttk.Checkbutton(Spellframes[level], bootstyle= 'warning', text = self.master.All_Spells[i], variable=self.SpellList[i], onvalue=1, offvalue=0)
             self.SpellButton.append(button)
         #This ensures, that if a spell is clicked, the Spell list Display on the Main page updates, it is not the dict of the Page
@@ -496,42 +561,145 @@ class EntityPage_cl(Frame):
         self.AbilityPageTopFrame = Frame(self.AbilityPage)
         Label(self.AbilityPageTopFrame, text='Other Abilites').grid(row=0,column=1)
         ttk.Button(self.AbilityPageTopFrame, text='Back', bootstyle = 'outline', command= self.close_ability_page).grid(row=0, column=0, pady=5)
-        self.AbilityPageTopFrame.grid(row=0, column=0, pady=5)
+        self.AbilityPageTopFrame.grid(row=0, column=0, pady=5, sticky='w')
 
-        self.AbilitiesListFrame = Frame(self.AbilityPage)
+        self.AbilitiesFrame = Frame(self.AbilityPage)
+        self.Abilities1Frame = Frame(self.AbilitiesFrame)
+        Break1 = 5
+        self.Abilities2Frame = Frame(self.AbilitiesFrame)
         #Label Frames for the Abilities
-        Class_names = ['Rogue', 'Barbarian', 'Paladin', 'Sorcerer', 'Druid', 'Bard', 'Warlock', 'Monsters']
-        Class_Frames = [ttk.Labelframe(self.AbilitiesListFrame, text= Class_names[i]) for i in range(0, len(Class_names))]
+        Class = {0:{'name':'Fighter', 'Number':3},
+                1:{'name':'Fighting Style', 'Number':3},
+                2:{'name':'Rogue', 'Number': 4},
+                3:{'name':'Barbarian', 'Number':6},
+                4:{'name':'Paladin', 'Number':2},
+                5:{'name':'Sorcerer', 'Number':3},
+                6:{'name':'Druid', 'Number':2},
+                7:{'name':'Bard', 'Number':3},
+                8:{'name':'Warlock', 'Number':1},
+                9:{'name':'Cleric', 'Number':1},
+                10:{'name':'Monster', 'Number':2}}
+        Class_Frames = []
+        ChoosenFrame = self.Abilities1Frame
+        for i in range(0, len(Class)):
+            if i == Break1:
+                ChoosenFrame = self.Abilities2Frame
+            Class_Frames.append(ttk.Labelframe(ChoosenFrame, text= Class[i]['name']))
 
         self.AbilitiesList = [IntVar() for i in self.master.All_Abilities]
         self.AbilitiesButton = []
-        for i in range(0,len(self.AbilitiesList)):
-            if i < 3:
-                frame = Class_Frames[0]
-            elif i < 6:
-                frame = Class_Frames[1]
-            elif i < 7:
-                frame = Class_Frames[2]
-            elif i < 10:
-                frame = Class_Frames[3]
-            elif i < 12:
-                frame = Class_Frames[4]
-            elif i < 13:
-                frame = Class_Frames[5]
-            elif i < 14:
-                frame = Class_Frames[6]
-            elif i < 16:
-                frame = Class_Frames[7]
-            self.AbilitiesButton.append(ttk.Checkbutton(frame, text=self.master.All_Abilities[i], variable=self.AbilitiesList[i], onvalue=1, offvalue=0))
+        FrameCounter = 0 #Which Frame the Ability is listed in
+        NumberCounter = Class[0]['Number'] #How much space is left in current window for class
+        AbilityCounter = 0
+        while AbilityCounter < len(self.AbilitiesList):
+            while NumberCounter > 0:
+                frame = Class_Frames[FrameCounter]
+                self.AbilitiesButton.append(ttk.Checkbutton(frame, text=self.master.All_Abilities[AbilityCounter], variable=self.AbilitiesList[AbilityCounter], onvalue=1, offvalue=0))
+                NumberCounter -= 1
+                AbilityCounter += 1
+            FrameCounter += 1
+            if FrameCounter == len(Class):
+                break
+            NumberCounter = Class[FrameCounter]['Number']
 
         #This ensures, that if a ability is clicked, the Ability list Display on the Main page updates, it is not the dict of the Page
         for i in range(0, len(self.AbilitiesList)):
             self.AbilitiesList[i].trace('w', self.UpdateKnownAbilities)
         for i in range(0, len(self.AbilitiesList)):
             self.AbilitiesButton[i].grid(row=1 + i, column=0, sticky='w', pady = 3, padx=3)
+        
+        #Now Do the Additional Ability Entries
+        row = len(self.AbilitiesList) + 1
         for i in range(0,len(Class_Frames)):
-            Class_Frames[i].grid(row=i, column = 0, sticky='ew', pady=5)
-        self.AbilitiesListFrame.grid(row=1, column=0, pady=10, sticky='w')
+            frame = Class_Frames[i]
+            if Class[i]['name'] == 'Fighter':
+                #Action Surge
+                ActionSurgeFrame = Frame(frame)
+                Label(ActionSurgeFrame, text='Action Surges').grid(row=0, column=1, sticky="w")
+                self.ActionSurgeEntry = Entry(ActionSurgeFrame, bd=self.Entrybd, width =3)
+                self.ActionSurgeEntry.grid(row=0, column=0, sticky="e")
+                ActionSurgeFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+            if Class[i]['name'] == 'Rogue':
+                #SneakAttack
+                SneackAttFrame = Frame(frame)
+                Label(SneackAttFrame, text='Sneak Attack Dmg').grid(row=0, column=1, sticky="w")
+                self.SneakAttackDmgEntry = Entry(SneackAttFrame, bd=self.Entrybd, width =3)
+                self.SneakAttackDmgEntry.grid(row=0, column=0, sticky="e")
+                SneackAttFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+            if Class[i]['name'] == 'Barbarian':
+                #RageDmg
+                RageDmgFrame = Frame(frame)
+                Label(RageDmgFrame, text='Rage Dmg').grid(row=0, column=1, sticky="w")
+                self.RageDmgEntry = Entry(RageDmgFrame, bd=self.Entrybd, width =3)
+                self.RageDmgEntry.grid(row=0, column=0, sticky="e")
+                RageDmgFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+            if Class[i]['name'] == 'Paladin':
+                #LayOnHands
+                LayOnHandsFrame = Frame(frame)
+                LayOnHandsFrame.rowconfigure(0, weight=1)
+                frame.rowconfigure(row, weight=1)
+                Label(LayOnHandsFrame, text='Lay on Hands Pool').grid(row=0, column=1, sticky="w")
+                self.LayOnHandsEntry = Entry(LayOnHandsFrame, bd=self.Entrybd, width =self.AbilityScoreWidth)
+                self.LayOnHandsEntry.grid(row=0, column=0, sticky="e")
+                LayOnHandsFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+            if Class[i]['name'] == 'Sorcerer':
+                #SorceryPoints
+                ScorceryFrame = Frame(frame)
+                Label(ScorceryFrame, text='Sorcery Points').grid(row=0, column=1, sticky="w")
+                self.SorceryPointsEntry = Entry(ScorceryFrame, bd=self.Entrybd, width =self.AbilityScoreWidth)
+                self.SorceryPointsEntry.grid(row=0, column=0, sticky="e")
+                ScorceryFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+            if Class[i]['name'] == 'Druid':
+                #Wildshape
+                WildShapeFrame = Frame(frame)
+                Label(WildShapeFrame, text='Wild Shape CR').grid(row=0, column=1, sticky="w")
+                self.WildShapeCREntry = Entry(WildShapeFrame, bd=self.Entrybd, width=3)
+                self.WildShapeCREntry.grid(row=0, column=0, sticky="e")
+                WildShapeFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+            if Class[i]['name'] == 'Bard':
+                self.InspirationFrame = Frame(frame)
+                Label(self.InspirationFrame, text='Inspiration Die').grid(row=0, column=1, sticky='w')
+                Dies = ['0','d4', 'd6', 'd8', 'd10', 'd12']
+                self.InspirationEntry = ttk.Combobox(self.InspirationFrame, values = Dies, state='readonly', height=6, width=3) #Type Entry
+                if self.stats['Inspiration'] == 2: self.InspirationEntry.set('d4')
+                elif self.stats['Inspiration'] == 3: self.InspirationEntry.set('d6')
+                elif self.stats['Inspiration'] == 4: self.InspirationEntry.set('d8')
+                elif self.stats['Inspiration'] == 5: self.InspirationEntry.set('d10')
+                elif self.stats['Inspiration'] == 6: self.InspirationEntry.set('d12')
+                else: self.InspirationEntry.set('0')
+                self.InspirationEntry.grid(row=0, column=0, sticky='e')
+                self.InspirationFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+            if Class[i]['name'] == 'Cleric':
+                #ChannelDevinity
+                ChannelDivinityFrame = Frame(frame)
+                Label(ChannelDivinityFrame, text='Channel Devinity').grid(row=0, column=1, sticky="w")
+                self.ChannelDivinityEntry = Entry(ChannelDivinityFrame, bd=self.Entrybd, width=3)
+                self.ChannelDivinityEntry.grid(row=0, column=0, sticky="e")
+                ChannelDivinityFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+                #DestroyUndead
+                DestroyUndeadFrame = Frame(frame)
+                Label(DestroyUndeadFrame, text='Destroy Undead CR').grid(row=0, column=1, sticky="w")
+                self.DestroyUndeadEntry = Entry(DestroyUndeadFrame, bd=self.Entrybd, width=3)
+                self.DestroyUndeadEntry.grid(row=0, column=0, sticky="e")
+                DestroyUndeadFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 1
+
+
+        CRow = 0
+        for i in range(0,len(Class_Frames)):
+            Class_Frames[i].grid(row=CRow, column = 0, sticky='ew', pady=5, padx=10)
+            CRow += 1
+        self.Abilities1Frame.grid(row=0, column=0, sticky='nw')
+        self.Abilities2Frame.grid(row=0, column=1, sticky='nw')
+        self.AbilitiesFrame.grid(row=1, column=0, sticky='nw')
 
     def open_ability_page(self):
         self.AbilityPage.tkraise()
@@ -579,10 +747,9 @@ class EntityPage_cl(Frame):
         self.stats['AC'] = Player.base_AC
         self.stats['HP'] = Player.HP
         self.stats['Proficiency'] = Player.proficiency
-        self.stats['To_Hit'] = Player.base_tohit
-        self.stats['Attacks'] = Player.base_attacks
-        self.stats['DMG'] = Player.base_dmg
         self.stats['Level'] = Player.level
+        self.stats['Hero_or_Villain'] = Player.team
+        self.stats['Type'] = Player.type
 
         self.stats['Str'] = Player.Str
         self.stats['Dex'] = Player.Dex
@@ -590,9 +757,7 @@ class EntityPage_cl(Frame):
         self.stats['Int'] = Player.Int
         self.stats['Wis'] = Player.Wis
         self.stats['Cha'] = Player.Cha
-
         self.stats['Saves_Proficiency'] = Player.saves_prof
-        self.stats['Hero_or_Villain'] = Player.team
 
         self.stats['Damage_Type'] = Player.damage_type
         self.stats['Damage_Resistance'] = Player.damage_resistances
@@ -612,10 +777,21 @@ class EntityPage_cl(Frame):
         self.stats['Spell_Slot_9'] = Player.spell_slots[8]
         self.stats['Spell_List'] = Player.spell_list
 
+        self.stats['To_Hit'] = Player.base_tohit
+        self.stats['Attacks'] = Player.base_attacks
+        self.stats['DMG'] = Player.base_dmg
+        self.stats['OffHand'] = Player.offhand_dmg
+
         self.stats['Other_Abilities'] = Player.other_abilities
+        self.stats['ActionSurges'] = Player.action_surges
         self.stats['Sneak_Attack_Dmg'] = Player.sneak_attack_dmg
+        self.stats['RageDmg'] = Player.rage_dmg
         self.stats['Lay_on_Hands_Pool'] = Player.lay_on_hands
         self.stats['Sorcery_Points'] = Player.sorcery_points
+        self.stats['DruidCR'] = Player.DruidCR
+        self.stats['Inspiration'] = Player.inspiration_die
+        self.stats['ChannelDivinity'] = Player.channel_divinity_counter
+        self.stats['DestroyUndeadCR'] = Player.destroy_undead_CR
 
         self.stats['Position'] = Player.position_txt
         self.stats['Speed'] = Player.speed
@@ -628,12 +804,13 @@ class EntityPage_cl(Frame):
         self.name = self.NameEntry.get()
 
         #Basic Stuff
-        BasicStuffNames = ['AC', 'HP', 'Proficiency', 'To_Hit', 'Attacks', 'DMG', 'Level', 'Hero_or_Villain']
+        BasicStuffNames = ['AC', 'HP', 'Proficiency', 'Level', 'Hero_or_Villain']
         for i in range(0,len(BasicStuffNames)):
-            if BasicStuffNames[i] == 'DMG':
+            if BasicStuffNames[i] == 'DMG' or BasicStuffNames[i] == 'Level':
                 self.stats[BasicStuffNames[i]] = float(self.BasicStatValues[i].get()) #fetch all these Entries
             else:
                 self.stats[BasicStuffNames[i]] = int(self.BasicStatValues[i].get())
+        self.stats['Type'] = self.TypeEntry.get()
 
         #Ability Scores
         AbilityScoreNames = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha']
@@ -684,6 +861,12 @@ class EntityPage_cl(Frame):
             SpellText = 'none'
         self.stats['Spell_List'] = SpellText
 
+        #Attacks
+        self.stats['To_Hit'] = float(self.ToHitEntry.get())
+        self.stats['DMG'] = float(self.DmgEntry.get())
+        self.stats['Attacks'] = float(self.AttackNumEntry.get())
+        self.stats['OffHand'] = float(self.OffHandEntry.get())
+
         #Position
         self.stats['Speed'] = int(self.SpeedEntry.get())
         self.stats['Range_Attack'] = int(self.Range_Attack_Value.get())
@@ -703,9 +886,22 @@ class EntityPage_cl(Frame):
         if AbilitiesText == '':
             AbilitiesText = 'none'
         self.stats['Other_Abilities'] = AbilitiesText
+        self.stats['ActionSurges'] = int(self.ActionSurgeEntry.get())
         self.stats['Sneak_Attack_Dmg'] = float(self.SneakAttackDmgEntry.get())
+        self.stats['RageDmg'] = float(self.RageDmgEntry.get())
         self.stats['Lay_on_Hands_Pool'] = int(self.LayOnHandsEntry.get())
         self.stats['Sorcery_Points'] = int(self.SorceryPointsEntry.get())
+        self.stats['DruidCR'] = float(self.WildShapeCREntry.get())
+        #Inspiration
+        inspiration = self.InspirationEntry.get()
+        if inspiration == 'd4': self.stats['Inspiration'] = '2'
+        elif inspiration == 'd6': self.stats['Inspiration'] = '3'
+        elif inspiration == 'd8': self.stats['Inspiration'] = '4'
+        elif inspiration == 'd10': self.stats['Inspiration'] = '5'
+        elif inspiration == 'd12': self.stats['Inspiration'] = '6'
+        else: self.stats['Inspiration'] = '0'
+        self.stats['ChannelDivinity'] = int(self.ChannelDivinityEntry.get())
+        self.stats['DestroyUndeadCR'] = float(self.DestroyUndeadEntry.get())
 
     def load_default_stats(self):
         #This is called when the #new character button is pressed, restore default stats 
@@ -732,10 +928,11 @@ class EntityPage_cl(Frame):
         self.update_Entry(self.NameEntry, self.name)
 
         #Basic Stuff
-        BasicStuffNames = ['AC', 'HP', 'Proficiency', 'To_Hit', 'Attacks', 'DMG', 'Level', 'Hero_or_Villain']
+        BasicStuffNames = ['AC', 'HP', 'Proficiency', 'Level', 'Hero_or_Villain']
         for i in range(0,len(BasicStuffNames)):
             self.BasicStatValues[i].set(self.stats[BasicStuffNames[i]]) #update all these Entries
-        
+        self.TypeEntry.set(self.stats['Type'])
+
         #Ability Scores
         AbilityScoreNames = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha']
         for i in range(0,6):
@@ -776,6 +973,12 @@ class EntityPage_cl(Frame):
                 self.SpellList[i].set(0)
         self.UpdateKnownSpells()
 
+        #Attacks
+        self.update_Entry(self.ToHitEntry, self.stats['To_Hit'])
+        self.update_Entry(self.AttackNumEntry, self.stats['Attacks'])
+        self.update_Entry(self.DmgEntry, self.stats['DMG'])
+        self.update_Entry(self.OffHandEntry, self.stats['OffHand'])
+
         #Position
         self.update_Entry(self.SpeedEntry, self.stats['Speed'])
         self.Range_Attack_Value.set(int(self.stats['Range_Attack']))
@@ -791,9 +994,20 @@ class EntityPage_cl(Frame):
                 self.AbilitiesList[i].set(1)
             else:
                 self.AbilitiesList[i].set(0)
+        self.update_Entry(self.ActionSurgeEntry, self.stats['ActionSurges'])
         self.update_Entry(self.SneakAttackDmgEntry, self.stats['Sneak_Attack_Dmg'])
+        self.update_Entry(self.RageDmgEntry, self.stats['RageDmg'])
         self.update_Entry(self.LayOnHandsEntry, self.stats['Lay_on_Hands_Pool'])
         self.update_Entry(self.SorceryPointsEntry, self.stats['Sorcery_Points'])
+        self.update_Entry(self.WildShapeCREntry, self.stats['DruidCR'])
+        if self.stats['Inspiration'] == 2: self.InspirationEntry.set('d4')
+        elif self.stats['Inspiration'] == 3: self.InspirationEntry.set('d6')
+        elif self.stats['Inspiration'] == 4: self.InspirationEntry.set('d8')
+        elif self.stats['Inspiration'] == 5: self.InspirationEntry.set('d10')
+        elif self.stats['Inspiration'] == 6: self.InspirationEntry.set('d12')
+        else: self.InspirationEntry.set('0')
+        self.update_Entry(self.ChannelDivinityEntry, self.stats['ChannelDivinity'])
+        self.update_Entry(self.DestroyUndeadEntry, self.stats['DestroyUndeadCR'])
 
         #update the Modifier Labels
         self.update_all_ability_mod()
@@ -809,7 +1023,6 @@ class EntityPage_cl(Frame):
         RUSure = ttk.Toplevel()
         RUSure.geometry("320x120")
         RUSure.title('Delete Character?')
-        ttk.Button(RUSure, text='hi', bootstyle='outline').pack
         Label(RUSure, text= "Are you sure you want to delete " + self.name + '?').pack(pady=10)
         #Yes, No, Buttons
         ttk.Button(RUSure, text='Yeah, kill it!', bootstyle='outline', command= partial(self.delete_Entity_and_go_back, RUSure)).pack()
@@ -923,7 +1136,7 @@ class DM_page(Frame):
             self.Entry_Init[i].insert(0, str(self.master.Fighters[i].initiative))
             Label(self, width =5, anchor="w", text='/' + str(self.master.Fighters[i].HP)).grid(row=i+2, column=3, padx=padx, pady=pady)
             self.b_concentration[i].grid(row=i+2, column=4, padx=padx, pady=pady)
-            if self.master.Fighters[i].concentration == 1:
+            if self.master.Fighters[i].is_concentrating == 1:
                 self.b_concentration[i].configure(bootstyle = 'warning solid')
             self.Entry_dmg[i].grid(row=i+2, column=5, padx=padx, pady=pady)
             self.Entry_dmg_type[i].grid(row=i+2, column=6, padx=padx, pady=pady)
@@ -980,27 +1193,27 @@ class DM_page(Frame):
 
     def apply_dmg(self,Fighter):
         index = self.master.Fighters.index(Fighter)
-        dmg = int(self.Entry_dmg[index].get())
+        damage = int(self.Entry_dmg[index].get())
         #DMG Types
-        if dmg > 0:
+        if damage > 0:
             dmg_type = self.Entry_dmg_type[index].get()
             print(dmg_type)
             if dmg_type == '':
                 dmg_type = 'true'
             if dmg_type in Fighter.damage_resistances:
                 print(Fighter.name + ' is resistant against ' + dmg_type)
-                dmg = dmg/2
+                damage = damage/2
             if dmg_type in Fighter.damage_immunity:
                 print(Fighter.name + ' is immune against ' + dmg_type)
-                dmg = 0
+                damage = 0
             if dmg_type in Fighter.damage_vulnerability:
                 print(Fighter.name + ' is vulnerable against ' + dmg_type)
-                dmg = dmg*2
-        Fighter.CHP -= int(dmg)
-        if Fighter.concentration == 1 and dmg > 0:
+                damage = damage*2
+        Fighter.CHP -= int(damage)
+        if Fighter.is_concentrating == 1 and damage > 0:
             DC = 10
-            if dmg/2 > 10:
-                DC = int(dmg/2 + 0.5)
+            if damage/2 > 10:
+                DC = int(damage/2 + 0.5)
             messagebox.showinfo('Concentration Check',Fighter.name + ' must make concentration check DC: ' + str(DC))
         #delete the Entriess
         self.Entry_dmg[index].delete(0, 'end')
@@ -1009,11 +1222,11 @@ class DM_page(Frame):
         self.Entry_Fighters[index].insert(0, str(self.master.Fighters[index].CHP))
     
     def set_concentration(self,Player):
-        if Player.concentration == 0:
-            Player.concentration = 1
+        if Player.is_concentrating == 0:
+            Player.is_concentrating = 1
             self.b_concentration[self.master.Fighters.index(Player)].configure(bootstyle = 'warning solid')
         else:
-            Player.concentration = 0
+            Player.is_concentrating = 0
             self.b_concentration[self.master.Fighters.index(Player)].configure(bootstyle = 'warning outline')
 
 def StartGUI():
@@ -1032,9 +1245,9 @@ def StartGUI():
     MainCanvas = Canvas(MainFrame)
     MainCanvas.pack(side=LEFT,fill=BOTH,expand=1)
     # Add A Scrollbars to Canvas
-    XScrollbar = ttk.Scrollbar(XFrame,orient=HORIZONTAL,command=MainCanvas.xview)
+    XScrollbar = ttk.Scrollbar(XFrame,orient=HORIZONTAL,command=MainCanvas.xview, bootstyle="warning-round")
     XScrollbar.pack(side=BOTTOM,fill=X)
-    YScrollbar = ttk.Scrollbar(MainFrame,orient=VERTICAL,command=MainCanvas.yview)
+    YScrollbar = ttk.Scrollbar(MainFrame,orient=VERTICAL,command=MainCanvas.yview, bootstyle="warning-round")
     YScrollbar.pack(side=RIGHT,fill=Y)
     #Mouse Weel
     def _on_mousewheel(event):
@@ -1042,7 +1255,7 @@ def StartGUI():
     MainCanvas.bind_all("<MouseWheel>", _on_mousewheel)
     # Configure the canvas
     MainCanvas.configure(xscrollcommand=XScrollbar.set)
-    MainCanvas.configure(yscrollcommand=XScrollbar.set)
+    MainCanvas.configure(yscrollcommand=YScrollbar.set)
     MainCanvas.bind("<Configure>",lambda e: MainCanvas.config(scrollregion= MainCanvas.bbox(ALL))) 
     # Create Another Frame INSIDE the Canvas
     GUIFrame = Frame(MainCanvas)

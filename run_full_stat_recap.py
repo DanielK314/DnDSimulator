@@ -1,8 +1,9 @@
 from Entity_class import *
 from Encounter_Simulator import *
+from Dm_class import DungeonMaster
 import json
 
-if __name__ == '__main__':
+def run_full_stat_recap():
     #read out Informations for the simulation from json file
     f = open('simulation_parameters.json')
     data = json.load(f)
@@ -20,3 +21,6 @@ if __name__ == '__main__':
     #load the Entities for the fight
     Fighters = [entity(player['name'], player['team'], DM) for player in Loaded_Entities]
     full_statistical_recap(parameters['repetitions'], Fighters)
+
+if __name__ == '__main__':
+    run_full_stat_recap()

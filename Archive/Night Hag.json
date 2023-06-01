@@ -36,5 +36,13 @@
     "Sorcery_Points": 0,
     "Position": "middle",
     "Speed": 30,
-    "Range_Attack": 0
+    "Range_Attack": 0,
+    "DruidCR": "0",
+    "OffHand": "0",
+    "Type": "normal",
+    "Inspiration": "0",
+    "DestroyUndeadCR": "0",
+    "ChannelDivinity": "0",
+    "ActionSurges": "0",
+    "RageDmg": "0"
 }

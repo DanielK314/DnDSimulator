@@ -46,7 +46,7 @@ This is a overview of all the stats and abilities that are currently supported b
 ## Basic Stats
 <img src="/Documentation/BasicStats.png" width=30% height=30%>
 
-Most of this explains itself. Interesting is the **Number of Attacks** which just means, that if a character chooses to use the action for an attack, they will do this many with the same dmg. The system does not know **off hand attacks** yet, so if you have a rogue that usually does an additional off hand attack, just give him an additional attack here. Also keep in mind, that the dmg of all attacks and spells used is the expectation value of the dice roll.
+Most of this explains itself. Simply insert the AC, HP, proficiency and level of your character. The Hero and Villain can be set to 0 for hero and 1 for villain. Character type is relevant for undead and the clecrics destroy undead. You can then add the stats and if they have save prof.
 
 ## Spells
 <img src="/Documentation/Spell1.png" width=40% height=40%>
@@ -60,7 +60,7 @@ In the **Spell Book** page you can choose from the spells that are currently imp
 ## Movement
 <img src="/Documentation/Movement.png" width=50% height=50%>
 
-Okay, so this is a little bit more complicated. **Short version**: If you are a spell caster with low AC, go in the **Back Line**. If you can tank a bit more and want to attack melee, go **Middle**. **Front** is for the heavy hitters with high AC, like Barbarian or Paladin.
+Interesting is the **Number of Attacks** which just means, that if a character chooses to use the action for an attack, they will do this many with the same dmg. The system also supports **off hand attacks** with a bonus action. Also keep in mind, that the dmg of all attacks and spells used is the expectation value of the dice roll. Okay, so the positioning is a little bit more complicated. **Short version**: If you are a spell caster with low AC, go in the **Back Line**. If you can tank a bit more and want to attack melee, go **Middle**. **Front** is for the heavy hitters with high AC, like Barbarian or Paladin.
 
 **Long Version**: I wanted to include movement, speed and positioning into the simulation, but I felt like an actual system for position, maps and movement over 5ft squares was over the top. Additionally I assumed that most of the movement would average out over many fights anyway and no simulation will capture the actual maps an movement of a real DnD session. So I decided to do a different approach. The line system is supposed to mimic the basic play and positioning style of the characters and implement speed and opportunity attacks without a grid system.
 
@@ -83,6 +83,12 @@ Not so much to say here. The dmg type system of DnD is fully implemented. Any cr
 
 Now it gets really interesting. In the following I will discuss the different special abilities and how they are implemented in the code (for me and maybe you to better understand the code). These are class features but also monster abilities:
 
+**Action Surge** Set how many Action Surges a Character has. A Character with action surge will use it if HP lower then 60%
+
+**Improved Critical** Critical Hit at 19
+
+**Second Wind** A Character will use this if HP lower then 30%
+
 **Sneak Attack Dmg** If this is not zero it will just be added to the first attack hit of every turn, implemented directly in the attack function. I realize that not every attack is a sneak attack, but I figured a rogue will get mostly sneak attack.
 
 **Lay on Hands Pool** Is a feature of the paladin and will be used to heal others and the player if needed. It is implemented via the 'use_lay_on_hands' function of the Entity class. This is also useful if monster has self healing powers. I used it for the Vampire for example as I have not implemented another heal for monsters to use.
@@ -101,21 +107,31 @@ Now it gets really interesting. In the following I will discuss the different sp
 
 **Frenzy** If player goes in rage and knows franzy, this will be activated in the 'rage' function. If a player attacks it will do an additional franzy attack. 
 
+**Totems** This is a Barbarian feature
+
 **Smite** Smite uses spell slots. If a player knows smite and hits a target, smite is activated via the 'initiate_smite' function and the smite dmg is added in the 'attack' function. The decision to smite comes in the 'smart_attack' function. If a player attacks and knows smite, currently, it will use the highest spell slot to smite.
 
-**Meta Magic** There are 3 options to use the meta magic of sorcerers. I will hopefully cover this part more in the documentation. It is quite complex...I think :)
+**Aura of Protection** Some of the allies are randomly choosen every round. They will revieve the bonus.
 
-**WildShape** A druid can go into wild shape. It will drop it, if the an ally needs heal desperately. Currently the wild shape forms are a wolf and a bear, according to the players level respectfully.
+**Lay on hands** Set how much Lay on hands a character has, if this is not 0 a Character will use it to heal themself or allies
+
+**Meta Magic** There are 3 options to use the meta magic of sorcerers. Set how much sorcery points a character has. If it is more then 0 and a character has meta magic options to cast a spell, they might use it.
+
+**WildShape** A druid can go into wild shape. It will drop it, if the an ally needs heal desperately. Currently a few Options are available for the character to select from randomly, according to the players level respectfully. These are: Wolf,Brown Bear, Crocodile,Ape,Giant Eagle,Giant Boar,Polar Bear,Boar
 
 **CombatWildShape** Allows the player to go into wild shape with a BA and heal using spell slots.
 
-**Inspiration** If this is activated a player might use the BA to inspire random allies.
+**Inspiration** If this is activated a player might use the BA to inspire random allies. Choose a inspiration die below
+
+**Cutting Words** Might use a inspiration die to cutting words an attack
+
+**Aganizing Blast** Warlock invocation
+
+**Turn Undead** Choose if a character can Turn Undead, how often and at what CR (level) they destroy undead
 
 **DragonsBreath** This ability is charged at the start of a turn with a 5 or 6 on a d6 roll. If charged the monster will breath fire on multiple random targets via the 'use_drongs_breath' Entity function. Its dmg scales with the Con mod und level of the player using it (Save DC = 12 + int((Level-10)/3) , DMG = 20 + int(level*3.1). This corresponds pretty accurately to red dragons (young to ancient) but works in principle for all characters.
 
 **SpiderWeb** This ability is charged at the start of a turn with a 5 or 6 on a d6 roll. If charged the monster will shoot a spider web to restrain a target. The DC scales with Dex mod (9 + Dex). Works in principle for all characters.
-
-<img src="/Documentation/Other2.png" width=40% height=40%>
 
 # Spellcasting
 
@@ -135,15 +151,27 @@ HealingWord
 
 MagicMissile
 
+Hex
+
+Guiding Bolt
+
 Shield
+
+False Life
 
 AganazzarsSorcher
 
 ScorchingRay
 
+Shatter
+
+Spiritual Weapon
+
 Fireball
 
 Haste
+
+Conjure Animals 
 
 When implementing a new Spell, it must be written in the spell class and list of all spells in the entity class
 

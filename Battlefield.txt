@@ -1,2 +1,2 @@
-enemies per 100 square feet, 1
+density 0-loose 1-normal 2-dense, 1
 Stuff, 2

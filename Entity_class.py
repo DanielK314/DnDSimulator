@@ -1,33 +1,10 @@
-from datetime import datetime
+from Ifstatement_class import ifstatements
+from Dmg_class import dmg
+from AI_class import AI
+
 from random import *
 import numpy as np
 import json
-from functools import partial
-
-class DungeonMaster:
-    def __init__(self):
-        self.AI_blank = False #just ignore, but MUST be False, see AI Class
-        self.printing_on = False
-        self.start_time = datetime.now()
-        self.Battlefield = np.genfromtxt('Battlefield.txt', delimiter= ',')      #load Informations from Battlefield
-        self.enemies_per_100_sqft = self.Battlefield[0][1]
-    def block_print(self):
-        self.printing_on = False
-    def enable_print(self):
-        self.printing_on = True
-
-    def say(self, text, end=False):
-        if self.printing_on:
-            if True:                       #This is a hard coded, disabled developer Function 
-                if False:#total diff in ms
-                    print(str(round((datetime.now() - self.start_time).total_seconds()*1000, 3)), end=': ')
-                if False:#diff to last 
-                    print(str(round((datetime.now() - self.start_time).total_seconds()*1000, 3)), end=': ')
-                    self.start_time = datetime.now()
-            if end == False:
-                print(text)
-            else:
-                print(text, end = end)
 
 class entity:                                          #A NPC or PC
     def __init__(self, name, team, DM, archive = False):                  #Atk - Attack [+x to Hit, mean dmg]
@@ -41,14 +18,14 @@ class entity:                                          #A NPC or PC
         self.data = data
         self.DM = DM
 
-    #AI
-        self.AI = AI(self)
 
     #Base Properties
         self.name = str(name)
         self.orignial_name = str(name)        #restore name after zB WildShape
         self.team = team                                      #which Team they fight for
         self.NPC = 0                        #NPCs like Skeletons
+        self.type = str(data['Type'])
+        self.base_type = self.type
 
         self.AC = int(data['AC'])         #Current AC that will be called, and reset at start of turn
         self.shape_AC =int(data['AC'])     #AC of the current form, changed by wild shape
@@ -58,11 +35,14 @@ class entity:                                          #A NPC or PC
         self.tohit = int(data['To_Hit'])
         self.base_tohit = int(data['To_Hit'])
 
+
         self.base_attacks = int(data['Attacks'])    #attacks of original form                           #number auf Attacks
         self.attacks = self.base_attacks  #at end_of_turn attack_counter reset to self.attack
         self.dmg = float(data['DMG'])           #dmg per attack
         self.base_dmg = float(data['DMG'])
-        self.level = int(data['Level'])           #!!!!!!! It is not implementet yet, but level is used in some functions already
+        self.offhand_dmg = float(data['OffHand']) #If 0, no Offhand dmg
+
+        self.level = float(data['Level'])           #It is not fully implementet yet, but level is used in some functions already, Level is used as CR for wildshape and co
 
     #Position management
         self.speed = int(data['Speed'])
@@ -96,13 +76,12 @@ class entity:                                          #A NPC or PC
 
         #actually only the modifier are currently ever used
         self.saves_prof = data['Saves_Proficiency']        #Already in Entity, not implementet in fight functions tho
-        self.saves_adv_dis = [0,0,0,0,0,0]  #advantage or disadvantage on saves
         #list for saves of all kind. if = 0, no advantage 
         #if > 0 has advantage
         #if < 0 has disadvantage
         self.HeroVillain = int(data['Hero_or_Villain'])
 
-    #Damage Types,
+    #Damage Types
         self.damage_type = data['Damage_Type']
         self.base_damage_type = self.damage_type
         self.damage_resistances = data['Damage_Resistance']
@@ -111,6 +90,8 @@ class entity:                                          #A NPC or PC
         self.base_damage_immunity = self.damage_immunity
         self.damage_vulnerability = data['Damage_Vulnerabilities']
         self.base_damage_vulnerability = self.damage_vulnerability
+
+        self.additional_resistances = ''     #for rage and stuff
 
         self.last_used_DMG_Type = data['Damage_Type']
 
@@ -134,23 +115,81 @@ class entity:                                          #A NPC or PC
         self.haste_cast = 0
         self.shield_cast = 0
         self.eldritch_blast_cast = 0
+        self.hex_cast = 0
+        self.armor_of_agathys_cast = 0
+        self.false_life_cast = 0
+        self.spiritual_weapon_cast = 0
+        self.shatter_cast = 0
+        self.conjure_animals_cast = 0
+        self.guiding_bolt_cast = 0
 
         #Spells known
         self.spell_list = data['Spell_List']
 
         #If this updates, the All_Spells in the GUI will load this
         #Keep this in Order of the Spell Level, so that it also fits for the GUI
-        self.SpellNames = ['FireBolt', 'EldritchBlast', 'Entangle', 'BurningHands', 'CureWounds', 'HealingWord', 'Shield', 'MagicMissile', 'AganazzarsSorcher', 'ScorchingRay', 'Fireball', 'Haste']
+        self.SpellNames = ['FireBolt', 'EldritchBlast', 'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon', 'Fireball', 'Haste', 'ConjureAnimals']
         self.SpellBook = {SpellName: spell(self, SpellName) for SpellName in self.SpellNames}
+
+        #Haste
+        self.haste_round_counter = 0    #when this counter hits 10, haste will wear off
+        #Hex 
+        self.can_choose_new_hex = False 
+        #Armor of Agathys
+        self.has_armor_of_agathys = False
+        self.agathys_dmg = 0
+        #Spiritual Weapon
+        self.has_spiritual_weapon = False
+        self.SpiritualWeaponDmg = 0
+        self.SpiritualWeaponCounter = 0
+        #Conjure Animals
+        self.has_animals_conjured = False
+        self.is_a_conjured_animal = False   #Is a constand state, see spell conjure animals
+        self.conjurer = False #This is the player that conjured this entity
+        #Guiding Bolt
+        self.used_guiding_bolt = False
+        self.is_guiding_bolted = False
 
 
     #Special Abilities
         self.other_abilities = data['Other_Abilities']
+        #Action Surge
+        if 'ActionSurge' in self.other_abilities:
+            self.knows_action_surge = True
+        else: self.knows_action_surge = False
+        self.action_surges = int(data['ActionSurges'])       #The base how many action surge the player has
+        self.action_surge_counter = self.action_surges
+        self.action_surge_used = False
+        #Improved Critical
+        if 'ImprovedCritical' in self.other_abilities:
+            self.knows_improved_critical = True
+        else:self.knows_improved_critical = False
+        #Second Wind
+        if 'SecondWind' in self.other_abilities:
+            self.knows_second_wind = True
+        else:
+            self.knows_second_wind = False
+        self.has_used_second_wind = False
+
+        #Archery
+        if 'Archery' in self.other_abilities:
+            self.knows_archery = True
+        else: self.knows_archery = False
+        #Great Weapon Fighting
+        if 'GreatWeaponFighting' in self.other_abilities:
+            self.knows_great_weapon_fighting = True
+        else: self.knows_great_weapon_fighting = False
+        #Interseption
+        if 'Interception' in self.other_abilities:
+            self.knows_interseption = True
+        else: self.knows_interseption = False
+        self.interseption_amount = 0 #is true if a interseptor is close, see end_of_turn
+
         #UncannyDodge
         if 'UncannyDodge' in self.other_abilities:
-            self.uncanny_dodge = True
+            self.knows_uncanny_dodge = True
         else:
-            self.uncanny_dodge = False
+            self.knows_uncanny_dodge = False
         #Cunning Action
         if 'CunningAction' in self.other_abilities:
             self.knows_cunning_action = True
@@ -164,23 +203,22 @@ class entity:                                          #A NPC or PC
         #Sneak Attack
         self.sneak_attack_dmg = float(data['Sneak_Attack_Dmg'])        #If Sneak_Attack is larger then 0, the Entity has sneak Attack
         self.sneak_attack_counter = 1                  #set 0 after sneak attack     
+        #Assassinate
+        self.knows_assassinate = False
+        if 'Assassinate' in self.other_abilities:
+            self.knows_assassinate = True
+
         #RecklessAttack
         self.knows_reckless_attack = False
         if 'RecklessAttack' in self.other_abilities:
             self.knows_reckless_attack = True
         self.reckless = 0    #while reckless, u have ad but attacks against u have too, must be called in Player AI
-
         #Rage
         self.knows_rage = False
         self.rage_dmg = 0
         if 'Rage' in self.other_abilities:
             self.knows_rage = True
-            if self.level < 9:
-                self.rage_dmg = 2
-            elif self.level < 16:
-                self.rage_dmg += 3
-            else:
-                self.rage_dmg += 4
+            self.rage_dmg = float(data['RageDmg'])
         self.raged = 0     # 1 if currently raging
         self.rage_round_counter = 0
         #Frenzy
@@ -188,7 +226,20 @@ class entity:                                          #A NPC or PC
         if 'Frenzy' in self.other_abilities:
             self.knows_frenzy = True
         self.is_in_frenzy = False
-
+        if 'BearTotem' in self.other_abilities:
+            self.knows_bear_totem = True
+        else:
+            self.knows_bear_totem = False
+        if 'EagleTotem' in self.other_abilities:
+            self.knows_eagle_totem = True
+        else:
+            self.knows_eagle_totem = False
+        if 'WolfTotem' in self.other_abilities:
+            self.knows_wolf_totem = True
+        else:
+            self.knows_wolf_totem = False
+        self.has_wolf_mark = False #Is true if you were attacked last by a Totel of the Wolf barbarian
+        
         #Lay On Hands
         self.lay_on_hands = int(data['Lay_on_Hands_Pool'])            #pool of lay on hands pool
         self.lay_on_hands_counter = self.lay_on_hands    #lay on hands pool left
@@ -198,18 +249,52 @@ class entity:                                          #A NPC or PC
             self.knows_smite = True
         #Smites use Spellslots
         self.smite_initiated = [False, False, False, False, False]      #  lv1, lv2, lv3, ... lv5 (0 = no smite, 1 = smite)
+        #Aura of Protection
+        self.knows_aura_of_protection = False
+        if 'AuraOfProtection' in self.other_abilities:
+            self.knows_aura_of_protection = True
+            #Is implemented in the do_your_turn function via area of effect chooser
 
         #Inspiration
-        self.knows_inspiration=False
         if 'Inspiration' in self.other_abilities:
             self.knows_inspiration = True
+            self.inspiration_die = int(data['Inspiration'])
+        else:
+            self.knows_inspiration = False
+            self.inspiration_die = 0
         self.inspired = 0   #here the amount a target is inspired
         self.inspiration_counter =  self.modifier[5]    #for baric inspiration char mod
+        #Combat Inspiration
+        if 'CombatInspiration' in self.other_abilities:
+            self.knows_combat_inspiration = True
+        else: self.knows_combat_inspiration = False
+        self.is_combat_inspired = False 
+        if 'CuttingWords' in self.other_abilities:
+            self.knows_cutting_words = True
+        else: self.knows_cutting_words = False
+
+        #ChannelDevinity
+        self.channel_divinity_counter = int(data['ChannelDivinity'])
+        if self.channel_divinity_counter > 0:
+            self.knows_channel_divinity = True
+        else:
+            self.knows_channel_divinity = False
+        #Turn Undead
+        if 'TurnUndead' in self.other_abilities:
+            self.knows_turn_undead = True
+        else:
+            self.knows_turn_undead = False
+        self.is_a_turned_undead = False
+        self.turned_undead_round_counter = 0
+        #DestroyUndead
+        self.destroy_undead_CR = float(data['DestroyUndeadCR'])
+
 
         #Agonizing Blast
         self.knows_agonizing_blast = False
         if 'AgonizingBlast' in self.other_abilities:
             self.knows_agonizing_blast = True
+
 
     #Meta Magic
         self.sorcery_points_base = int(data['Sorcery_Points'])
@@ -236,9 +321,24 @@ class entity:                                          #A NPC or PC
         
 
     #Wild Shape
+
+        self.BeastForms = {
+            0:{'Name': 'Wolf', 'Level': 0.25},
+            1:{'Name': 'Brown Bear', 'Level': 1},
+            2:{'Name': 'Crocodile', 'Level': 0.5},
+            3:{'Name': 'Ape', 'Level': 0.5},
+            4:{'Name': 'Giant Eagle', 'Level': 1},
+            5:{'Name': 'Giant Boar', 'Level': 2},
+            6:{'Name': 'Polar Bear', 'Level': 2},
+            7:{'Name': 'Boar', 'Level': 0.25}
+        }
+        self.DruidCR = 0
         self.knows_wild_shape = False
         if 'WildShape' in self.other_abilities:
             self.knows_wild_shape = True
+            self.DruidCR = float(data['DruidCR']) #This is the max CR in which the druid can wild shape
+            if self.DruidCR < 0.25: self.DruidCR = 0.25 #min CR
+
         self.knows_combat_wild_shape = False
         if 'CombatWildShape' in self.other_abilities:
             self.knows_combat_wild_shape = True
@@ -251,15 +351,18 @@ class entity:                                          #A NPC or PC
         self.death_counter = 0
         self.heal_counter = 0
         self.CHP = self.HP                                 #CHP - current HP
+        self.THP = 0         #Temporary HitPoints (dont stack)
         self.initiative = 0
         self.attack_counter = self.attacks           #will be reset to attack at start of turn
+        self.is_attacking = False #Is set true if player has used acktion to attack
+        self.unconscious_counter = 0       #This counts how often the player was unconscious in the fight for the statistics
 
         self.action = 1
         self.bonus_action = 1
         self.reaction = 1
         self.cast = 1 #if a spell is cast, cast = 0
-        self.concentration = 0
-
+        self.is_concentrating = False
+        self.uses_offhand = False
 
         self.restrained = 0             #will be ckeckt wenn attack/ed 
         self.prone = 0
@@ -276,36 +379,27 @@ class entity:                                          #A NPC or PC
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False
 
-    #Concentration Spells
-        #Entangle Variables (in break_concentration handeled)
-        self.entangled = 0
-        self.entangled_by = self
-        self.is_entangling = 0
-        self.entangling_target = self
-        #Haste
-        self.hasted = 0           #haste was cast on him
-        self.haste_round_counter = 0    #when this counter hits 10, haste will wear off
-        self.hasted_by = self
-        self.is_hasting = 0  #This Entity has cast haste on someone
-        self.hasting_target = self     #target of haste
- 
+    #AI
+        self.AI = AI(self)
+
     def rollD20(self, advantage_disadvantage=0): #-1 is disadvantage +1 is advantage
+        d20_1 = int(random()*20 + 1)
+        d20_2 = int(random()*20 + 1)
         if advantage_disadvantage > 0:
-            d20_1 = randint(1,20)
-            d20_2 = randint(1,20)
             d20 = max([d20_1, d20_2])
         elif advantage_disadvantage < 0:
-            d20_1 = randint(1,20)
-            d20_2 = randint(1,20)
             d20 = min([d20_1, d20_2])
         else:
-            d20 = randint(1,20)
+            d20 = d20_1
         
         #Inspiration hits here, at the top most layer of this simulation, creazy isnt it 
         if self.inspired != 0:
-            d20 += self.inspired
-            self.inspired = 0
-            self.DM.say(' (with inspiration),', end= '')
+            #Only use it if roll is low, but not that low
+            if d20 < 13 and d20 > 6:
+                d20 += self.inspired
+                self.inspired = 0
+                self.is_combat_inspired = False
+                self.DM.say('(with inspiration), ', end= '')
         return d20
 
 #---------------------Character State Handling----------------
@@ -313,95 +407,84 @@ class entity:                                          #A NPC or PC
         self.DM.say(self.name + ' is unconscious ', end='')
         self.CHP = 0
         self.state = 0   # now unconscious
+        self.unconscious_counter += 1 #for statistics
 
         #if u get uncounscious:
         self.end_rage()
         self.break_concentration()
+        if self.knows_aura_of_protection:
+            self.end_aura_of_protection()
 
-        if self.hasted == 1:
+        if self.is_hasted():
             self.break_haste()
-        if self.entangled == 1:
+        if self.is_entangled():
             self.break_entangle()
+        if self.is_hexed():
+            self.switch_hex()
+        if self.is_a_conjured_animal:
+            self.end_conjuration()
         self.DM.say('\n', end='')
+
+        if self.team == 1: #this is for Monsters
+            self.state = -1
     
+    def get_conscious(self):
+        self.DM.say(self.name + ' regains consciousness')
+        self.state = 1
+        self.heal_counter = 0
+        self.death_counter = 0
+
     def death(self):
         self.CHP = 0
         self.state = -1
         #if u die:
         self.end_rage()
         self.break_concentration()
+        if self.knows_aura_of_protection:
+            self.end_aura_of_protection()
 
-        if self.hasted == 1:
+
+        if self.is_hasted():
             self.break_haste()
-        if self.entangled == 1:
+        if self.is_entangled():
             self.break_entangle()
+        if self.is_hexed():
+            self.switch_hex()
+        if self.is_a_conjured_animal:
+            self.end_conjuration()
 
-    def changeCHP(self, damage, attacker, damage_type = 'slashing'):
-        if damage != 0:
-            if damage_type in self.damage_resistances:
-                self.DM.say(str(self.name) + ' is resistant against ' + damage_type)
-                damage = damage/2
-
-            if damage_type in self.damage_immunity:
-                self.DM.say(str(self.name) + ' is immune against ' + damage_type)
-                damage = 0
-
-            if damage_type in self.damage_vulnerability:
-                self.DM.say(str(self.name) + ' is vulnarable against ' + damage_type)
-                damage = damage*2
-
-        if self.uncanny_dodge == True and damage > 0 and self.reaction == 1 and self.state == 1: #uncanny dodge condition
-            if self.wild_shape_HP > 0:                         #Wild Shape HP
-                self.change_wild_shape_HP(damage/2, attacker)
-                self.make_concentration_check(damage/2)
+    def check_uncanny_dodge(self, dmg):
+        #-----------Uncanny Dodge
+        if self.knows_uncanny_dodge:
+            if dmg.abs_amount() > 0 and self.reaction == 1 and self.state == 1: #uncanny dodge condition
+                dmg.multiply(1/2) #Uncanny Dodge halfs all dmg
                 self.reaction = 0
-            else:                                            #no Wild Shape
-                self.CHP -= damage/2
-                self.make_concentration_check(damage/2)
-                self.reaction = 0
-                self.DM.say(self.name + ' used Uncanny Dodge, DMG: ' + str(damage/2))
+                self.DM.say('with Uncanny Dodge, ', end='')
 
-        else:    
-            if damage > 0:                 #if damage, it will be checkt if wild shape HP are still there
-                if self.wild_shape_HP > 0:
-                    self.change_wild_shape_HP(damage, attacker)
-                    self.make_concentration_check(damage)
-                else:
-                    self.CHP -= damage
-                    self.make_concentration_check(damage)
-                    self.DM.say(self.name + ' takes DMG: ' + str(round(damage,2)) + ' now at: ' + str(round(self.CHP,2)))
+    def check_new_state(self, was_ranged):
+        #State Handling after Changing CHP
 
-            if damage < 0:               #neg. damage is heal
-                if self.state == -1:
-                    self.DM.say('This is stupid, it should be dead')
-                    quit()
-                if abs(self.HP - self.CHP) >= abs(damage):
-                    self.CHP -= damage    
-                else:                     #if more heal then HP, only fill HP up
-                    damage = -1*(self.HP - self.CHP)
-                    self.CHP -= damage
-                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
-
-            if damage == 0:
-                self.DM.say('Missed')
-
+        #----------State Handling Unconscious
         if self.state == 0:         #if the player is dying
-            if self.CHP > 0:           #if healed over 0
-                self.state = 1
-                self.death_counter = 0
-                self.heal_counter = 0
-                self.DM.say(str(self.name) + ' regains conciousness')
+            if self.CHP > 0:           #was healed over 0
+                self.get_conscious()
             if self.CHP <0:
                 if self.CHP < -1*self.HP:
                     self.death()
                     self.DM.say(str(self.name) + ' died due to the damage ')
                 else:
                     self.CHP = 0
-                    self.death_counter += 1
+                    if was_ranged:
+                        self.death_counter += 1
+                    else: #melee is auto crit
+                        self.death_counter += 2
                     if self.death_counter >= 3:
                         self.death()
                         self.DM.say(str(self.name) + ' was attacked and died')
+                    else:
+                        self.DM.say(str(self.name) + ' death saves at ' + self.StringDeathCounter())
 
+        #----------State handling alive
         if self.state == 1:                    #the following is if the player was alive before
             if self.CHP < 0-self.HP:              #if more then -HP dmg, character dies
                 self.death()
@@ -409,14 +492,67 @@ class entity:                                          #A NPC or PC
             if self.CHP <= 0 and self.state != -1:   #if below 0 and not dead, state dying 
                 self.unconscious()
 
-        
+    def changeCHP(self, Dmg, attacker, was_ranged):
+        self.check_uncanny_dodge(Dmg)
+
+        damage = Dmg.calculate_for(self) #call dmg class, does the Resistances 
+        #This calculates the total dmg with respect to resistances
+
+        #-----------Statistics
         if damage > 0:
             attacker.dmg_dealed += damage
-            attacker.last_used_DMG_Type = damage_type
+            if attacker.is_a_conjured_animal:
+                attacker.conjurer.dmg_dealed += damage
+            attacker.last_used_DMG_Type = Dmg.damage_type()
         elif damage < 0:
             attacker.heal_given -= damage
 
-    def change_wild_shape_HP(self, damage, attacker):
+        #---------Damage Deal
+        AgathysDmg = dmg() #0 dmg
+        if damage > 0:                 #if damage, it will be checkt if wild shape HP are still there
+            if self.is_a_turned_undead:
+                self.end_turned_undead()
+            self.make_concentration_check(damage) #Make Concentration Check for the dmg
+            if self.wild_shape_HP > 0:
+                self.change_wild_shape_HP(damage, attacker, was_ranged)
+                #Not checking resistances anymore, already done 
+            else:
+                if self.THP > 0:     #Temporary Hitpoints
+                    AgathysDmg = self.check_for_armor_of_agathys() #returns the agathys dmg
+                    if damage < self.THP: #Still THP
+                        self.THP -= damage
+                        self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP')
+                        damage = 0
+                    else: #THP gone
+                        damage = damage - self.THP #substract THP
+                        self.THP = 0
+                        self.DM.say('temporaray HP empty, ', end='')
+
+                #Change CHP
+                if damage > 0: #If still damage left
+                    self.CHP -= damage
+                    self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now at: ' + str(round(self.CHP,2)))
+
+        #---------Armor of Agathys 
+        if AgathysDmg.abs_amount() > 0 and was_ranged == False:
+            self.DM.say(attacker.name + ' is harmed by the Armor of Agathys')
+            attacker.changeCHP(AgathysDmg, self, was_ranged=False)
+
+        #---------Heal
+        if damage < 0:               #neg. damage is heal
+            if self.state == -1:
+                self.DM.say('This is stupid, dead cant be healed')
+                quit()
+            if abs(self.HP - self.CHP) >= abs(damage):
+                self.CHP -= damage    
+            else:                     #if more heal then HP, only fill HP up
+                damage = -1*(self.HP - self.CHP)
+                self.CHP -= damage
+            self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
+
+        self.check_new_state(was_ranged)
+
+    def change_wild_shape_HP(self, damage, attacker, was_ranged):
         if damage < self.wild_shape_HP:     #damage hits the wild shape
             self.wild_shape_HP -= damage
             self.DM.say(str(self.name) + ' takes damage in wild shape: ' + str(round(damage,2)) + ' now: ' + str(round(self.wild_shape_HP,2)))
@@ -426,79 +562,167 @@ class entity:                                          #A NPC or PC
             #reshape after critical damage
             self.wild_shape_drop()  #function that resets the players stats
             self.DM.say(str(self.name) + ' wild shape breaks')
-            self.changeCHP(overhang_damage, attacker)
+            #Remember, this function is called in ChangeCHP, so resistances and stuff has already been handled
+            #For this reason a 'true' dmg type is passed here
+            Dmg = dmg(overhang_damage, 'true')
+            self.changeCHP(Dmg, attacker, was_ranged)
 
+    def addTHP(self, newTHP):
+        if self.THP == 0: #currently no THP
+            self.THP = newTHP
+        elif self.has_armor_of_agathys:
+            self.THP = newTHP
+            self.break_armor_of_agathys()
+            #New THP will break the Armor
+        else:
+            self.THP = newTHP
+        self.DM.say(self.name + ' gains ' + str(newTHP) + ' temporary HP')
+
+    def stand_up(self):
+        rules = [self.prone == 1, self.restrained == 0]
+        errors = [self.name + ' tried to stand up but is not prone', 
+                self.name + ' tried to stand up, but is restrained']
+        ifstatements(rules, errors, self.DM).check()
+        self.prone = 0
+        self.DM.say(self.name + ' stood up to end prone')
+
+    def dps(self):
+        #DPS is a reference used to determine the performance of the player so far in the fight
+        #It is used by some AI functions to determine the value of the target in a fight
+        #This Function returns a value for the dps
+        #Heal is values 2 times dmg
+        return (self.dmg_dealed + self.heal_given*2)/self.DM.rounds_number
+
+    def value(self):
+        #This function is designed to help decision making in AI
+        #It returns a current, roughly dmg equal score of the entity to compare how important it is for the team
+        #Score that should be roughly a dmg per round equal value
+        Score = self.dps() #see .dps() func, is dmg and heal*2 per turn
+        if self.restrained == 1:
+            Score = Score*0.9
+        if self.blinded == 1:
+            Score = Score*0.9
+        if self.prone == 1:
+            Score = Score*0.95
+        if self.is_hasted() == 1:
+            Score = Score*1.1
+        return Score
+
+    def end_conjuration(self):
+        #This function is called if this entity is a conjured animal and should vanish
+        if self.is_a_conjured_animal:
+            self.DM.say(' ' + self.name + ' vanishes ', end='')
+            self.state = -1
+            if self.conjurer == False:
+                self.DM.say(self.name + ' should have a conjurer, but doesnt')
+                quit()
+            else:
+                if self.conjurer.is_concentrating and self.conjurer.has_animals_conjured:
+                    #The conjurer has not lost concentration but this entity simply died
+                    #Now check if it is maybe the last of the conjured animals
+                    ConjuredRelations = [x for x in self.DM.relations if x.type == 'ConjuredAnimal' and x.initiator == self.conjurer]
+                    #This is a list with all Relations of the players conjurer that are ConjuredAnimasl
+                    for x in ConjuredRelations:
+                        if x.target == self: self.DM.resolve(x) #resolve own relation
+                    ConjuredRelations = [x for x in self.DM.relations if x.type == 'ConjuredAnimal' and x.initiator == self.conjurer]
+                    if len(ConjuredRelations) == 0: #The conjurer is now free of conjurations
+                        self.conjurer.is_concentrating = False
+                        self.conjurer.has_animals_conjured = False
+                        self.DM.say(self.conjurer.name + ' is no longer concentrated')
+        else:
+            self.DM.say(self.name + ' cant vanish, is not a conjured animal')
+            quit()
+
+    def update_additional_resistances(self):
+        #If this function is called it checks all possible things that could add a resisantace
+        self.additional_resistances = ''
+        if self.raged == 1:
+            self.additional_resistances += 'piercing, bludgeoning, slashing, '
+            if self.knows_bear_totem:
+                self.additional_resistances += 'acid, cold, fire, force, lightning, thunder, necrotic, poison, radiant'
+
+#---------------------Checks and Saves
     def make_check(self, which_check):  #0-Str, 1-Dex, ...
         d20_roll = self.rollD20()
         result = d20_roll + self.modifier[which_check]  #calc modifier
         return result
 
+    def check_advantage(self, which_save):
+        saves_adv_dis = [0,0,0,0,0,0] #calculate all factors to saves:
+        if self.restrained == 1:  #disadvantage in dex if restrained
+            saves_adv_dis[1] -= 1
+            self.DM.say('restrained, ', end='')
+        if self.raged == 1:   #str ad if raged
+            saves_adv_dis[0] += 1
+            self.DM.say('raging, ', end='')
+        if self.is_hasted():
+            saves_adv_dis[1] += 1
+            self.DM.say('hasted, ', end='')
+        if self.is_hexed():
+            HexType = int(random()*2 + 1) #random hex disad at Str, Dex or Con
+            HexText = ['Str ', 'Dex ', 'Con ']
+            self.DM.say('hexed ' + HexText[HexType] + ', ', end='')
+            saves_adv_dis[HexType] -= 1 #one rand disad 
+        return saves_adv_dis[which_save]
+
     def make_save(self, which_save):          #0-Str, 1-Dex, ...
     #how to disadvantage and advantage here !!!
-        self.saves_adv_dis = [0,0,0,0,0,0] #calculate all factors to saves:
-        self.DM.say(str(self.name) + ' is', end='')
-        if self.restrained == 1:  #disadvantage in dex if restrained
-            self.saves_adv_dis[1] -= 1
-            self.DM.say(' restrained,', end='')
-        if self.raged == 1:   #str ad if raged
-            self.saves_adv_dis[0] += 1
-            self.DM.say(' raging,', end='')
-        if self.hasted == 1:
-            self.saves_adv_dis[1] += 1
-            self.DM.say(' hasted,', end='')
-
-        if self.saves_adv_dis[which_save] < 0:
+        self.DM.say(str(self.name) + ' is ', end='')
+        Advantage = self.check_advantage(which_save)
+        AuraBonus = self.protection_aura()
+        if AuraBonus > 0:
+            self.DM.say('in protection aura, ', end='')
+        if Advantage < 0:
             d20_roll = self.rollD20(advantage_disadvantage=-1)
-            self.DM.say(' in disadvantage doing the save: ' + str(d20_roll), end='')
-        elif self.saves_adv_dis[which_save] > 0:
+            self.DM.say('in disadvantage doing the save: ' + str(d20_roll), end='')
+        elif Advantage > 0:
             d20_roll = self.rollD20(advantage_disadvantage=1)
-            self.DM.say(' in advantage doing the save: ' + str(d20_roll), end='')
+            self.DM.say('in advantage doing the save: ' + str(d20_roll), end='')
         else:
             d20_roll = self.rollD20(advantage_disadvantage=0)
-            self.DM.say(' doing the save: ' + str(d20_roll), end='')
-        result = d20_roll + self.modifier[which_save] #calc modifier
+            self.DM.say('doing the save: ' + str(d20_roll), end='')
+
+        result = d20_roll + self.modifier[which_save] + AuraBonus #calc modifier
         save_text = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha']
-        if save_text[which_save] in self.saves_prof:
-            #Save Proficiency
+        if save_text[which_save] in self.saves_prof: #Save Proficiency
             result += self.proficiency
         self.DM.say(' + ' + str(int(result - d20_roll)))
         return result
 
     def make_death_save(self):
-        d20_roll = randint(1,20)
-        if d20_roll < 11:
-            self.death_counter += 1
-            self.DM.say(str(self.name) + ' did not made the death save')
-        elif d20_roll > 10 and d20_roll != 20:
-            self.heal_counter += 1
-            self.DM.say(str(self.name) + ' made the death save')
-        if d20_roll == 20:
-            self.heal_counter += 2
-            self.DM.say(str(self.name) + ' made the death save critical')
+        d20_roll = int(random()*20 + 1)
+        AuraBonus = self.protection_aura()
+        if AuraBonus > 0:
+            d20_roll += AuraBonus
+            self.DM.say('Aura of protection +' + str(int(AuraBonus)) + ' : ', end= '')
+        self.DM.say(self.StringDeathCheck(d20_roll))
         if self.death_counter >= 3:
             self.death()
             self.DM.say(str(self.name) + ' failed death save and died')
         if self.heal_counter >= 3:
-            self.state = 1
             self.CHP = 1
-            self.heal_counter = 0
-            self.death_counter = 0
-            self.DM.say(str(self.name) + ' made death save and became conscious')
+            self.get_conscious()
 
-    def stand_up(self):
-        if self.prone == 1:
-            if self.restrained == 0:
-                self.prone = 0
-                self.DM.say(self.name + ' stood up to end prone')
-            else:
-                self.DM.say(self.name + ' tried to stand up, but is restrained')
-        else:
-            self.DM.say(self.name + ' tried to stand up but is not prone')
-            quit()
+    def StringDeathCheck(self, d20_roll):
+        if d20_roll < 11:
+            self.death_counter += 1
+            TextResult = str(self.name) + ' did not made the death save '
+        elif d20_roll > 10 and d20_roll != 20:
+            self.heal_counter += 1
+            TextResult = str(self.name) + ' made the death save'
+        if d20_roll == 20:
+            self.heal_counter += 2
+            TextResult = str(self.name) + ' made the death save critical'
+        TextResult += self.StringDeathCounter()
+        return TextResult
+
+    def StringDeathCounter(self):
+        text = '(' + str(self.death_counter) + '-/' + str(self.heal_counter) + '+)'
+        return text 
 
 #---------------Concentration and Concentration Spells-----------
     def make_concentration_check(self, damage):
-        if self.concentration == 1:
+        if self.is_concentrating:
             save_res = self.make_save(2)
             if save_res >= damage/2 and save_res >= 10:   #concentration is con save
                 return 
@@ -509,68 +733,202 @@ class entity:                                          #A NPC or PC
             return
 
     def break_concentration(self):
-        if self.is_entangling == 1 or self.is_hasting == 1:
-            self.DM.say(self.name + ' lost concentration: ', end='')
-        self.concentration = 0  #no longer concentrated
+        player_was_concentrating = self.is_entangling() or self.is_hasting() or self.is_hexing() or self.has_animals_conjured
+        if player_was_concentrating:
+            self.DM.say(self.name + ' lost concentration, ', end='')
+
+        self.is_concentrating = False  #no longer concentrated
         #break entangled
-        if self.is_entangling == 1:
-            self.entangling_target.break_entangle()
+        if self.is_entangling():
+            relations_to_resolve = [x for x in self.DM.relations if x.type == 'Entangle' and x.initiator == self]
+            for x in relations_to_resolve:
+                #resolve all entangle relations 
+                x.target.break_entangle()
         #break Haste
-        if self.is_hasting == 1: 
-            self.hasting_target.break_haste()
+        if self.is_hasting():
+            #Here it is important to not do it in a loop, as the break haste removes the relation from the list and this can mess with the loop
+            relations_to_resolve = [x for x in self.DM.relations if x.type == 'Haste' and x.initiator == self]
+            for x in relations_to_resolve:
+                #resolve all initiated hastes by this player
+                x.target.break_haste()
+        #Break Hex
+        if self.is_hexing():
+            relations_to_resolve = [x for x in self.DM.relations if x.type == 'Hex' and x.initiator == self]
+            for x in relations_to_resolve:
+                #resolve all Hex of this player
+                self.DM.resolve(x)
+                self.DM.say('hex is lifted from ' + x.target.name + ', ', end='')
+        #Break Conjured Animals
+        if self.has_animals_conjured:
+            self.break_conjured_animals()
+        
+        if player_was_concentrating:
+            self.DM.say('\n', end= '')
 
     def break_haste(self):
-        if self.hasted == 1:
-            self.DM.say(self.name + ' Haste wares of, '+ self.hasted_by.name + ' no longer concentrated', end='')
-            #reset the own haste
-            self.hasted = 0
+        if self.is_hasted():
+            #First find the haste realtion
+            for x in self.DM.relations:
+                if x.type == 'Haste' and x.target == self:
+                    HasteRelation = x
+                    break
+            Haster = HasteRelation.initiator
+            #Selfs Haste wares of
+            self.DM.say(self.name + ' Haste wares of, ', end='')
+            self.DM.resolve(HasteRelation)
+            #If not hasting anymore, because it was the only haste, return concentration
+            if Haster.is_hasting() == False and Haster.is_concentrating:
+                #If this function is called via the break concentration, concentration is already 0
+                self.DM.say(Haster.name + ' no longer concentrated, ', end='')
+                Haster.is_concentrating = False
+
+            #reset hast counter
             self.haste_round_counter = 0
-            #reset the haste of the entity that was casting haste, restore concentration
-            self.hasted_by.is_hasting = 0
-            self.hasted_by.hasting_target = self.hasted_by
-            self.hasted_by.concentration = 0
 
-            self.hasted_by = self
-
-    def get_hasted_by(self, caster):
-        self.hasted = 1
-        self.hasted_by = caster
+    def is_hasted(self):
         #advantage in Dex saves in make_save function
         #additional Attack in start_of_turn_function
         #AC added in start_of_turn_function
-
-        caster.is_hasting = 1
-        caster.hasting_target = self
+        #This function checks if the player is hasted and if so, returns True
+        #To do so it checks the relations of the DM for itself beeing hasted
+        for x in self.DM.relations:
+            if x.type == 'Haste' and x.target == self:
+                return True
+        return False #not hasted
+    
+    def is_hasting(self):
+        #Returns True if self is hasting anyone
+        for x in self.DM.relations:
+            if x.type == 'Haste' and x.initiator == self:
+                return True
+        return False
 
     def break_entangle(self):
-        if self.entangled == 1:
-            self.DM.say(self.name + ' Entangle breaks, '+ self.entangled_by.name + ' no longer concentrated', end='')
-            #reset the own entangle
-            self.entangled = 0
-            self.restrained = 0
-            #reset the entangle of the entity that was casting entangle, restore concentration
-            self.entangled_by.is_entangling = 0
-            self.entangled_by.entangling_target = self.entangled_by#
-            self.entangled_by.concentration = 0
-
-            self.entangled_by = self
+        if self.is_entangled():
+            #Find the entangle raltion
+            for x in self.DM.relations:
+                if x.type == 'Entangle' and x.target == self:
+                    EntangleRelation = x
+                    break
+            Entangler = EntangleRelation.initiator
+            #Self Entangle Breaks
+            self.DM.say(self.name + ' breaks Entangle, ', end='')
+            self.DM.resolve(EntangleRelation)
+            self.restrained = 0 #no longer restrained
+            #If the Caster is not entangling anymore, because was only entangle, break concentration
+            if Entangler.is_entangling() == False and Entangler.is_concentrating:
+                #If this function is called via the break concentration, concentration is already 0
+                self.DM.say(Entangler.name + ' no longer concentrated, ', end='')
+                Entangler.is_concentrating = False
 
     def try_break_entangle(self):  #makes an effort to break entangle
-        if self.entangled == 0:
-            self.DM.say(self.name + ' tried to break entangle but is not entangled')
-        elif self.action == 0:
-            self.DM.say(self.name + ' tried to break entangle but has no action left')
-        else: 
-            self.DM.say(self.name + ' tries to break entangle: ', end = '')
-            result = self.make_check(0)
-            self.DM.say('result/' + self.entangled_by.spell_dc)
-            if result < self.entangled_by.spell_dc:
-                self.action = 0
-                return
-            else:
-                self.action = 0
-                self.break_entangle()
-                return
+        rules = [self.is_entangled(), self.action != 0]
+        errors = [self.name + ' tried to break entangle but is not entangled',
+                self.name + ' tried to break entangle but has no action left']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.DM.say(self.name + ' tries to break entangle: ', end = '')
+        result = self.make_check(0)
+        for x in self.DM.relations:
+            if x.type == 'Entangle' and x.target == self:
+                Entangler = x.initiator
+                break
+        self.DM.say(str(result) + '/' + self.Entangler.spell_dc)
+        if result < self.Entangler.spell_dc:
+            self.action = 0
+            return
+        else:
+            self.action = 0
+            self.break_entangle()
+            return
+
+    def is_entangled(self):
+        #This function checks if the player is entangled and if so, returns True
+        #To do so it checks the relations of the DM for itself beeing hasted
+        for x in self.DM.relations:
+            if x.type == 'Entangle' and x.target == self:
+                return True
+        return False
+
+    def is_entangling(self):
+        #Returns True if self is entangling anyone
+        for x in self.DM.relations:
+            if x.type == 'Entangle' and x.initiator == self:
+                return True
+        return False
+
+    def switch_hex(self):
+        #This function is called if a hexed player goes unconscious or dead
+        #It is not called if a player loses concentration and hex is broken
+        HexRelations = [x for x in self.DM.relations if x.type == 'Hex' and x.target == self]
+        #This is a list of all hex targeted at this player, which is now unconscious or dead
+        for x in HexRelations:
+            x.initiator.can_choose_new_hex = True #This player can now choose a new hex on turn
+            self.DM.resolve(x) #Then resolve the old hex
+            self.DM.say('hex of ' + x.initiator.name + ' is unbound, ', end='')
+
+    def is_hexed(self):
+        for x in self.DM.relations:
+            if x.type == 'Hex' and x.target == self:
+                return True
+        return False
+    
+    def is_hexing(self):
+        for x in self.DM.relations:
+            if x.type == 'Hex' and x.initiator == self:
+                return True
+        return False
+
+    def break_armor_of_agathys(self):
+        if self.has_armor_of_agathys and self.THP > 0:
+            self.has_armor_of_agathys = False
+            self.THP = 0
+            self.agathys_dmg = 0
+            self.DM.say(self.name + ' Armor of Agathys breaks, ')
+        else:
+            self.DM.say(self.name + ' Armor of Agathys broke without having one')
+            quit()
+
+    def break_spiritual_weapon(self):
+        if self.has_spiritual_weapon:
+            self.has_spiritual_weapon = False
+            self.SpiritualWeaponCounter = 0 #reset counter
+            self.SpiritualWeaponDmg = 0
+            self.DM.say('Spiritual Weapon of ' + self.name + ' vanishes, ')
+    
+    def break_conjured_animals(self):
+        #This function is called if all the conjured animals of the player should vanish
+        #Is called in break concentration
+        if self.has_animals_conjured:
+            self.is_concentrating = False
+            self.has_animals_conjured = False
+            AnimalRelations = [x for x in self.DM.relations if x.type == 'ConjuredAnimal' and x.initiator == self]
+            for x in AnimalRelations:
+                x.target.death() #The Animal vanishes
+                self.DM.resolve(x)
+
+    def end_guiding_bolt(self):
+        Relations = [x for x in self.DM.relations if x.type == 'GuidingBolt' and x.initiator == self and x.InitRound == self.DM.rounds_number - 1]
+        #All Guding Bolt relations from this player from last round
+        BoltedPlayer = [x.target for x in Relations]
+        #Resolve all Guided Bolts with this player as initiator from last round
+        for x in Relations:
+            self.DM.say('For ' + x.target.name + ' guiding bolt ends')
+            self.DM.resolve(x)
+        #Check is the player are now no longer guided bolted
+        RemainingRelations = [x for x in self.DM.relations if x.type == 'GuidingBolt']
+        for x in BoltedPlayer:
+            if x not in [y.target for y in RemainingRelations]:
+                #No longer bolted
+                x.is_guiding_bolted = False
+        #Check if self is still guiding bolting
+        if self not in [x.initiator for x in RemainingRelations]:
+            self.used_guiding_bolt = False
+
+    def end_turned_undead(self):
+        self.is_a_turned_undead == False #no longer turned
+        self.turned_undead_round_counter = 0
+        self.DM.say(self.name + ' is no longer turned')
 
 #--------------------Position Management----------------------
     def need_dash(self, target, fight, AttackIsRanged = False):
@@ -579,62 +937,68 @@ class entity:                                          #A NPC or PC
         #2 - not reachable
 
         #ABack-25ft-AMid-25ft-AFront-BFront-25ft-BMid-25ft-BBack
-    #no Dash for ranged attacks
-
-        #The Distance between lines scales with how close the Battlefield is
-        # 0.5 Wide Space
-        # 1 normal
-        # 2 crowded
-        distance = 25*1/self.DM.enemies_per_100_sqft
-
-        EnemiesLeft = self.AI.enemies_left_sort(fight)
-        EnemiesInFront = [Enemy for Enemy in EnemiesLeft if Enemy.position == 0]
-        EnemiesInMid = [Enemy for Enemy in EnemiesLeft if Enemy.position == 1]
-
-        def compare_speed(OpenLines):
-            #example: Mid Attacks Mid, no open front: 1 + 1 = 2*25ft = 50ft 
-            if self.speed >= (target.position + self.position - OpenLines)*distance: return 0
-            elif self.dash_target == target: return 0 #The player has used dash last round to get to this target
-            #Only works if you can still dash with action or cunning action
-            elif self.action == 1 or (self.knows_cunning_action and self.bonus_action ==1):
-                if 2*self.speed >= (target.position + self.position - OpenLines)*distance: return 1
-                else: return 2 
-            else: return 2
-
+        #no Dash for ranged attacks
         if AttackIsRanged: return 0 
         if self.has_range_attack: return 0
         if target.position == 3: return 0 #Airborn is in range
-        if self.position < 3: #0,1,2 Front, Mid, Back
-            if len(EnemiesInFront) == 0 and len(EnemiesInMid) == 0: return compare_speed(2) #open Front and Mid
-            elif len(EnemiesInFront) == 0: return compare_speed(1) #open front
-            else: return compare_speed(0) #no open line
 
-        if self.position == 3: #airborn
-            if target.position < 3: return compare_speed(3) #basically 3 open lines
+        #The Distance between lines scales with how dense the Battlefield is
+        # 0 Wide Space
+        # 1 normal
+        # 2 crowded
+        distance = 25
+        if self.DM.density == 0:
+            distance = 50
+        elif self.DM.density == 2:
+            distance = 12.5
 
-    def will_provoke_Attack(self, target, fight, AttackIsRanged = False):
-        #this function tells if an attack of opportunity will be provoked
-        EnemiesLeft = self.AI.enemies_left_sort(fight)
+
+        EnemiesLeft = [x for x in fight if x.team != self.team and x.state == 1]
         EnemiesInFront = [Enemy for Enemy in EnemiesLeft if Enemy.position == 0]
         EnemiesInMid = [Enemy for Enemy in EnemiesLeft if Enemy.position == 1]
 
-        def compare_positions(OpenLines):
-            #if you cross more then 2 lines (like, front - back or mid - mid) you provoke opp. attack
-            if self.position == 2:
-                OpenLines += 1 #back Player can attack Front with no Opp Attack 
-            if self.position + target.position - OpenLines >= 2:
-                return True 
-            else: return False
+        if self.position < 3: #0,1,2 Front, Mid, Back
+            if len(EnemiesInFront) == 0 and len(EnemiesInMid) == 0: OpenLines=2 #open Front and Mid
+            elif len(EnemiesInFront) == 0: OpenLines = 1 #open front
+            else: OpenLines = 0 #no open line
+        if self.position == 3: #airborn
+            if target.position < 3: OpenLines=3 #basically 3 open lines
+            else: return 0
 
+        #Test if Dash is ness        
+        #example: Mid Attacks Mid, no open front: 1 + 1 = 2*25ft = 50ft 
+        if self.speed >= (target.position + self.position - OpenLines)*distance: return 0
+        elif self.dash_target == target: return 0 #The player has used dash last round to get to this target
+        #Only works if you can still dash with action or cunning action or eagle totem
+        elif self.action == 1 or (self.knows_cunning_action and self.bonus_action ==1) or (self.knows_eagle_totem and self.bonus_action ==1):
+            if 2*self.speed >= (target.position + self.position - OpenLines)*distance: return 1
+            else: return 2 
+        else: return 2
+
+    def will_provoke_Attack(self, target, fight, AttackIsRanged = False):
+        #this function tells if an attack of opportunity will be provoked
         if AttackIsRanged: return False
         if self.has_range_attack: return False
         if self.dash_target == target: return False
+
+        EnemiesLeft = [x for x in fight if x.team != self.team and x.state == 1]
+        EnemiesInFront = [Enemy for Enemy in EnemiesLeft if Enemy.position == 0]
+        EnemiesInMid = [Enemy for Enemy in EnemiesLeft if Enemy.position == 1]
+        
+        #Open Lines
         if self.position < 3: #0,1,2 Front, Mid, Back
             if len(EnemiesInFront) == 0 and len(EnemiesInMid) == 0: return False #open Front and Mid
-            elif len(EnemiesInFront) == 0: return compare_positions(1) #open front
-            else: return compare_positions(0) #no open line
+            elif len(EnemiesInFront) == 0: OpenLines = 1 #open front
+            else: OpenLines = 0 #no open line
+        if self.position == 3: return False #no opp. attacks from the air
 
-        if self.position == 3: False #no opp. attacks from the air
+        #Compare Lines
+        #if you cross more then 2 lines (like, front - back or mid - mid) you provoke opp. attack
+        if self.position == 2:
+            OpenLines += 1 #back Player can attack Front with no Opp Attack 
+        if self.position + target.position - OpenLines >= 2:
+            return True 
+        else: return False
 
     def use_disengage(self):
         if self.bonus_action == 1 and self.knows_cunning_action:
@@ -652,91 +1016,92 @@ class entity:                                          #A NPC or PC
         #This also includes Players, that are only reachable by dashing or by provoking attacks of Opportunity
 
         #The following Rules Apply
-        #----------1---------
+        #----------0---------
         #Front can always melee attack the other front
         #Front can attack the other mid, if the player speed suffice
         #Front can attack the other back, if player speed suffice and by provoking an opportunity attack
         #If there is no Player in the other Front, the Front can melee attack mid and back
         #If there is no front, the distance to mid and back reduces
-        #----------2---------
+        #----------1---------
         #mid can meelee attack front
         #mid can attack mid, if speed suffices, and by provoking an opportunity attack
         #If there is no Player in the other Front, the mid can melee attack mid and back
         #If there is no Player in the other Front and Mid, mid can attack all
-        #----------3---------
+        #----------2---------
         #back can attack Front
-        #----------4---------
+        #----------3---------
         #airborn can melee attack all, but must land for that
         #if airborn lands, it is then in front
         #Airborn can not be attacked by melee at this point
-        #----------5---------
+        #----------R---------
         #If player has reanged attacks, player can attack all regardless
 
-        #Idden: $. Reihe Airborn, only hittable by ranged 
+        #Idea: Line Airborn, only hittable by ranged 
         #At the start of turn, a creature desides to go airborn or land
-        EnemiesLeft = self.AI.enemies_left_sort(fight)
-        EnemiesInFront = [Enemy for Enemy in EnemiesLeft if Enemy.position == 0]
-        EnemiesInMid = [Enemy for Enemy in EnemiesLeft if Enemy.position == 1]
-                
+
+        #This includes Character Players that are unconscious        
+        EnemiesNotDead = [x for x in fight if x.team != self.team and (x.state == 1 or (x.team != 1 and x.state == 0))]
+        
+        if AttackIsRanged: return EnemiesNotDead #Everyone in Range
+        if self.has_range_attack: return EnemiesNotDead #Everyone in Range
+        if self.position == 3: return EnemiesNotDead #Everyone in Range
+        
+        EnemiesInFront = [Enemy for Enemy in EnemiesNotDead if Enemy.position == 0]
+        EnemiesInMid = [Enemy for Enemy in EnemiesNotDead if Enemy.position == 1]
+        
+
         EnemiesInReach = []
 
-        for Enemy in EnemiesLeft:
-        #This is to manually say the function that the Attack is ranged, even if the player might not have ranged attacks, for Spells for example
-            EnemyIsInRange = True
-            if AttackIsRanged:
-                EnemiesInReach.append(Enemy)
+        for i in range(0,len(EnemiesNotDead)):
+        #This is to manually tell the function that the Attack is ranged, even if the player might not have ranged attacks, for Spells for example
+            Enemy = EnemiesNotDead[i]
+            if Enemy == self.dash_target: #last dash target is always in reach
+                EnemiesInReach.append(Enemy) #Is in range 
                 continue
-        #Range, anyone is in reach
-            elif self.has_range_attack:
-                EnemiesInReach.append(Enemy)
-                continue
-            elif self.position == 3:
-                EnemiesInReach.append(Enemy)
-                continue
-            elif Enemy == self.dash_target: #last dash target is always in reach
-                EnemiesInReach.append(Enemy)
-                continue                
 
         #All other lines front(0), mid(1), back(2)
-            DashValue = self.need_dash(Enemy, fight, AttackIsRanged)
-            if DashValue == 2: #target is too far away
-                continue
             if self.position == 1:
                 if Enemy.position == 2 and len(EnemiesInFront) != 0:
-                    EnemyIsInRange = False
+                    continue
             if self.position == 2:
                 if Enemy.position == 1 and len(EnemiesInFront) != 0:
-                    EnemyIsInRange = False
+                    continue
                 if Enemy.position == 2 and len(EnemiesInFront) != 0:
-                    EnemyIsInRange = False
+                    continue
                 if Enemy.position == 2 and len(EnemiesInMid) != 0:
-                    EnemyIsInRange = False
+                    continue
             if Enemy.position == 3 and self.position !=3:
-                EnemyIsInRange = False
-            if self.bonus_action == 0:
-                if self.need_dash(Enemy, fight, AttackIsRanged) > 0:
-                    EnemyIsInRange = False
-
-
-            if EnemyIsInRange: EnemiesInReach.append(Enemy)
-
+                continue
+            DashValue = self.need_dash(Enemy, fight, AttackIsRanged= False)
+            if DashValue == 2: #target is too far away
+                continue
+            
+            #No False case, so in range
+            EnemiesInReach.append(Enemy)
         return EnemiesInReach
 
     def use_dash(self, target):
-        if self.knows_cunning_action:
+        if self.knows_cunning_action and self.bonus_action == 1:
             self.DM.say(self.name + ' uses cunning action to dash to ' + target.name)
+            is_BADash = True 
+        elif self.knows_eagle_totem and self.bonus_action == 1:
+            self.DM.say(self.name + ' uses eagle totem to dash to ' + target.name)
+            is_BADash = True
+        else:
+            is_BADash = False
+        if is_BADash:
             self.bonus_action = 0
             self.dash_target = target
             self.has_dashed_this_round = True
-        elif self.action == 0:
-            self.DM.say(self.name + ' tried to dash, but has no action left')
-            quit()
-        else:
+        elif self.action == 1:
             self.action = 0
             self.attack_counter = 0
             self.dash_target = target
             self.has_dashed_this_round = True
             self.DM.say(self.name + ' uses dash to get to ' + target.name)
+        else:
+            self.DM.say(self.name + ' tried to dash, but has no action left')
+            quit()
 
     def move_position(self):
         #This function will be called, if the player hat no target in reach last turn
@@ -746,39 +1111,74 @@ class entity:                                          #A NPC or PC
             self.action = 0 #took the action
 
 #-------------------Attack Handling----------------------
-    def make_normal_attack_on(self, target, fight):
-    #This is the function of a player trying to move to a target und making an attack
-    #It also checks for Dash and does opportunity attacks if necessary
-    
-    #first check if target is in range
-        if target not in self.enemies_reachable_sort(fight):
+    def make_attack_check(self, target, fight, is_off_hand):
+        if self.action == 0 and self.is_attacking == False and is_off_hand == False:
+            self.DM.say(self.name + ' tried to attack, but has no action left')
+            quit()
+        elif self.bonus_action == 0 and is_off_hand:
+            self.DM.say(self.name + ' tried to offhand attack, but has no bonus attacks left')
+            quit()
+        elif is_off_hand and self.is_attacking == False:
+            self.DM.say(self.name + ' tried to offhand attack, but has not attacked with action')
+            quit()
+        elif self.attack_counter < 1 and is_off_hand == False:
+            self.DM.say(self.name + ' tried to attack, but has no attacks left')
+            quit()
+        elif self.state != 1:
+            self.DM.say(self.name +' treid to attack but is not conscious')
+            quit()
+        #check if target is in range
+        elif target not in self.enemies_reachable_sort(fight):
             self.DM.say(self.name + ' tried to attack, but ' + target.name + ' is out of reach')
             quit()            
-        else:   #target is within reach
-            if self.need_dash(target, fight) == 2:
-                self.DM.say(self.name + ' tried to attack, but ' + target.name + ' is out of reach, this is weird here, check enemies_rechable_sort')
-                quit()
-            else:
-            #----attack of opportunity and dash
-                if self.need_dash(target, fight) == 1:
-                    self.use_dash(target)
-                    if self.attack_counter == 0:return  #If you used the action to dash, return and end your turn here, if cunning action, then proceed
-                if self.will_provoke_Attack(target, fight):
-                    if self.no_attack_of_opportunity_yet:#only one per turn
-                        #now choose who did the attack of opportunity
-                        EnemiesLeft = self.AI.enemies_left_sort(fight)
-                        EnemiesInFront = [Enemy for Enemy in EnemiesLeft if Enemy.position == 0]
-                        if len(EnemiesInFront) > 0:
-                            OpportunityAttacker = EnemiesInFront[randint(0, len(EnemiesInFront)-1)]
-                        else:
-                            OpportunityAttacker = EnemiesLeft[randint(0, len(EnemiesLeft)-1)]
-                        if self.provoke_opportunit_attack(OpportunityAttacker) == False:
-                            #false means that the attack killed the player
-                            return #return and end the turn
-                
-                #The Player is now in range for attack
-                self.action = 0 #if at least one attack, action = 0
-                self.attack(target)
+
+    def check_dash_and_op_attack(self, target, fight, NeedDash):
+        if NeedDash == 1:
+            self.use_dash(target)
+        if self.will_provoke_Attack(target, fight):
+            if self.no_attack_of_opportunity_yet:#only one per turn
+                #now choose whos doing the attack of opportunity
+                EnemiesLeft = [x for x in fight if x.team != self.team and x.state == 1]
+                EnemiesInFront = [Enemy for Enemy in EnemiesLeft if Enemy.position == 0]
+                if len(EnemiesInFront) > 0:
+                    OpportunityAttacker = EnemiesInFront[int(random()*len(EnemiesInFront))]
+                else:
+                    OpportunityAttacker = EnemiesLeft[int(random()*len(EnemiesLeft))]
+                if self.provoke_opportunit_attack(OpportunityAttacker) == False:
+                    #false means that the attack killed the player
+                    return #return and end the turn
+
+    def make_normal_attack_on(self, target, fight, is_off_hand=False):
+    #This is the function of a player trying to move to a target und making an attack
+    #It also checks for Dash and does opportunity attacks if necessary
+
+    #First Check for attck_counter
+        self.make_attack_check(target, fight, is_off_hand)
+        #target is within reach
+        NeedDash = self.need_dash(target, fight)
+        if NeedDash == 2:
+            self.DM.say(self.name + ' tried to attack, but ' + target.name + ' is out of reach, this is weird here, check enemies_rechable_sort')
+            quit()
+        #----attack of opportunity and dash
+        self.check_dash_and_op_attack(target, fight, NeedDash)
+
+        #The Player is now in range for attack
+        is_ranged = False
+        if self.has_range_attack: is_ranged = True
+
+        if self.attack_counter == 0 and is_off_hand == False:
+            #If you used the action to dash, return and end your turn here, if cunning action, then proceed
+            return
+        if is_off_hand:
+            #Make Offhand Attack
+            self.bonus_action = 0
+            self.uses_offhand = True #will be disabled by attack funtion
+            self.attack(target, is_ranged, other_dmg=self.offhand_dmg)
+        else:
+            self.action = 0 #if at least one attack, action = 0
+            self.is_attacking = True #uses action to attack
+            self.attack_counter -= 1 #Lower the attack counter 
+            self.attack(target, is_ranged)
 
     def provoke_opportunit_attack(self, target):
         if self.no_attack_of_opportunity_yet: #only one per turn 
@@ -789,36 +1189,22 @@ class entity:                                          #A NPC or PC
             else: return True
         else: return True
 
-    def attack(self, target, other_dmg = False, damage_type = False, other_tohit = False):
-    #this is the attack funktion of a player attacking a target with a normak attack
-    #if another type of dmg is passed, it will be used, otherwise the player.dmg_type is used
-    #if no dmg is passed, the normal entitiy dmg is used
-        #this ensures that for a normal attack the dmg type of the entity is used
-        if damage_type == False:
-            damage_type_of_attack = self.damage_type
-        #if another damage type is specified, like for a spell use that:
-        else:
-            damage_type_of_attack = damage_type
-        #if no other dmg is passed, use that of the player
-        if other_dmg == False:
-            dmg = self.dmg
-        else:
-            dmg = other_dmg
-        #check if other to hit is passsed, like for a spell
-        if other_tohit == False:
-            tohit = self.tohit
-        else:
-            tohit = other_tohit
-
-        self.DM.say(self.name + " -> " + target.name + ', ', end='')
+    def make_attack_roll(self, target, is_ranged, is_opportunity_attack):
         #calculate all effects that might influence Disad or Advantage
         advantage_disadvantage = 0
+        if target.state == 0:
+            advantage_disadvantage += 1 #advantage against unconscious
+            self.DM.say(target.name + ' unconscious, ',end='')
         if target.reckless == 1:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' reckless, ',end='')
         if self.reckless == 1:
             advantage_disadvantage += 1    
             self.DM.say(self.name + ' reckless, ',end='')
+        if target.knows_eagle_totem and is_opportunity_attack:
+            advantage_disadvantage -= 1
+            #disadvantage for opp. att against eagle totem
+            self.DM.say('eagle totem, ',end='')
         if target.restrained == 1:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' restrained, ',end='')
@@ -832,115 +1218,219 @@ class entity:                                          #A NPC or PC
             advantage_disadvantage -= 1
             self.DM.say(self.name + ' blinded, ',end='')
         if target.prone == 1:
-            advantage_disadvantage += 1
+            if is_ranged:
+                advantage_disadvantage -=1 #disad for ranged against prone
+            else:
+                advantage_disadvantage += 1
             self.DM.say(target.name + ' prone, ',end='')
         if self.prone == 1:
             advantage_disadvantage -= 1
             self.DM.say(self.name + ' prone, ',end='')
+        if self.knows_assassinate:
+            if self.DM.rounds_number == 1 and self.initiative > target.initiative:
+                #Assassins have advantage against player that havnt had a turn
+                advantage_disadvantage += 1
+                self.DM.say(self.name + ' assassinte, ', end='')
+        if target.has_wolf_mark and is_ranged == False:
+            self.DM.say(target.name + ' wolf totem, ', end='')
+            advantage_disadvantage += 1
+        if target.is_guiding_bolted:
+            self.DM.say('guiding bolt, ', end='')
+            advantage_disadvantage += 1
 
         #Roll the Die to hit
         if advantage_disadvantage > 0:
             d20 = self.rollD20(advantage_disadvantage=1)
-            self.DM.say('with advantage, ', end='')
+            self.DM.say('\nAdvantage: ', end='')
         elif advantage_disadvantage < 0:
             d20 = self.rollD20(advantage_disadvantage=-1)
-            self.DM.say('with disadvantage, ', end='')
+            self.DM.say('\nDisadvantage: ', end='')
         else:
             d20 = self.rollD20(advantage_disadvantage=0)
+            self.DM.say('\n', end='')
+        return d20 , advantage_disadvantage
 
-        #Does the target AI wants to use Reaction to cast shield? 
-        if target.reaction == 1 and target.SpellBook['Shield'].is_known:
-            target.AI.want_to_cast_shield(self, dmg)  #call the target AI for shield
-
-        if d20 + tohit >= target.AC or d20 == 20:       #Does it hit
-            if d20 == 20:
-                self.DM.say('Critical Hit!, ',end='')
-            self.DM.say(' hit: ' + str(d20 + tohit) + '/' + str(target.AC), end= '')
-
-        #before attack check if a smite is initiated
-            smitedmg = 0
+    def check_smite(self, Dmg, is_ranged):
+        if is_ranged == False and self.knows_smite:  #smite only on melee
             for i in range(0, len(self.smite_initiated)):
                 if self.smite_initiated[i]:             #smite initiated?
-                    if self.knows_smite:
-                        if self.spell_slot_counter[i] > 0:
-                            smitedmg += 4.5*(i+1)
-                            if d20 ==20:
-                                smitedmg = smitedmg*2                       #smite crit
-                            self.spell_slot_counter[i] -= 1
-                            damage_type_of_attack = 'radiant'
-                            self.smite_initiated[i] = 0
-                            self.DM.say('\n' + self.name + ' uses ' + str(i + 1) + '. lv Smite', end='')
-            
-        #calculate the dmg, maybe smite, maybe sneak attack
-        #smite might be 0 
-            damage_done = dmg + smitedmg
-        #add sneak attack dmg
-            if self.sneak_attack_dmg > 0 and self.sneak_attack_counter == 1:    #Sneak Attack 
-                damage_done += self.sneak_attack_dmg
-                if d20 == 20:
-                    damage_done += self.sneak_attack_dmg  #double sneak Attack dmg for crit
+                    if self.spell_slot_counter[i] > 0:
+                        smitedmg = 4.5*(i+2) #i=0 -> lv1 -> 2d8
+                        Dmg.add(smitedmg, 'radiant')
+                        self.spell_slot_counter[i] -= 1
+                        self.smite_initiated[i] = 0
+                        self.DM.say('\n' + self.name + ' uses ' + str(i + 1) + '. lv Smite: +' + str(smitedmg), end='')
+
+    def check_sneak_attack(self, Dmg, advantage_disadvantage):
+        if self.sneak_attack_dmg > 0:    #Sneak Attack 
+            if self.sneak_attack_counter == 1 and advantage_disadvantage >= 0: #not in disadv.
+                Dmg.add(self.sneak_attack_dmg, self.damage_type)
                 self.DM.say('\n' + self.name + " Sneak Attack: +" + str(self.sneak_attack_dmg), end='')
                 if self.wailsfromthegrave == 1 and self.wailsfromthegrave_counter > 0:  #if sneak attack hits and wails from the grave is active
-                    damage_done += self.sneak_attack_dmg/2
+                    Dmg.add(self.sneak_attack_dmg/2, 'necrotic')
                     self.wailsfromthegrave_counter -= 1
                     self.DM.say(' and ' + str(self.sneak_attack_dmg/2) + ' wails from the grave', end='')
                 self.sneak_attack_counter = 0
-        #add rage dmg
-            if self.raged == True:
-                damage_done += self.rage_dmg
 
+    def check_combat_inspiration(self, Dmg, other_dmg):
+        if self.is_combat_inspired and self.inspired > 0 and other_dmg == False:
+            #Works only for weapon dmg, so other_dmg == False
+            Dmg.add(self.inspired, self.damage_type)
+            self.DM.say('\n' + self.name + ' uses combat inspiration: +' + str(self.inspired), end='')
+            self.inspired = 0
+            self.is_combat_inspired = False
+
+    def check_hex(self, Dmg, target):
+        for x in self.DM.relations:
+            if x.type == 'Hex' and x.target == target and x.initiator == self:
+                Dmg.add(3.5, 'necrotic')
+                self.DM.say('\n' + target.name + ' was cursed with a hex', end='')
+                return
+
+    def check_great_weapon_fighting(self, Dmg, is_ranged, other_dmg):
+        rules = [self.knows_great_weapon_fighting,
+                self.offhand_dmg == 0,  #no offhand
+                is_ranged == False,     #no range
+                other_dmg == False]   #no spells or stuff
+        if all(rules):
+            self.DM.say('\n' + self.name + ' uses great weapon fighting', end='')
+            Dmg.multiply(1.15) #no 1,2 in dmg roll, better dmg on attack
+
+    def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False):
+    #this is the attack funktion of a player attacking a target with a normak attack
+    #if another type of dmg is passed, it will be used, otherwise the player.dmg_type is used
+    #if no dmg is passed, the normal entitiy dmg is used
+    #is_ranged tells the function if it is a meely or ranged attack
+        #this ensures that for a normal attack the dmg type of the entity is used
+        if damage_type == False: damage_type = self.damage_type
+        #if no other dmg is passed, use that of the player
+        if other_dmg == False: Dmg = dmg(self.dmg, damage_type)
+        else: Dmg = dmg(other_dmg, damage_type)
+
+        #check if other to hit is passsed, like for a spell
+        if tohit == False: tohit = self.tohit
+
+        self.DM.say(self.name + " -> " + target.name + ', ', end='')
+
+        if is_ranged:
+            self.DM.say('ranged, ', end='')
         else:
-            damage_done = 0
-            self.DM.say(str(d20 + tohit) + '/' + str(target.AC) + ' - ', end= '')
+            self.DM.say('melee, ', end='')
+        
+        if self.uses_offhand:
+            self.DM.say('off hand, ', end='')
+            self.uses_offhand == False
 
-        if d20 == 20:                                            #Critical Hit
-            damage_done += dmg*0.8
+        d20, advantage_disadvantage = self.make_attack_roll(target, is_ranged, is_opportunity_attack)
+                
+        if d20 == 20 or (self.knows_improved_critical and d20 == 19):
+            is_crit = True
+        else:
+            is_crit = False
 
+        #Does the target AI wants to use Reaction to cast shield? 
+        if target.state == 1: #is still alive?
+            if target.reaction == 1 and target.SpellBook['Shield'].is_known:
+                target.AI.want_to_cast_shield(self, Dmg)  #call the target AI for shield
+
+        Modifier = 0 # Will go add to the attack to hit
+        ACBonus = 0
+
+        if target.is_combat_inspired and target.inspired > 0:
+            if d20 + self.tohit > target.AC:
+                self.DM.say('combat inspired AC (' + str(target.inspired) + '), ', end='')
+                ACBonus += target.inspired
+                self.inspired = 0
+                self.is_combat_inspired = False
+        
+        if target.knows_cutting_words and target.inspiration_counter > 0:
+            if d20 + self.tohit > target.AC:
+                self.DM.say(target.name + ' uses cutting word, ', end='')
+                Modifier += -target.inspiration_die
+                target.reaction = 0 #uses reaction
+        
+        if self.knows_archery and is_ranged:
+            self.DM.say(self.name + ' uses Archery, ', end='')
+            Modifier += 2 #Archery
+
+        if d20 + tohit + Modifier >= target.AC + ACBonus or is_crit:       #Does it hit
+            if is_crit:
+                self.DM.say('Critical Hit!, ',end='')
+            self.DM.say('hit: ' + str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus), end= '')
+
+        #Smite
+            self.check_smite(Dmg, is_ranged)
+        #Snackattack
+            self.check_sneak_attack(Dmg, advantage_disadvantage)
+        #Combat Inspiration 
+            self.check_combat_inspiration(Dmg, other_dmg)
+        #Hex
+            self.check_hex(Dmg, target)
+        #GreatWeapon
+            self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg)
+        #Critical
+            if is_crit: Dmg.multiply(1.8)
+        #add rage dmg
+            if self.raged == True and is_ranged == False: #Rage dmg only on melee
+                Dmg.add(self.rage_dmg, self.damage_type)
+        #Interseption
+            if target.interseption_amount > 0:
+                self.DM.say('Attack was intersepted: -' + str(self.interseption_amount))
+                Dmg.substract(target.interseption_amount)
+        else:
+            Dmg = dmg(amount=0)   #0 dmg
+            self.DM.say(str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus) + ' miss', end= '')
         self.DM.say('\n', end='')
-        target.changeCHP(damage_done, self, damage_type_of_attack)  #actually change HP
-        self.attack_counter -= 1      #Attack Counter 
-        self.reset_all_smites() 
+        target.changeCHP(Dmg, self, is_ranged)  #actually change HP
+        self.reset_all_smites()
         target.last_attacker = self
-        return damage_done
+        if self.knows_wolf_totem:
+            target.has_wolf_mark = True #marked with wolf totem
+        return Dmg.abs_amount()
 
 #-------------------Wild Shape---------------
-    def wild_shape(self, shape_name):
+    def wild_shape(self, ShapeIndex):
+        #ShapeIndex is Index in BeastFroms from entity __init__
         #Wild shape needs an action or a bonus action if you know combat_wild_shape
         player_can_wild_shape = False
-        if self.wild_shape_uses > 0 and self.wild_shape_HP == 0 and self.knows_wild_shape:
-            if self.bonus_action == 1 and self.knows_combat_wild_shape:
-                player_can_wild_shape = True
-                self.bonus_action = 0
-            elif self.action == 1:
-                player_can_wild_shape = True
-                self.action = 0
+        if self.wild_shape_uses > 0 and self.wild_shape_HP == 0 and self.knows_wild_shape and self.DruidCR >= self.BeastForms[ShapeIndex]['Level']:
+                if self.bonus_action == 1 and self.knows_combat_wild_shape:
+                    player_can_wild_shape = True
+                    self.bonus_action = 0
+                elif self.action == 1:
+                    player_can_wild_shape = True
+                    self.action = 0
+
         if player_can_wild_shape:
-            path = 'WildShapes/' + str(shape_name) + '.json'
-            wild_shape_form = json.load(open(path))
+            #A Shape form is choosen and then initiated as entity to use their stats
+            ShapeName = self.BeastForms[ShapeIndex]['Name']
+            NewShape = entity(ShapeName, self.team, self.DM, archive=True)
         #Wild Shape Properties
-            self.name = self.orignial_name + '(' + shape_name + ')'
-            self.shape_AC = wild_shape_form['AC']
-            self.wild_shape_HP = wild_shape_form['HP']
-            self.tohit = wild_shape_form['To_Hit']
-            self.attacks = wild_shape_form['Attacks']                               #number auf Attacks
+            self.name = self.orignial_name + '(' + ShapeName + ')'
+            self.shape_AC = NewShape.AC
+            self.wild_shape_HP = NewShape.HP
+            self.tohit = NewShape.tohit
+            self.attacks = NewShape.attacks
+            self.type = NewShape.type
+            #number auf Attacks
             self.attack_counter = self.attacks
-            self.dmg = wild_shape_form['Dmg']
-            self.wild_shape_name = shape_name
+            self.dmg = NewShape.dmg
+            self.wild_shape_name = ShapeName
 
             #new modifier
-            stats_list = [wild_shape_form[stat] for stat in ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha']]       #used for temp changes and request
-            self.stats_list = stats_list
-            self.modifier = [round((stats_list[i] -10)/2 -0.1, 0) for i in range(0,6)]  #calculate the mod
-
+            self.stats_list = NewShape.stats_list
+            self.modifier = NewShape.modifier
 
             #new dmg types
-            self.damage_type = wild_shape_form['Damage_Type']
-            self.damage_resistances = wild_shape_form['Damage_Resistance']
-            self.damage_immunity = wild_shape_form['Damage_Immunity']
-            self.damage_vulnerability = wild_shape_form['Damage_Vulnerability']
+            self.damage_type = NewShape.damage_type
+            self.damage_resistances = NewShape.damage_resistances
+            self.damage_immunity = NewShape.damage_immunity
+            self.damage_vulnerability = NewShape.damage_vulnerability
 
-            self.DM.say(self.name + ' goes into wild shape ' + shape_name)
+            self.DM.say(self.name + ' goes into wild shape ' + ShapeName)
             self.wild_shape_uses -= 1
+
+        #Cant go into wild shape
         else:
             if self.wild_shape_uses < 1:
                 self.DM.say(self.name + ' cant go into wild shape anymore')
@@ -950,8 +1440,13 @@ class entity:                                          #A NPC or PC
                 self.DM.say(self.name + ' cant go into wild shape while in wildshape')
             elif self.knows_wild_shape == False:
                 self.DM.say(self.name + ' tried to go into wild shape without knowing how')
+                quit()
+            elif self.DruidCR < self.BeastForms[ShapeIndex]['Level']:
+                self.DM.say(self.name + ' tried to go into a too high CR shape: ' + str(self.BeastForms[ShapeIndex]['Level']))
+                quit()
             else:
                 self.DM.say('ERROR Wild Shape')
+            quit()
 
     def wild_shape_drop(self):
         if self.wild_shape_HP != 0:
@@ -962,6 +1457,7 @@ class entity:                                          #A NPC or PC
             self.attacks = self.base_attacks
             self.attack_counter = self.attacks
             self.dmg = self.base_dmg
+            self.type = self.base_type
             
             self.modifier = self.base_modifier
             self.stats_list = self.base_stats_list
@@ -981,24 +1477,26 @@ class entity:                                          #A NPC or PC
         else:
             if self.wild_shape_HP == 0:
                 self.DM.say(self.name + ' tried to drop wild shape, but is not in wild shape')
+                quit()
             else:
                 self.DM.say(self.name + ' tried to drop wild shape, but has no bonus action left')
+                quit()
 
     def use_combat_wild_shape_heal(self, spell_level=1):
-        if self.knows_combat_wild_shape and self.wild_shape_HP > 0 and self.spell_slot_counter[spell_level -1] > 0 and self.bonus_action == 1:
-            heal = spell_level*4.5
-            self.changeCHP(-heal, self)
-            self.spell_slot_counter[spell_level -1] -= 1
-            self.bonus_action -= 1
-        else:
-            if self.knows_combat_wild_shape == False:
-                self.DM.say(self.name + ' tried to heal by combat wild shape but does not know how')
-            elif self.wild_shape_HP == 0:
-                self.DM.say(self.name + ' tried to heal by combat wild shape but is not in wild shape')
-            elif self.bonus_action == 0:
-                self.DM.say(self.name + ' tried to heal by combat wild shape but has no bonus action left')
-            elif self.spell_slot_counter[spell_level -1] == 0:
-                self.DM.say(self.name + ' tried to heal by combat wild shape with a ' + str(spell_level) + 'lv spell slot but has non left')
+        rules = [self.knows_combat_wild_shape,
+                self.wild_shape_HP > 0,
+                self.spell_slot_counter[spell_level -1] > 0,
+                self.bonus_action == 1]
+        errors = [self.name + ' tried to heal by combat wild shape but does not know how',
+                self.name + ' tried to heal by combat wild shape but is not in wild shape',
+                self.name + ' tried to heal by combat wild shape but has no bonus action left',
+                self.name + ' tried to heal by combat wild shape with a ' + str(spell_level) + 'lv spell slot but has non left']
+        ifstatements(rules, errors, self.DM).check()
+
+        heal = spell_level*4.5
+        self.changeCHP(dmg(-heal, 'heal'), self, was_ranged=False)
+        self.spell_slot_counter[spell_level -1] -= 1
+        self.bonus_action -= 1
 
 #------------------Special Abilities-----------------
     def rackless_attack(self):
@@ -1007,22 +1505,30 @@ class entity:                                          #A NPC or PC
             self.DM.say(self.name + ' uses reckless Attack')
         else:
             self.DM.say(self.name + ' tried to reckless Attack without knowing it')
+            quit()
 
     def rage(self):
         #rage dmg is added in attack function
         if self.bonus_action == 1 and self.knows_rage:
             self.bonus_action = 0
             self.raged = 1
+            self.update_additional_resistances()
             rage_text = self.name + ' falls into a'
+            if self.knows_bear_totem:
+                rage_text += ' bear totem'
+            if self.knows_eagle_totem:
+                rage_text += ' eagle totem'
             if self.knows_frenzy:
                 self.is_in_frenzy = True
-                rage_text +=' franzy'
+                rage_text += ' franzy'
             self.DM.say(rage_text + ' rage')
         else:
             if self.bonus_action == 0:
                 self.DM.say(self.name + ' tried to rage, but has no bonus action')
+                quit()
             elif self.knows_rage == False:
                 self.DM.say(self.name + ' tried to rage but cant')
+                quit()
 
     def use_frenzy_attack(self):
         if self.is_in_frenzy and self.bonus_action == 1:
@@ -1031,108 +1537,231 @@ class entity:                                          #A NPC or PC
             self.bonus_action = 0
         elif self.bonus_action == 0:
             self.DM.say(self.name + ' tried to use frenzy attack without a bonus action')
+            quit()
         elif self.is_in_frenzy == False:
             self.DM.say(self.name + ' tried to use franzy attack but is not in a frenzy rage')
+            quit()
 
     def end_rage(self):
         if self.raged == 1:
             self.raged = 0
+            self.update_additional_resistances()
             self.is_in_frenzy = False
-            self.DM.say(' ' + self.name + ' falls out of rage', end= '')
+            self.DM.say(self.name + ' falls out of rage, ', end= '')
 
     def inspire(self, target):
         if self.bonus_action == 0:  #needs a bonus action
             self.DM.say(self.name + ' tried to use bardic inspiration but has no bonus action left')
+            quit()
         else:
             if self.inspiration_counter > 0:
                 self.bonus_action = 0
-                if self.level < 5:
-                    inspiration = 3
-                elif self.level < 10:
-                    inspiration = 4
-                elif self.level < 15:
-                    inspiration = 5
-                else:
-                    inspiration = 6
-                target.inspired = inspiration
+                target.inspired = self.inspiration_die
+                #Combat Inspiration
+                CombatInspirationText = ''
+                if self.knows_combat_inspiration:
+                    target.is_combat_inspired = True 
+                    CombatInspirationText = ' combat'
+
                 self.inspiration_counter -= 1
-                self.DM.say(self.name + ' inspired ' + str(target.name) + ' with awesomeness')
+                self.DM.say(self.name + CombatInspirationText + ' inspired ' + str(target.name) + ' with awesomeness')
             else:
                 self.DM.say(self.name + ' tried to use bardic inspiration but has none left')
+                quit()
 
     def use_lay_on_hands(self, target, heal):
         if self.action == 0:
             self.DM.say(self.name + ' tried to lay on hands, but has no action left')
-            return
+            quit()
+        elif heal <= 0:
+            self.DM.say('Lay on Hands was called with a negative heal')
+            quit()
+        elif self.lay_on_hands_counter <= 0:
+            self.DM.say(self.name + ' tried to lay on hands, but has no points left')
+            quit()
         else:
-            if heal > 0:
-                if self.lay_on_hands_counter > heal:
-                    self.lay_on_hands_counter -= heal
-                    self.DM.say(self.name + ' uses lay on hands')
-                    target.changeCHP(-1*heal, self, damage_type = 'heal')
-                    self.action = 0
-                elif self.lay_on_hands_counter > 0:
-                    self.DM.say(self.name + ' uses lay on hands')
-                    target.changeCHP(-1*self.lay_on_hands_counter, self, damage_type = 'heal')
-                    self.lay_on_hands_counter = 0
-                    self.action = 0
-                else:
-                    self.DM.say(self.name + ' tried to lay on hands, but has no points left')
-            else:
-                self.DM.say('Lay on Hands was called with a negative heal')
+            if self.lay_on_hands_counter > heal:
+                self.lay_on_hands_counter -= heal
+            elif self.lay_on_hands_counter > 0:
+                heal = self.lay_on_hands_counter
+                self.lay_on_hands_counter = 0
+            self.action = 0
+            self.DM.say(self.name + ' uses lay on hands')
+            target.changeCHP(dmg(-1*heal, 'heal'), self, False)
 
     def initiate_smite(self, smite_level= 1):
         if self.knows_smite and self.spell_slot_counter[smite_level - 1]>0:
             self.smite_initiated[smite_level-1] = True
         elif self.knows_smite == False:
             self.DM.say(self.name + ' tried to initiate smite without knowing it')
+            quit()
         else:
             self.DM.say(self.name + ' tried to initiate smite without spellslots')
+            quit()
 
     def reset_all_smites(self):
         self.smite_initiated = [False, False, False, False, False]
 
     def use_empowered_spell(self):
-        if self.knows_empowered_spell:
-            if self.sorcery_points < 1:
-                self.DM.say(self.name + ' tried to use empowered Spell, but has no Sorcery Points left')
+        rules = [self.knows_empowered_spell, self.sorcery_points > 0, self.empowered_spell==False]
+        errors= [
+            self.name + ' tried to use Empowered Spell without knowing it',
+            self.name + ' tried to use empowered Spell, but has no Sorcery Points left',
+            self.name + ' tried to use empowered spell, but has already used it']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.sorcery_points -= 1
+        self.empowered_spell = True
+        self.DM.say(self.name + ' used Empowered Spell')
+
+    def use_action_surge(self):
+        rules = [self.knows_action_surge,
+            self.action_surge_counter > 0,
+            self.action_surge_used == False]
+        errors = [
+            self.name + ' tried to use action surge, but does not know how',
+            self.name + ' tried to use action surge, but has no charges left',
+            self.name + ' tried to use action surge, but already used it']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.action_surge_counter -= 1
+        self.action_surge_used = True
+        self.action_surge()      #This resets the action, cast and attacks
+        self.DM.say(self.name + ' used action surge')
+
+    def use_aura_of_protection(self, allies):
+        #passiv ability, restes at end of turn for the targets
+        if self.knows_aura_of_protection:
+            if len(allies) > 5: #at least 4 ally
+                targetnumber = int(random()*3 +1) #plus self
+            elif len(allies) > 1:
+                targetnumber = int(random() + 1)
             else:
-                if self.empowered_spell:
-                    self.DM.say(self.name + ' tried to use empowered spell, but has already used it')
-                else:
-                    self.sorcery_points -= 1
-                    self.empowered_spell = True
-                    self.DM.say(self.name + ' used Empowered Spell')
-        else:
-            self.DM.say(self.name + ' tried to use Empowered Spell without knowing it')
+                targetnumber = 0 #only self
+
+            #Now choose random targtes plus self
+            targets = []
+            targets.append(self)
+            AllyChoice = [ally for ally in allies if ally != self]
+            shuffle(AllyChoice)
+            for i in range(0,targetnumber):
+                targets.append(AllyChoice[i])
+            
+            #Now apply Bonus
+            for ally in targets:
+                self.DM.relate(self, ally, 'AuraOfProtection')
+        else: return
+
+    def protection_aura(self):
+        #Returns the current Bonus of all Auras of Protection in relation to self
+        AuraBonus = 0
+        for x in self.DM.relations:
+            if x.type == 'AuraOfProtection' and x.target == self:
+                PlayerBonus = x.initiator.modifier[5]
+                if PlayerBonus < 1:
+                    PlayerBonus = 1 #Aura of Protection min +1
+                AuraBonus += PlayerBonus #Add to Bonus, Aura stacks
+        return AuraBonus
+
+    def end_aura_of_protection(self):
+        #Resolve all your aura relations
+        OldAuraRelations = [x for x in self.DM.relations if x.type == 'AuraOfProtection' and x.initiator == self]
+        for x in OldAuraRelations: self.DM.resolve(x)
+        if self.state != 1:
+            self.DM.say(', aura of protection fades ', end='')
+
+    def use_second_wind(self):
+        rules = [self.bonus_action==1, self.knows_second_wind, self.has_used_second_wind == False]
+        errors = [self.name + ' tried to use second wind without a BA',
+            self.name + ' tried to use second wind without knowing it',
+            self.name + ' tried to use second wind, but has used it already']
+        ifstatements(rules, errors, self.DM).check()
+
+        heal = 5.5 + self.level
+        self.DM.say(self.name + ' used second wind')
+        self.changeCHP(dmg(-heal,'heal'), self, was_ranged=False)
+        self.bonus_action = 0
+        self.has_used_second_wind = True #until end of fight
+
+    def use_turn_undead(self, targets):
+        rules = [self.knows_turn_undead,
+                self.action > 0,
+                self.channel_divinity_counter > 0]
+        errors = [self.name + ' tried to use turn undead, but ' + 'does not know how',
+                self.name + ' tried to use turn undead, but ' + 'has no action left',
+                self.name + ' tried to use turn undead, but ' + 'has no channel divinity left']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.DM.say(self.name + ' uses turn undead:')
+        for target in targets:
+            if target.type == 'undead':
+                if target.make_save(4) < self.spell_dc:
+                    #Destroy undead
+                    if target.level <= self.destroy_undead_CR:
+                        self.DM.say(target.name + ' is destroyed')
+                        target.death()
+                    else:
+                        target.is_a_turned_undead = True
+                        self.DM.say(target.name + ' is turned')
+            else:
+                continue
+        self.action = 0
+        self.channel_divinity_counter -= 1 #used a channel divinity
+
+#---------------Spells---------------
+    def check_for_armor_of_agathys(self):
+        #This function is called if a player is attacked and damaged in changeCHP
+        #If the player has THP left, if calles this function to check if it has armor of agathys
+        #If true, this functions return the dmg to the attacker
+        AgathysDmg = dmg()
+        if self.THP > 0:
+            if self.has_armor_of_agathys:
+                AgathysDmg.add(self.agathys_dmg, 'cold')
+        return AgathysDmg #is 0 if nothig added
 
 #---------------Round Handling------------
     def start_of_turn(self):
+        #Attention is called in the do the fighting function
+        #ONLY called if player state = 1
         self.reckless = 0
         self.stepcounter=0 
         self.attack_counter = self.attacks #must be on start of turn, as in the round an attack of opportunity could have happened 
         self.AC = self.shape_AC  #reset AC to the AC of the shape (maybe wild shape)
 
         if self.knows_dragons_breath: #charge Dragons Breath
-            if randint(1,6) > 4:
+            if random() > 2/3:
                 self.dragons_breath_is_charged = True
         if self.knows_spider_web: #charge Spider Web
-            if randint(1,6) > 4:
+            if random() > 2/3:
                 self.spider_web_is_charged = True
 
-        if self.hasted == 1:#additional Hast attack
+        if self.is_hasted():#additional Hast attack
             self.attack_counter += 1
             self.AC += 2
-        print_text = '_____________'
-        self.DM.say(print_text)
+
+        if self.is_a_turned_undead:
+            self.action = 0
+            self.attack_counter = 0
+            self.bonus_action = 0
+    
+    def action_surge(self):
+        self.attack_counter = self.attacks #You can do your attacks again
+        self.action = 1      #You get one additional action
+        self.cast = 1        #You can cast again in your new action
 
     def end_of_turn(self):    #resets all round counters
         self.bonus_action = 1
-        self.reaction = 1
+        if self.is_a_turned_undead == False:
+            self.reaction = 1
         self.action = 1
         self.cast = 1
         self.sneak_attack_counter = 1
         self.no_attack_of_opportunity_yet = True
+        self.action_surge_used = False
+        self.uses_offhand = False
+        self.is_attacking = False
+        self.has_wolf_mark = False #reset totem of wolf mark
+
 
         #If you have not dashed this round, you should not have a dash target anymore
         if self.has_dashed_this_round == False:
@@ -1146,11 +1775,26 @@ class entity:                                          #A NPC or PC
             if self.rage_round_counter >= 10:
                 self.end_rage()
 
-        if self.hasted ==1:        #for haste spell counter
+        if self.is_hasted():        #for haste spell counter
             self.haste_round_counter += 1
             if self.haste_round_counter >= 10:  #if longer then 1min / 10 rounds, haste ends
                 self.break_haste()
-                self.DM.say(str(self.name) + ' runs out of haste')
+        
+        if self.has_spiritual_weapon:
+            self.SpiritualWeaponCounter += 1
+            if self.SpiritualWeaponCounter >= 10:
+                self.break_spiritual_weapon()
+        
+        if self.used_guiding_bolt:
+            self.end_guiding_bolt()
+        
+        if self.is_a_turned_undead:
+            self.turned_undead_round_counter += 1
+            if self.turned_undead_round_counter >= 10:
+                self.end_turned_undead()
+
+        if self.interseption_amount != 0:
+            self.interseption_amount = 0 #no longer in interseption
 
     def long_rest(self):       #resets everything to initial values
         self.name = self.orignial_name
@@ -1159,13 +1803,13 @@ class entity:                                          #A NPC or PC
         self.dmg = self.base_dmg
         self.tohit = self.base_tohit
         self.attacks = self.base_attacks
-
-        self.saves_adv_dis = [0,0,0,0,0,0]  #advantage or disadvantage on saves
+        self.type = self.base_type
 
         for i in range(0, len(self.spell_slots)):
             self.spell_slot_counter[i] = self.spell_slots[i]
 
         self.reset_all_smites()
+        self.DM.reset_relations()
 
         self.wailsfromthegrave_counter = self.proficiency
         self.sneak_attack_counter = 1
@@ -1174,6 +1818,9 @@ class entity:                                          #A NPC or PC
         self.rage_round_counter = 0
         self.lay_on_hands_counter = self.lay_on_hands
         self.sorcery_points = self.sorcery_points_base
+        self.action_surge_counter = self.action_surges
+        self.action_surge_used = False
+        self.has_used_second_wind = False
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False
@@ -1181,6 +1828,7 @@ class entity:                                          #A NPC or PC
         self.wild_shape_HP = 0
         self.wild_shape_uses = 2
         self.inspired = 0
+        self.is_combat_inspired = False
         if self.knows_inspiration:
             self.inspiration_counter = self.modifier[5]
         else:
@@ -1190,6 +1838,7 @@ class entity:                                          #A NPC or PC
         self.death_counter = 0
         self.heal_counter = 0
         self.CHP = self.HP
+        self.THP = 0
         self.initiative = 0
         self.attack_counter = self.attacks
         self.position = self.base_position #Go back 
@@ -1200,7 +1849,7 @@ class entity:                                          #A NPC or PC
         self.bonus_action = 1
         self.reaction = 1
         self.cast = 1 #if a spell is cast, cast = 0
-        self.concentration = 0
+        self.is_concentrating = False
 
         self.restrained = 0             #will be ckeckt wenn attack/ed 
         self.prone = 0
@@ -1211,46 +1860,33 @@ class entity:                                          #A NPC or PC
         self.last_attacker = 0
         self.dmg_dealed = 0
         self.heal_given = 0
+        self.unconscious_counter = 0
 
-        self.entangled = 0
-        self.entangled_by = self
-        self.is_entangling = 0
-        self.entangling_target = self
         #Haste
-        self.hasted = 0           #haste was cast on him
         self.haste_round_counter = 0    #when this counter hits 10, haste will wear off
-        self.hasted_by = self
-        self.is_hasting = 0  #This Entity has cast haste on someone
-        self.hasting_target = self     #target of haste
+        self.can_choose_new_hex = False
+        #Armor of Agathys
+        self.has_armor_of_agathys = False
+        self.agathys_dmg = 0
+        #Spiritual Weapon
+        self.has_spiritual_weapon = False
+        self.SpiritualWeaponDmg = 0
+        self.SpiritualWeaponCounter = 0
+        #ConjureAnimals
+        self.has_animals_conjured = False
+        self.is_a_conjured_animal = False #Should be anyway
+        self.conjurer = False #Should be anyway
+        #Guiding Bolt
+        self.is_guiding_bolted = False
+        self.used_guiding_bolt = False
+        #TurnUnded
+        self.is_a_turned_undead = False
+        self.turned_undead_round_counter = 0
+        #Interseption
+        self.interseption_amount = 0
 
         self.empowered_spell = False
         self.quickened_spell = False
-
-    def moveto(self,newposition,fight): #newposition input form: [x,y]
-        fail=0
-        x_size,y_size=(10,10)
-        grid=np.zeros([x_size,y_size])
-        for x in fight: 
-            grid[x.position[0]][x.position[1]]=1
-            if x.position==newposition: 
-                fail+=1
-                self.DM.say(self.name+' tried to move to position of '+x.name)
-        if self.stepcounter>self.speed:
-            fail+=1
-            self.DM.say(self.name+' tried to move but has no steps left')
-        if newposition[0]<0 or newposition[1]<0:
-            fail+=1
-            self.DM.say('negative coordinates, postion not found')
-        if self.restrained==1:
-            fail+=1
-            self.DM.say(self.name+' tried to move but is restrained')
-        if fail==0: 
-            self.stepcounter+=5
-            grid[self.position[0]][self.position[1]]=0 #delete old position from grid
-            self.position=newposition
-            grid[self.position[0]][self.position[1]]=1 #input new position to grid
-            self.DM.say(self.name+' moved to '+ str(newposition))
-            self.DM.say(grid)
     
 #Monster Abilities
     def use_dragons_breath(self, targets, DMG_Type = 'fire'):
@@ -1263,12 +1899,11 @@ class entity:                                          #A NPC or PC
             for target in targets:
                 target.last_attacker = self    #target remembers last attacker
                 save = target.make_save(1)           #let them make saves
-                dmg = 20 + int(self.level*3.1)
+                Dmg = dmg(20 + int(self.level*3.1), DMG_Type)
                 DragonBreathDC = 12 + self.Con + int((self.level - 10)/3)  #Calculate the Dragons Breath DC 
                 if save >= DragonBreathDC:
-                    target.changeCHP(dmg/2, self, DMG_Type)             #save made
-                else:
-                    target.changeCHP(dmg, self, DMG_Type)
+                    Dmg.multiply(1/2)
+                target.changeCHP(Dmg, self, True)
             self.action = 0
 
     def use_spider_web(self, target):
@@ -1282,602 +1917,6 @@ class entity:                                          #A NPC or PC
                 self.DM.say(target.name + ' is caugth in the web and restrained')
                 target.restrained = 1
             self.action = 0
-                
-class AI:
-    def __init__(self, player):
-    #this class is initialized in the Entity class to controll all the moves and decisions
-        self.player = player
-        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactived
-            self.player = entity('test', 0, 0)
-
-        #this is later filled in so_your_turn()
-        self.allies = []
-        self.dying_allies = []
-        self.enemies_left_list = []
-
-    def do_your_turn(self,fight):
-        player = self.player
-        self.allies = [x for x in fight if x.team == player.team]       #which allies
-        self.dying_allies = [i for i in self.allies if i.state == 0]     #who is dying
-        self.enemies_left_list = self.enemies_left_sort(fight)    #what enemies are alive
-
-        #stand up if prone
-        if player.prone == 1 and player.restrained == 0:
-            player.stand_up()
-
-        #------------Not in WildShape
-        if player.wild_shape_HP == 0:
-        #---------------Healing First----------
-            self.smart_heal(fight)
-
-        #--------Evaluate Choices
-            TryCounter = 0
-            while (player.action == 1 or player.bonus_action == 1) and player.state == 1:
-                self.AttackScore = self.player_attack_score()#The potential dmg of a simple attack
-                Choices = []
-                #What are the players Choices
-                
-                #Wildshape
-                if player.wild_shape_HP == 0: #is not in wild shape (might have just gone into wildshape)
-                    if player.knows_wild_shape and player.wild_shape_uses > 0:
-                        if player.action == 1 or (player.bonus_action == 1 and player.knows_combat_wild_shape):
-                            Choices.append(self.smart_go_wildshape)
-                #Inspiration
-                if player.knows_inspiration and player.inspiration_counter > 0 and player.bonus_action == 1:
-                    Choices.append(self.smart_inspire)
-                #Spellcasting
-                #If you can cast spells, choose one.
-                #This Spell will then be the choosen spell
-                #If no Spell is good, the returned Spell is False
-                self.ChoosenSpell = False
-                for spell in player.SpellNames: #check if player knows any spells
-                    if player.SpellBook[spell].is_known:
-                        if player.bonus_action == 1 or player.action == 1: #if you have still action left 
-                            #print(self.choose_spell(fight))
-                            self.ChoosenSpell, SpellScore = self.choose_spell(fight)
-                            break
-                if self.ChoosenSpell != False:
-                    Choices.append(self.smart_spellcasting)
-                #Special Abilities
-                if (player.dragons_breath_is_charged or player.spider_web_is_charged) and player.action == 1:
-                    Choices.append(self.smart_special_abilities)
-                
-                if player.action == 1 and player.attack_counter > 0:
-                    Choices.append(self.smart_attack)
-
-                #Now give the Choices Scores
-                ChoiceScores = [0 for i in Choices]
-                if len(Choices) == 0: return #if nothing to do, return
-
-
-                for i in range(0, len(Choices)):
-                    Choice = Choices[i]
-                    Score = 0
-                    #This function will now assign scores to the choices
-                    #The Scores should be roughly the amount of dmg, or an dmg equal value
-
-                    #Wildshape
-                    if Choice == self.smart_go_wildshape:
-                        if player.level < 4: Score += 7*1*2 #Wolf, prop. at least 2 Rounds
-                        elif player.level > 4: Score += 9*2*2 #Bear, prop. at least 2 Rounds
-                        Score += player.HP/(player.CHP + player.HP/4)*Score   #if low on HP go wild shape
-                        #Up to 4 times the score if very low
-                        if player.knows_combat_wild_shape:
-                            Score = Score*1.2  #if you know combat wild shape freaking go
-                    
-                    #Inspiration
-                    if Choice == self.smart_inspire:
-                        if randint(0,1) > 0: #50:50 chance to inspire
-                            Score += player.level*2  #if you can inspire go for it
-
-                    #Spellcasting
-                    if Choice == self.smart_spellcasting:
-                        Score = SpellScore #comes from the choose spell function
-
-                    #Special Abilities
-                    if Choice == self.smart_special_abilities:
-                        if player.dragons_breath_is_charged:
-                            Score += (20 + int(player.level*3.1))*3   #damn strong ability, at least 2-3 Targets
-                        if player.spider_web_is_charged:
-                            Score += player.dmg*player.attacks*1.5   #good Ability, better then simple attack
-
-                    #Attack
-                    if Choice == self.smart_attack:
-                        Score = self.AttackScore
-                        Score += (player.AC - 12 - player.level/3.5)*3 #encourage high AC to attack
-
-                    ChoiceScores[i] = Score
-                ActionDoTo = Choices[np.argmax(ChoiceScores)]
-                ActionDoTo(fight) #Do the best Choice
-                TryCounter += 1
-                #First Round Action and Attacks
-                #Secound Round Bonus Action 
-                if TryCounter > 2: #sometimes a BA is left, but no choice with BA
-                    if player.bonus_action == 1 and player.action == 1:
-                        player.DM.say(player.name + ' count not decide what to do!')
-                    return
-
-        #------------Still in Wild Shape
-        else: self.smart_in_wildshape(fight)
-
-#-----------Smart Actions
-    def smart_inspire(self, fight):
-        player = self.player
-        #Inspire random Ally
-        if player.knows_inspiration and player.inspiration_counter > 0 and player.bonus_action == 1:
-            player.inspire(self.allies[randint(0,len(self.allies)-1)])
-
-    def smart_special_abilities(self, fight):
-        player = self.player
-        #Dragon Breath
-        if player.knows_dragons_breath and player.action == 1:
-            if player.dragons_breath_is_charged:
-                if player.level < 10:
-                    area = 250
-                elif player.level < 15:
-                    area = 450 
-                elif player.level < 20:#60-ft-cone
-                    area = 1800
-                else:#90-ft-cone
-                    area = 4000
-                targets = self.area_of_effect_chooser(fight, area)
-                if len(targets) == len([x for x in fight if x.team != player.team]) and len(targets) > 1:
-                    max = int(len(targets)*0.25 + 0.5) #some should be able to get out, even for high are of effect
-                    targets = targets[0:-1*max]
-                player.use_dragons_breath(targets)
-        
-        #Spider Web
-        if player.knows_spider_web and player.action == 1:
-            if player.spider_web_is_charged:
-                enemies_left = self.enemies_left_sort(fight)
-                #Random Target
-                player.use_spider_web(enemies_left[randint(0,len(enemies_left)-1)])
-
-    def smart_go_wildshape(self, fight):
-        player =self.player 
-        if player.knows_wild_shape and player.wild_shape_uses > 0 and player.wild_shape_HP == 0:
-            if player.action == 1 or (player.bonus_action == 1 and player.knows_combat_wild_shape):
-                if player.level < 4:
-                    player.wild_shape('Wolf')
-                else:
-                    player.wild_shape('BrownBear')
-
-    def smart_in_wildshape(self, fight):
-        player = self.player
-        #This function is called in do_your_turn if the player is still in wild shape
-        if self.dying_allies != []:
-        #is someone dying
-            dying_allies_deathcounter = [i.death_counter for i in self.dying_allies]
-            if np.max(dying_allies_deathcounter) > 1:
-                if player.SpellBook['CureWounds'].is_known and player.bonus_action == 1:
-                    player.wild_reshape()
-                    self.do_your_turn(fight) #this then starts the healing part again
-
-        #Heal in combat wild shape
-        self.try_wild_shape_heal()
-        if player.action == 1:
-            self.smart_attack(fight)
-    
-    def smart_heal(self, fight):
-        player = self.player
-        #------------------------Healing first----------------------------
-        #!!!!!!!!!!!The Heal Section is still pretty slow
-        #self is low
-        if player.CHP < int(player.HP/3) and player.lay_on_hands_counter > player.lay_on_hands/5 and player.action == 1:
-            player.use_lay_on_hands(player, player.lay_on_hands_counter - int(player.lay_on_hands_counter/5))
-
-        #allies low
-        if self.dying_allies != []:      #someone is dying
-        #If someone is dying, use a healing Spell!!
-            dying_allies_deathcounter = [i.death_counter for i in self.dying_allies]
-            if np.max(dying_allies_deathcounter) > 1:
-                most_dying_ally = np.argmax(dying_allies_deathcounter)    #most needy ally
-                if player.SpellBook['HealingWord'].is_known and player.bonus_action ==1:   #when Someone is dying and u have healing word, heal!
-                    for i in range(0,4):
-                        if player.spell_slot_counter[i]>0:
-                            player.SpellBook['HealingWord'].cast(self.dying_allies[most_dying_ally], cast_level=i+1)
-                            break
-                elif player.SpellBook['CureWounds'].is_known and player.action ==1:   #when Someone is dying and u have CureWounds, heal!
-                    for i in range(0,4):
-                        if player.spell_slot_counter[i]>0:
-                            player.SpellBook['CureWounds'].cast(self.dying_allies[most_dying_ally], cast_level=i+1)
-                            break  
-                elif player.lay_on_hands_counter > 4 and player.action ==1:
-                    player.use_lay_on_hands(self.dying_allies[most_dying_ally], 5)
-
-    def smart_spellcasting(self,fight):
-        player = self.player
-        #Empowered Spell, if you have sorcery Points
-        if player.sorcery_points > 2 and player.empowered_spell == False and player.knows_empowered_spell:
-            Score = 0
-            #Encourage for low HP
-            if player.CHP < player.HP/2: Score += 10
-            if player.CHP < player.HP/3: Score += 10
-            if player.CHP < player.HP/4: Score += 10
-            #Disencourage for low SP
-            Score -= (1-player.sorcery_points/player.sorcery_points_base)*15
-            Score*(randint(70,130)/100)
-            if Score > 10:
-                player.use_empowered_spell()
-        if self.ChoosenSpell != False:
-            self.ChoosenSpell()
-
-    def smart_attack(self, fight):
-        player = self.player
-        #This function then actually does the attack
-        if player.action == 1: #if nothing else, attack
-            #Smite if u can and have not cast
-            if player.knows_smite:
-                for i in range(0,5):
-                    if player.spell_slot_counter[4-i] > 0:  #here 0 - lv1 slot
-                        player.initiate_smite(4-i+1)   #here the actual level are important (1 - lv 1 slot)
-                        break
-            if player.knows_reckless_attack:
-                player.rackless_attack()
-            if player.knows_rage and player.bonus_action == 1 and player.raged == 0:
-                player.rage() #includes frenzy
-            if player.is_in_frenzy and player.bonus_action == 1:
-                player.use_frenzy_attack()
-            while player.attack_counter > 0 and player.state == 1:  #attack enemies as long as attacks are free and alive (attack of opportunity might change that)
-                target = self.choose_att_target(fight) #choose a target
-                if target == False: #there might be no target
-                    return
-                else:
-                    player.make_normal_attack_on(target, fight)  #attack that target
-
-    def try_wild_shape_heal(self):
-        player = self.player
-        if player.knows_combat_wild_shape and player.bonus_action == 1:
-            #if wild shape is low < 1/4
-            if 0 < player.wild_shape_HP < player.wild_shape_HP/4:
-                #Still have spell slots?
-                for i in range(0,7):
-                    if player.spell_slot_counter[6-i] > 0: #try all spell slots, starting at 6
-                        player.use_combat_wild_shape_heal(spell_level=6-i+1) #spelllevel is 1+i
-
-#---------Reaction
-    def do_opportunity_attack(self,target):
-        #this function is called when the player can do an attack of opportunity
-        if target.knows_cunning_action and target.bonus_action == 1:
-            target.use_disengage() #use cunning action to disengage
-            return
-        else:
-            self.player.attack(target)
-
-    def want_to_cast_shield(self, attacker, dmg):
-        #This function is called in the attack function as a reaction, if Shild spell is known
-        if self.player.CHP < dmg:
-            for i in range(9):
-                if self.player.spell_slot_counter[i] > 0:
-                    self.player.SpellBook['Shield'].cast(i + 1)   #spell level is i + 1
-                    break
-
-#---------Support
-    def area_of_effect_chooser(self, fight, area):   #area in square feet
-    #The chooser takes all enemies and chooses amoung those to hit with the area of effect
-    #every target can only be hit once, regardless if it is alive or dead 
-    #how many targets wil be hit depends on the area and the density in that area from the Battlefield.txt
-        enemies = [x for x in fight if x.team != self.player.team]
-        target_pool = int(area/100 * self.player.DM.enemies_per_100_sqft + 0.5)   #how many enemies should be in that area
-        #1 per 100sqft is about normal
-        #0.5 is wide space
-        #2 is crowded
-
-        if target_pool < 1: target_pool = 1     #at least one will be hit 
-        elif target_pool == 1 and area > 100 and len(enemies) > 3: target_pool = 2 #2 is easy to hit with AoE
-        elif target_pool == 2 and area > 300 and len(enemies) > 6: target_pool = 3
-
-        if target_pool > len(enemies)*0.8: #never will all be hit
-            target_pool -= 1
-        
-        target_pool = int(target_pool*(1 + randint(-25,25)/100) + 0.5) #a little random power 
-        if target_pool >= len(enemies):
-            target_pool = len(enemies) - 1
-
-        shuffle(enemies)
-        if len(enemies) < target_pool:
-            targets = enemies
-        else:
-            targets = enemies[0:target_pool]
-        return targets
-
-    def player_attack_score(self):
-        #This function return a damage equal value, that should represent the dmg that could be expected form this player if it just attacks
-        player = self.player
-        Score = 0
-        dmg = player.dmg
-        attacks = player.attacks
-        if (player.knows_rage and player.bonus_action == 1) or player.raged == 1:
-            dmg += player.rage_dmg
-        if player.knows_frenzy:
-            attacks += 1
-        if player.knows_reckless_attack:
-            dmg = dmg*1.2 #improved chance to hit
-        if player.hasted == 1:
-            attacks += 1
-        if player.entangled == 1:
-            dmg = dmg*0.8
-
-        #dmg score is about dmg times the attacks
-        Score = dmg*attacks
-
-        #Only on one Attack 
-        if player.sneak_attack_counter == 1:
-            Score += player.sneak_attack_dmg
-        if player.wailsfromthegrave_counter > 0:
-            Score += player.sneak_attack_dmg/2
-        if player.knows_smite:
-            for i in range(0,5):
-                if player.spell_slot_counter[4-i] > 0:
-                    Score += (4-i)*4.5  #Smite Dmg once
-
-        #Other Stuff
-        if player.dash_target != False: #Do you have a dash target?
-            if player.dash_target.state == 1: Score*1.5 #Encourage a Dash target attack
-        if player.has_range_attack == False:
-            Score = Score*np.sqrt(player.AC/(13 + player.level/3.5)) #Encourage player with high AC
-        return Score
-
-    def choose_att_target(self, fight, AttackIsRanged = False, other_dmg = False):
-        player = self.player
-        if other_dmg == False:
-            dmg = player.dmg
-        else:
-            dmg = other_dmg
-        #function returns False if no target in rech
-        #this function takes all targets that are possible in reach and choosed which one to attack
-        #the AttackIsRanged is to manually say the function that the Attack is ranged, even if the player might not have ranged attacks, for Spells for example
-        EnemiesInReach = player.enemies_reachable_sort(fight, AttackIsRanged)
-
-        ThereIsADashTarget = False
-        if player.dash_target != False:
-            if player.dash_target.state == 1:
-                ThereIsADashTarget = True
-
-        if len(EnemiesInReach) == 0:
-            player.DM.say('There are no Enemies in reach for ' + player.name + ' to attack')
-            player.move_position() #if no target in range, move a line forward
-            player.attack_counter = 0
-            return False  #return, there is no target
-        elif ThereIsADashTarget:
-            #If the Dash Target from last turn is still alive, attack
-            return player.dash_target
-        else:
-            target_list = EnemiesInReach
-            #This function is the intelligence behind choosing the best target to hit from a List of given Targets. It chooses reguarding lowest Enemy and AC and so on
-            ThreatScore = [0 for x in target_list]
-            for i in range(0, len(target_list)):
-                target = target_list[i]
-                Score = 0
-                ScoreList = []
-                #Dmg done by the creature
-                DmgScore = target.dmg_dealed/player.HP * 40
-                if DmgScore > 150: DmgScore = 150
-                ScoreList.append(DmgScore)
-                #How Low the Enemy is
-                HPScore = 25*(target.HP - target.CHP)/target.HP
-                ScoreList.append(HPScore)
-                #If you can oneshot the target, go for it
-                if target.CHP <= dmg: OneShotScore = 120
-                else: OneShotScore = 0
-                ScoreList.append(OneShotScore)
-                #It might be good to hit a target with a low AC
-                ACScore = (20 - target.AC)*3
-                if ACScore < 0: ACScore = 0
-                ScoreList.append(ACScore)
-                #Kill Enemies that have your Vulerability as Dmg_type
-                DMGTypeScore = 0
-                if target.last_used_DMG_Type in player.damage_vulnerability: DMGTypeScore += 20
-                ScoreList.append(DMGTypeScore)
-
-                #Spell Score, attack Entangler
-                SpellScore = 0
-                if player.entangled == 1 and target == player.entangled_by:
-                    SpellScore = 100
-                if target.is_entangling == 1: SpellScore += 10
-                if target.is_hasting == 1: SpellScore += 20
-                if target.concentration == 1: SpellScore += 10
-                ScoreList.append(SpellScore)
-
-                #Wild Shape Score, it is not so useful to attack wild shape forms
-                WildshapeScore = 0
-                if target.wild_shape_HP > 0 and target.knows_combat_wild_shape == False: WildshapeScore = -15
-                if target.wild_shape_HP <= player.dmg: WildshapeScore += 20
-                ScoreList.append(WildshapeScore)
-
-                #Condition Score
-                ConditionScore = 0
-                if target.restrained or target.prone or target.blinded: ConditionScore = 40
-                ScoreList.append(ConditionScore)
-
-                #Line Score, Frontliner will go for front and mid mainly
-                LineScore = 0
-                if player.position == 0: #front
-                    if target.position == 0: LineScore += 30
-                elif player.position == 1: #Mid
-                    if target.position == 0: LineScore += 40
-                    elif target.position == 2: LineScore += 20
-                    elif target.position == 3: LineScore += 20
-                elif player.position == 2: #Back
-                    if target.position == 2: LineScore += 25
-                    elif target.position == 3: LineScore += 30
-                elif player.position == 3: #Airborn
-                    if target.position == 2: LineScore += 20
-                ScoreList.append(LineScore)
-                
-                #Movement Score
-                MovementScore = 0
-                if player.need_dash(target, fight) == 1 and player.knows_cunning_action == False: MovementScore -= 90
-                elif player.need_dash(target, fight) == 1 and player.knows_cunning_action: MovementScore -= 20
-                #it costs a turn to dash except if you have cunning action
-                if player.will_provoke_Attack(target, fight):
-                    if player.CHP > player.HP/3: MovementScore -= 40
-                    else: MovementScore -= 60
-                ScoreList.append(MovementScore)
-
-                for x in ScoreList:
-                    Score += x*randint(1,5)
-                    #Every individual Score gets a random weigth
-                if player.last_used_DMG_Type in target_list[i].damage_resistances or player.last_used_DMG_Type in target_list[i].damage_immunity:
-                    Score -= 120      #makes no sense to attack an immune target 
-                ThreatScore[i] = Score
-            return target_list[np.argmax(ThreatScore)]
-
-    def spell_cast_check(self, spell):
-        player = self.player
-        #This function checks if a given Spell is castable for the player, even with quickened Spell
-        if spell.is_known == False:
-            return False
-        #Check if Player has spellslots
-        if spell.spell_level > 0:
-            good_slots = 0
-            for i in range(spell.spell_level - 1,9):
-                if player.spell_slot_counter[i] > 0:
-                    good_slots += 1
-            if good_slots == 0:
-                return False
-                
-        if player.wild_shape_HP > 0:
-            return False
-        elif spell.is_concentration_spell and player.concentration == 1:
-            return False
-        elif spell.is_reaction_spell:
-            return False   #reaction Spell in own turn makes no sense
-        elif spell.is_cantrip == False and player.cast == 0:
-            return False
-
-
-        #Action Check
-        if spell.is_bonus_action_spell and player.bonus_action == 1:
-            if spell.is_cantrip:
-                return 1         #have BA, is cantrip -> cast 
-            elif player.cast == 1:
-                return 1        #have BA, is spell, have caste left? -> cast
-            else:
-                return False    #cant cast, have already casted
-        elif spell.is_bonus_action_spell == False:
-            if player.action == 1:
-                if spell.is_cantrip:
-                    return 1 #have action and is cantrip? -> cast
-                elif player.cast == 1:
-                    return 1 #have action and cast left? -> cast
-                else:
-                    return False
-            elif player.bonus_action == 1 and player.knows_quickened_spell and player.sorcery_points >= 2:
-                if spell.is_cantrip:
-                    return 2  #Cast only with Quickened Spell
-                elif player.cast ==1:
-                    return 2  #have cast left?
-                else:
-                    return False
-            else:
-                return False
-        else:
-            False
-
-    def choose_quickened_cast(self):
-        #This function is called once per trun to determine if player wants to use quickned cast this round
-        player = self.player
-        QuickScore = 100
-        QuickScore = QuickScore*(1.5 - 0.5*(player.CHP/player.HP)) #encourage quickend cast if youre low, if CHP -> 0, Score -> 150
-        if player.cast == 1: QuickScore = QuickScore*1.4    #encourage if you havend cast yet
-        if player.sorcery_points < player.sorcery_points_base/2: QuickScore = QuickScore*0.9 #disencourage for low SP
-        elif player.sorcery_points < player.sorcery_points_base/3: QuickScore = QuickScore*0.8
-        elif player.sorcery_points < player.sorcery_points_base/5: QuickScore = QuickScore*0.7
-        if player.entangled == 1: QuickScore = QuickScore*1.1  #Do something against the entangle
-        #Random Power for quickened Spell
-        QuickScore = QuickScore*(1+randint(-35,35)/100) #+/- 35%
-        if QuickScore > 100:
-            return True
-        else:
-            return False
-
-    def choose_spell(self, fight):
-        #This function chooses a spell for the spell choice
-        #If this function return False, spellcasting is not an option for this choice
-        player = self.player
-        SpellChoice = False
-
-        Choices = []
-
-        #Check Spells
-        for spellname in player.SpellNames:
-            Checkvalue = self.spell_cast_check(player.SpellBook[spellname])
-            if Checkvalue == 1:#check is spell is castable
-                Choices.append(player.SpellBook[spellname].cast)
-            if Checkvalue == 1 and player.SpellBook[spellname].is_twin_castable and player.sorcery_points > player.SpellBook[spellname].spell_level:
-                Choices.append(player.SpellBook[spellname].twin_cast)
-            elif Checkvalue == 2: #Spell is only castable via quickened spell
-                Choices.append(player.SpellBook[spellname].quickened_cast)
-
-        #This function determines if the player wants to cast a quickened spell this round
-        if player.knows_quickened_spell:
-            cast_quickened_this_round = self.choose_quickened_cast()
-        else:
-            cast_quickened_this_round = False
-
-        ChoiceScores = [0 for i in Choices]
-        if len(Choices) == 0:
-            return False, 0  #if no spell is castable return False
-        TargetList = [[player] for i in Choices] #will be filled with targets
-        LevelList = [0 for i in Choices]#at what Level the Spell is casted
-        for i in range(0, len(Choices)):
-            Choice = Choices[i]
-            Score = 0
-
-        #In the following all Options will get a score, that roughly resemlbes their dmg or equal dmg value
-        #This Score is assigned by a function of the spellcasting class 
-        #This function also evalues if it is good to use a quickened or twin cast
-        #The evaluation of quickened Cast is currently not handled by these functions
-            for spell in player.SpellNames:
-                if Choice == player.SpellBook[spell].cast:
-                    Score, SpellTargets, CastLevel = player.SpellBook[spell].score(fight)
-                elif Choice == player.SpellBook[spell].quickened_cast:
-                    if cast_quickened_this_round == True:
-                        Score, SpellTargets, CastLevel = player.SpellBook[spell].score(fight, quickened_cast=True)
-                    else:
-                        #Basically dont cast quickened this round
-                        Score = 0
-                        SpellTargets = [player]
-                        CastLevel = 0
-                elif Choice == player.SpellBook[spell].twin_cast:
-                    Score, SpellTargets, CastLevel = player.SpellBook[spell].score(fight, twinned_cast=True)
-
-            ChoiceScores[i] = Score
-            TargetList[i] = SpellTargets
-            LevelList[i] = CastLevel
-        #Now find best value and cast that
-        ChoiceIndex = np.argmax(ChoiceScores)
-
-        #Before returning the Value check if it is even sensable to cast instaed of doing something else
-        #This part gives a Value of the possible alternatives and assignes a dmg equal value to compare with
-        #This is the Score that will be compared for the action Spell, so assume an action is left
-        AltScore = self.AttackScore #is evaluated in do_your_turn before 
-        if player.action == 1:
-            #If the player has still its action, compete with this alternative score
-            if np.max(ChoiceScores) > AltScore:
-                SpellChoice = partial(Choices[ChoiceIndex],TargetList[ChoiceIndex],LevelList[ChoiceIndex])
-                return SpellChoice, ChoiceScores[ChoiceIndex]
-            else:
-                return False, 0 #If you have action and cant beat this Score, dont cast spell
-        elif player.bonus_action == 1:
-            if np.max(ChoiceScores) > player.dmg + 1:    #just a small threshold
-                    SpellChoice = partial(Choices[ChoiceIndex],TargetList[ChoiceIndex],LevelList[ChoiceIndex])
-                    return SpellChoice, ChoiceScores[ChoiceIndex]
-            else:
-                return False, 0
-        else: return False, 0
-
-    def enemies_left_sort(self,fight):
-        enemies_left_list = [x for x in fight if x.team != self.player.team and x.state == 1]
-        return enemies_left_list
-
-    def lowest_enemy(self, fight):
-        DM = self.player.DM
-        enemies_left_list = self.enemies_left_sort(fight)
-        if enemies_left_list == []:
-            return self.player  #sometimes the fight is alredy over, then return self
-        return enemies_left_list[np.argmin([x.CHP for x in enemies_left_list])]     #find lowest Enemy
 
 class spell:
     def __init__(self, player, spell_name):
@@ -1914,15 +1953,16 @@ class spell:
             self.cast = self.cast_fire_bolt
             self.score = self.score_fire_bolt
 
-        if spell_name == 'Entangle':
+        elif spell_name == 'Entangle':
             self.spell_level = 1
             self.is_bonus_action_spell = False
             self.is_concentration_spell = True
             self.is_cantrip = False
+            self.is_twin_castable = True
             self.cast = self.cast_entangle
             self.score = self.score_entangle
 
-        if spell_name == 'BurningHands':
+        elif spell_name == 'BurningHands':
             self.spell_level = 1
             self.is_bonus_action_spell = False
             self.is_concentration_spell = False
@@ -1931,7 +1971,7 @@ class spell:
             self.cast = self.cast_burning_hands
             self.score = self.score_burning_hands
 
-        if spell_name == 'CureWounds':
+        elif spell_name == 'CureWounds':
             self.spell_level = 1
             self.is_bonus_action_spell = False
             self.is_concentration_spell = False
@@ -1939,7 +1979,7 @@ class spell:
             self.cast = self.cast_cure_wounds
             self.score = self.score_cure_wounds
 
-        if spell_name == 'HealingWord':
+        elif spell_name == 'HealingWord':
             self.spell_level = 1
             self.is_bonus_action_spell = True
             self.is_concentration_spell = False
@@ -1947,7 +1987,7 @@ class spell:
             self.cast = self.cast_healing_word
             self.score = self.score_healing_word
 
-        if spell_name == 'MagicMissile':
+        elif spell_name == 'MagicMissile':
             self.spell_level = 1
             self.is_bonus_action_spell = False
             self.is_concentration_spell = False
@@ -1955,7 +1995,7 @@ class spell:
             self.cast = self.cast_magic_missile
             self.score = self.score_magic_missile
 
-        if spell_name == 'AganazzarsSorcher':
+        elif spell_name == 'AganazzarsSorcher':
             self.spell_level = 2
             self.spell_save_type = 1 #Dex
             self.is_bonus_action_spell = False
@@ -1964,7 +2004,7 @@ class spell:
             self.cast = self.cast_aganazzars_sorcher
             self.score = self.score_aganazzars_scorcher
 
-        if spell_name == 'ScorchingRay':
+        elif spell_name == 'ScorchingRay':
             self.spell_level = 2
             self.is_bonus_action_spell = False
             self.is_concentration_spell = False
@@ -1972,7 +2012,7 @@ class spell:
             self.cast = self.cast_scorching_ray
             self.score = self.score_scorching_ray
 
-        if spell_name == 'Fireball':
+        elif spell_name == 'Fireball':
             self.spell_level = 3
             self.spell_save_type = 1 #Dex
             self.is_bonus_action_spell = False
@@ -1981,15 +2021,16 @@ class spell:
             self.cast = self.cast_fireball
             self.score = self.score_fireball
 
-        if spell_name == 'Haste':
+        elif spell_name == 'Haste':
             self.spell_level = 3
             self.is_bonus_action_spell = False
             self.is_concentration_spell = True
             self.is_cantrip = False
+            self.is_twin_castable = True 
             self.cast = self.cast_haste
             self.score = self.score_haste
 
-        if spell_name == 'Shield':
+        elif spell_name == 'Shield':
             self.spell_level = 1
             self.is_bonus_action_spell = False
             self.is_concentration_spell = False
@@ -1998,7 +2039,7 @@ class spell:
             self.cast = self.cast_shield
             self.score = self.score_shield
         
-        if spell_name == 'EldritchBlast':
+        elif spell_name == 'EldritchBlast':
             self.spell_level = 0
             self.is_bonus_action_spell = False
             self.is_concentration_spell = False
@@ -2006,36 +2047,77 @@ class spell:
             self.cast = self.cast_eldritch_blast
             self.score = self.score_eldritch_blast
        
+        elif spell_name == 'Hex':
+            self.spell_level = 1
+            self.is_bonus_action_spell = True
+            self.is_concentration_spell = True
+            self.is_cantrip = False 
+            self.is_twin_castable = False
+            self.cast = self.cast_hex
+            self.score = self.score_hex
+
+        elif spell_name == 'ArmorOfAgathys':
+            self.spell_level = 1
+            self.is_bonus_action_spell = False
+            self.is_cantrip = False
+            self.is_concentration_spell = False
+            self.is_twin_castable = False
+            self.cast = self.cast_armor_of_agathys
+            self.score = self.score_armor_of_agathys
+
+        elif spell_name == 'FalseLife':
+            self.spell_level = 1
+            self.cast = self.cast_false_life
+            self.score = self.score_false_life
+        
+        elif spell_name == 'SpiritualWeapon':
+            self.spell_level = 2
+            self.is_bonus_action_spell = True
+            self.cast = self.cast_spiritual_weapon
+            self.score = self.score_spiritual_weapon
+
+        elif spell_name == 'Shatter':
+            self.spell_level = 2
+            self.spell_save_type = 2 #Con
+            self.cast = self.cast_shatter
+            self.score = self.score_shatter
+
+        elif spell_name == 'ConjureAnimals':
+            self.spell_level = 3
+            self.is_concentration_spell = True
+            self.cast = self.cast_conjure_animals
+            self.score = self.score_conjure_animals
+
+        elif spell_name == 'GuidingBolt':
+            self.spell_level = 1
+            self.is_twin_castable = True
+            self.cast = self.cast_guiding_bolt
+            self.score = self.score_guiding_bolt
+
     #any spell has a specific Spell cast function that does what the spell is supposed to do
     #To do so, the make_spell_check function makes sure, that everything is in order for the self.player to cast the spell
     #The make_action_check function checks if Action, Bonus Action is used
     #the spell class objects will be linked to the player casting it by self.player
 
     def make_spell_check(self, cast_level):
-        #check if spell is known
-        if self.is_known == False:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', without knowing the spell')
-            return False
-        #check if player is under casting
-        elif cast_level < self.spell_level:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ' at a lower level: ' + str(cast_level))
-            return False
-        #check if player has Spellslots
-        elif self.player.spell_slot_counter[cast_level -1] <= 0:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name +', but spell slots level ' + str(cast_level) + ' are empty')
-            return False        
-        #check if player is in wild shape
-        elif self.player.wild_shape_HP > 0:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but is in wild shape')
-            return False
-        #check if player is concentrating and tries to cast a concentration spell
-        elif self.is_concentration_spell and self.player.concentration == 1:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but is currently concentrating')
-            return False
+        rules = [self.is_known, 
+                self.player.raged == 0,
+                cast_level >= self.spell_level, 
+                self.player.spell_slot_counter[cast_level -1] > 0,
+                self.player.wild_shape_HP == 0,
+                self.is_concentration_spell == False or self.player.is_concentrating==False]
+        errors = [self.player.name + ' tried to cast ' + self.spell_name + ', without knowing the spell',
+                self.player.name + ' tried to cast ' + self.spell_name + ' but is raging',
+                self.player.name + ' tried to cast ' + self.spell_name + ' at a lower level: ' + str(cast_level),
+                self.player.name + ' tried to cast ' + self.spell_name +', but spell slots level ' + str(cast_level) + ' are empty',
+                self.player.name + ' tried to cast ' + self.spell_name + ', but is in wild shape',
+                self.player.name + ' tried to cast ' + self.spell_name + ', but is currently concentrating']
+        ifstatements(rules, errors, self.DM).check()
+
         #Is reaction Spell break here
-        elif self.is_reaction_spell:
+        if self.is_reaction_spell:
             if self.player.reaction == 0:
-                return False
+                quit()
             else:
                 self.player.reaction = 0
                 self.player.spell_slot_counter[cast_level-1] -= 1   #one SpellSlot used
@@ -2043,30 +2125,28 @@ class spell:
         #check if player has cast this round
         elif self.player.cast == 0:
             self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but has already cast a spell')
-            return False
+            quit()
         #check is player has action/bonus action left
         elif self.make_action_check() == False:
-            return False
+            quit()
         #everything clear for cast
         else:
             self.player.spell_slot_counter[cast_level-1] -= 1   #one SpellSlot used
             return True
 
     def make_cantrip_check(self):
-        #check if spell is known
-        if self.is_known == False:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', without knowing the spell')
-            return False
-        #check if player is in wild shape
-        elif self.player.wild_shape_HP > 0:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but is in wild shape')
-        #check if player is concentrating and tries to cast a concentration spell
-        elif self.is_concentration_spell and self.player.concentration == 1:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but is currently concentrating')
-            return False
+        rules = [self.is_known,
+                self.player.raged == 0,
+                self.player.wild_shape_HP == 0,
+                self.is_concentration_spell == False or self.player.is_concentrating==False]
+        errors = [self.player.name + ' tried to cast ' + self.spell_name + ', without knowing the spell',
+                self.player.name + ' tried to cast ' + self.spell_name + ' but is raging',
+                self.player.name + ' tried to cast ' + self.spell_name + ', but is in wild shape',
+                self.player.name + ' tried to cast ' + self.spell_name + ', but is currently concentrating']
+        ifstatements(rules, errors, self.DM).check()
         #check is player has action/bonus action left
-        elif self.make_action_check() == False:
-            return False
+        if self.make_action_check() == False:
+            quit()
         #everything clear for cast
         else:
             return True        
@@ -2077,7 +2157,7 @@ class spell:
             #Bonus Action used?
             if self.player.bonus_action == 0:
                 self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but has no Bonus Action left')
-                return False
+                quit()
             #Allow cast and use bonus_action
             else:
                 self.player.bonus_action = 0       #Bonus Action used
@@ -2100,7 +2180,7 @@ class spell:
                 #No Bonus Action left
                 else:
                     self.DM.say(self.player.name + ' tried to quickened cast ' + self.spell_name + ', but has no Bonus Action left')
-                    return False
+                    quit()
             #No Quickened Spell
             else:
                 if self.player.action == 0:
@@ -2115,57 +2195,51 @@ class spell:
 #-------------Meta Magic------------------
     #the twin_cast function needs exectly two targets
     def twin_cast(self, targets, cast_level=False):
-        if len(targets) != 2:
-            self.player.DM.say('Twin Cast needs 2 Targets')
-            quit()
-        if self.player.knows_twinned_spell and self.player.sorcery_points >= 2 and len(targets) == 2:
-            #If twinned spell is known and sorcery Points there, cast spell twice 
-            if self.make_action_check() == True:
-                #player should be able to cast, so a True came back. But in the macke_action_check function the bonus_action, action, and/or cast was diabled, so it will be enabled here before casting 
-                if cast_level==False:
-                    cast_level = self.spell_level
-                if cast_level == 0:
-                    self.player.sorcery_points -= 1
+        rules = [len(targets)==2,
+                self.player.knows_twinned_spell,
+                self.player.sorcery_points >= 2]
+        errors = [self.player.name + ' tried to twinned spell ' + self.spell_name + ' but not with 2 targets',
+                self.player.name + ' tried to twinned cast ' + self.spell_name + ' without knwoing it',
+                self.player.name + ' tried to twinned cast ' + self.spell_name + ' but has not enough sorcery points']
+        ifstatements(rules, errors, self.DM).check()
+        #If twinned spell is known and sorcery Points there, cast spell twice 
+        if self.make_action_check() == True:
+            #player should be able to cast, so a True came back. But in the macke_action_check function the bonus_action, action, and/or cast was diabled, so it will be enabled here before casting 
+            if cast_level==False:
+                cast_level = self.spell_level
+            if cast_level == 0:
+                self.player.sorcery_points -= 1
+            else:
+                self.player.sorcery_points -= cast_level
+                self.player.spell_slot_counter[cast_level -1] += 1 #add another spell Slots as two will be used in the twin cast
+            self.DM.say(self.player.name + ' twinned casts ' + self.spell_name)
+            for x in targets:
+                #everything will be enabeled in order for the spell do be cast twice
+                if self.is_bonus_action_spell:
+                    self.player.bonus_action = 1
                 else:
-                    self.player.sorcery_points -= self.spell_level
-                self.DM.say(self.player.name + ' twinned casts ' + self.spell_name)
-                for x in targets:
-                    #everything will be enabeled in order for the spell do be cast twice
-                    if self.is_bonus_action_spell:
-                        self.player.bonus_action = 1
-                    else:
-                        self.player.action = 1
-                    if self.is_cantrip == False:
-                        self.player.cast = 1
-                    self.cast(x, cast_level)
-        else:
-            if self.player.knows_twinned_spell == False:
-                self.DM.say(self.player.name + ' tried to twinned spell ' + self.spell_name + ' without knwoing it')
-            elif self.player.sorcery_points < 2:
-                self.DM.say(self.player.name + ' tried to twinned spell ' + self.spell_name + ' but has not enough sorcery points')
-            elif len(targets) != 2:
-                self.DM.say(self.player.name + ' tried to twinned spell ' + self.spell_name + ' but not with 2 targets')
+                    self.player.action = 1
+                if self.is_cantrip == False:
+                    self.player.cast = 1
+                if self.is_concentration_spell:
+                    self.player.is_concentrating = False #enable double concentration castst
+                self.cast(x, cast_level)
 
     def quickened_cast(self, targets, cast_level=False):
-        if len(targets) != 1: #if spell has just one target 
-            targets = targets[0]
+        rules = [self.player.knows_quickened_spell,
+                self.player.sorcery_points >= 2,
+                self.player.quickened_spell==0]
+        errors = [self.player.name + ' tried to use Quickened Spell without knowing it',
+                self.player.name + ' tried to use quickened Spell, but has no Sorcery Points left',
+                self.player.name + ' tried to use quickened spell, but has already used it']
+        ifstatements(rules, errors, self.player.DM).check()
 
-        if self.player.knows_quickened_spell:
-            if self.player.sorcery_points < 2:
-                self.DM.say(self.player.name + ' tried to use quickened Spell, but has no Sorcery Points left')
-            else:
-                if self.player.quickened_spell == 1:
-                    self.say(self.name + ' tried to use quickened spell, but has already used it')
-                else:
-                    self.player.sorcery_points -= 2
-                    self.player.quickened_spell = 1
-                    self.DM.say(self.player.name + ' used Quickened Spell')
-                    if cast_level==False:
-                        cast_level = self.spell_level
-                    self.cast(targets, cast_level)
-
-        else:
-            self.DM.say(self.player.name + ' tried to use Quickened Spell without knowing it')
+        self.player.sorcery_points -= 2
+        self.player.quickened_spell = 1
+        self.DM.say(self.player.name + ' used Quickened Spell')
+        if cast_level==False:
+            cast_level = self.spell_level
+        self.cast(targets, cast_level)
 
 #-------------Cast Spells------------------
     def cast_fire_bolt(self, target, cast_level=0):
@@ -2190,9 +2264,9 @@ class spell:
                 self.player.empowered_spell = False
                 self.DM.say('Empowered: ', end='')
 
-            self.DM.say(str(self.player.name) + ' casts fire bolt: ', end='')
+            self.DM.say(str(self.player.name) + ' casts fire bolt: ')
             #all specifications for this spell are given to the attack function
-            self.player.attack(target, other_dmg=dmg, damage_type='fire', other_tohit=tohit)
+            self.player.attack(target, is_ranged=True, other_dmg=dmg, damage_type='fire', tohit=tohit)
             self.player.fire_bolt_cast += 1
     
     def cast_eldritch_blast(self, targets, cast_level=0):
@@ -2219,14 +2293,14 @@ class spell:
                 self.DM.say('Empowered: ', end='')
             if self.player.knows_agonizing_blast:
                 self.DM.say('Agonizing: ', end='')
-            self.DM.say(self.player.name + ' casts eldritch blast: ', end='')
+            self.DM.say(self.player.name + ' casts eldritch blast: ')
 
             if type(targets) != list:  #if targets is only one Entity passed
                 targets = [targets]
             target_counter = 0
             while atk_counter > 0:    #loop for missile cast
                 #attack fist target with spell specifications and then move to next
-                self.player.attack(targets[target_counter], other_dmg=dmg, damage_type='force', other_tohit=tohit)
+                self.player.attack(targets[target_counter], is_ranged=True, other_dmg=dmg, damage_type='force', tohit=tohit)
                 atk_counter -= 1
                 target_counter += 1
                 if target_counter == len(targets):    #if all targets are hit once, restart 
@@ -2237,6 +2311,9 @@ class spell:
     def cast_entangle(self, target, cast_level=1):
         if type(target) == list:
             target = target[0]
+        if target.is_entangled():
+            self.DM.say(self.player.name + ' tried to entangle ' + target.name + ', who is already entangled')
+            quit()#double cast makes no sene 
         if self.make_spell_check(cast_level) == False:
             return
         else:
@@ -2244,14 +2321,11 @@ class spell:
             save = target.make_save(0)           #let them make save
             if save < self.player.spell_dc:
                 #write the entagle variables for the player and target
-                self.player.is_entangling = 1
-                self.player.entangling_target = target
-                target.entangled = 1
-                target.entangled_by = self.player
-                target.restrained = 1               #make them restrained
                 self.DM.say(self.player.name + ' casts Entangle and ' + str(target.name) + ' failed save with: ' + str(save))
                 self.player.entangle_cast += 1
-                self.player.concentration = 1
+                self.player.is_concentrating = True
+                self.DM.relate(self.player, target, 'Entangle')
+                target.restrained = 1               #make them restrained
             else:
                 self.DM.say(self.player.name + ' casts Entangle but ' + str(target.name) + ' made save with: ' + str(save))
                 self.player.entangle_cast += 1
@@ -2264,18 +2338,18 @@ class spell:
                 targets = [targets]  #make it a list then
             self.DM.say(self.player.name + ' casts Burning Hands at Level: ' + str(cast_level))
             self.player.burning_hands_cast += 1
-            dmg = 10.5 + 3.5*(cast_level - 1)   #upcast dmg 3d6 + 1d6 per level over 2
+            damage = 10.5 + 3.5*(cast_level - 1)   #upcast dmg 3d6 + 1d6 per level over 2
             if self.player.empowered_spell:
-                dmg = dmg*1.21
+                damage = damage*1.21
                 self.player.empowered_spell = False
                 self.DM.say('Empowered: ', end='')
             for i in targets:
+                Dmg = dmg(damage, 'fire')
                 i.last_attacker = self.player    #target remembers last attacker
                 save = i.make_save(1)           #let them make dex saves
                 if save >= self.player.spell_dc:
-                    i.changeCHP(dmg/2, self.player, 'fire')             #save made
-                else:
-                    i.changeCHP(dmg, self.player, 'fire')
+                    Dmg.multiply(1/2)                 #save made
+                i.changeCHP(Dmg, self.player, True)
 
     def cast_cure_wounds(self, target, cast_level=1):
         if type(target) == list:
@@ -2286,7 +2360,7 @@ class spell:
             self.DM.say(self.player.name + ' casts Cure Wounds at level: ' + str(cast_level))
             self.player.cure_wounds_cast += 1
             heal = 4.5*cast_level + self.player.spell_mod
-            target.changeCHP(-heal, self.player)
+            target.changeCHP(dmg(-heal, 'heal'), self.player, False)
 
     def cast_healing_word(self, target, cast_level=1):
         if type(target) == list:
@@ -2297,7 +2371,9 @@ class spell:
             self.DM.say(self.player.name + ' casts Healing Word at level: ' + str(cast_level))
             self.player.healing_word_cast += 1
             heal = 2.5*cast_level + self.player.spell_mod
-            target.changeCHP(-heal, self.player)
+            if heal < 0:
+                heal = 1
+            target.changeCHP(dmg(-heal,'heal'), self.player, True)
 
     def cast_magic_missile(self, targets, cast_level=1):           #needs list of targets
         if self.make_spell_check(cast_level) == False:
@@ -2305,19 +2381,24 @@ class spell:
         else:
             if type(targets) != list: #maybe only one Element was passed
                 targets = [targets]  #make it a list then
-            self.DM.say(self.player.name + ' casts Magic Missile at level ' + str(cast_level))
             self.player.magic_missile_cast += 1
             missile_counter = 2 + cast_level          #overcast mag. mis. for more darts 
             target_counter = 0
-            dmg = 3.5   #1d4 + 1
+            damage = 3.5   #1d4 + 1
             if self.player.empowered_spell:
-                dmg = dmg*1.21
+                damage = damage*1.21
                 self.player.empowered_spell = False
                 self.DM.say('Empowered: ', end='')
+            self.DM.say(self.player.name + ' casts Magic Missile at level ' + str(cast_level))
             while missile_counter > 0:    #loop for missile cast
                 missile_counter -= 1
+                Dmg = dmg(damage, 'force')
+                for x in self.DM.relations:
+                    if x.type == 'Hex' and x.target == targets[target_counter] and x.initiator == self.player:
+                        Dmg.add(3.5,'necrotic')
+                        self.DM.say(' Hex ', end= '')
                 targets[target_counter].last_attacker = self.player    #target remembers last attacker
-                targets[target_counter].changeCHP(dmg, self.player, 'force')    #target takes damage
+                targets[target_counter].changeCHP(Dmg, self.player, True)    #target takes damage
                 target_counter += 1
                 if target_counter == len(targets):    #if all targets are hit once, restart 
                     target_counter = 0
@@ -2330,19 +2411,19 @@ class spell:
             self.player.aganazzars_sorcher_cast += 1
             if type(targets) != list:
                 targets = [targets]
-            dmg = 13.5 + 4.5*(cast_level - 2)   #upcast dmg 3d6 + 1d6 per level over 2
+            damage = 13.5 + 4.5*(cast_level - 2)   #upcast dmg 3d6 + 1d6 per level over 2
             #empowered Spell
             if self.player.empowered_spell:
-                dmg = dmg*1.21
+                damage = damage*1.21
                 self.player.empowered_spell = False
                 self.DM.say('Empowered: ', end='')
             for i in targets:
+                Dmg = dmg(damage, 'fire')
                 i.last_attacker = self.player    #target remembers last attacker
                 save = i.make_save(1)           #let them make saves
                 if save >= self.player.spell_dc:
-                    i.changeCHP(dmg/2, self.player, 'fire')             #save made
-                else:
-                    i.changeCHP(dmg, self.player, 'fire')
+                    Dmg.multiply(1/2)             #save made
+                i.changeCHP(Dmg, self.player, True)
 
     def cast_scorching_ray(self, targets, cast_level=2):           #needs list of targets
         if self.make_spell_check(cast_level) == False:
@@ -2353,16 +2434,16 @@ class spell:
             self.DM.say(self.player.name + ' casts Scorching Ray at Level: ' + str(cast_level))
             self.player.scorching_ray_cast += 1
             tohit = self.player.spell_mod + self.player.proficiency
-            dmg = 7
+            damage = 7
             if self.player.empowered_spell:
-                dmg = dmg*1.21
+                damage = damage*1.21
                 self.player.empowered_spell = False
                 self.DM.say('Empowered: ', end='')
             ray_counter = 1 + cast_level          #overcast + 1 Ray per level
             target_counter = 0
             while ray_counter > 0:    #loop for missile cast
                 #attack fist target with spell specifications and then move to next
-                self.player.attack(targets[target_counter], other_dmg=dmg, damage_type='fire', other_tohit=tohit)
+                self.player.attack(targets[target_counter], is_ranged=True, other_dmg=damage, damage_type='fire', tohit=tohit)
                 ray_counter -= 1
                 target_counter += 1
                 if target_counter == len(targets):    #if all targets are hit once, restart 
@@ -2376,38 +2457,224 @@ class spell:
                 targets = [targets]  #make it a list then
             self.DM.say(self.player.name + ' casts Fireball at Level: ' + str(cast_level))
             self.player.fireball_cast += 1
-            dmg = 28 + 3.5*(cast_level - 3)   #upcast dmg 3d6 + 1d6 per level over 2
+            damage = 28 + 3.5*(cast_level - 3)   #upcast dmg 8d6 + 1d6 per level over 2
             spell_is_empowered = False
             if self.player.empowered_spell:
-                dmg=dmg*1.21
+                damage=damage*1.21
                 self.player.empowered_spell = False
                 spell_is_empowered = True                
             for i in targets:
+                Dmg = dmg(damage, 'fire')
                 i.last_attacker = self.player    #target remembers last attacker
                 save = i.make_save(1)           #let them make saves
                 if spell_is_empowered:
                     self.DM.say('Empowered: ', end='')
                 if save >= self.player.spell_dc:
-                    i.changeCHP(dmg/2, self.player, 'fire')             #save made
-                else:
-                    i.changeCHP(dmg, self.player, 'fire')
+                    Dmg.multiply(1/2)                #save made
+                i.changeCHP(Dmg, self.player, True)
 
     def cast_haste(self, target, cast_level = 3):
         if type(target) == list:
             target = target[0]
+        if target.is_hasted():
+            self.DM.say(self.player.name + ' tried to cast Haste for ' + target.name + ', who is already hasted')
+            quit()#double cast makes no sene 
         if self.make_spell_check(cast_level) == False:
             return
         else:
             self.DM.say(self.player.name + ' casts Haste for ' + target.name)
             self.player.haste_cast += 1
-            self.player.concentration = 1
-            target.get_hasted_by(self.player)
+            self.player.is_concentrating = True 
+            self.DM.relate(self.player, target, 'Haste')
     
     def cast_shield(self, cast_level = 1):
         if self.make_spell_check(cast_level): #return True if everything is in order, reaction and spellslots are then expendet
             self.DM.say(self.player.name + ' casts Shield, ', end='') #interrupts the attack function prints 
             self.player.shield_cast += 1
             self.player.AC += 5
+
+    def cast_hex(self, target, cast_level = 1):
+        #Hex needs exactly one target
+        if type(target) == list:
+            target = target[0]
+        if self.make_spell_check(cast_level) == False:
+            return
+        else:
+            self.DM.say(self.player.name + ' casts Hex at ' + target.name + ' with level ' + str(cast_level))
+            self.player.hex_cast += 1
+            self.player.is_concentrating = True
+            self.DM.relate(self.player, target, 'Hex')
+
+    def change_hex(self, target):
+        rules = [self.player.can_choose_new_hex,
+                self.is_known,
+                target.state == 1,
+                self.player.bonus_action == 1]
+        errors = [self.player.name + ' tried to change a bound hex',
+                self.player.name + ' tried to change a hex without knowing it',
+                self.player.name + ' tried to change to a not conscious target',
+                self.player.name + ' tried to change a hex without having a bonus action']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.DM.say(self.player.name + ' changes the hex to ' + target.name)
+        self.player.bonus_action = 0 #takes a BA
+        self.player.can_choose_new_hex = False
+        self.DM.relate(self.player, target, 'Hex')
+
+    def cast_armor_of_agathys(self, target, cast_level = 1):
+        #Armor only works for self
+        player = self.player
+        target = player
+        if self.make_spell_check(cast_level) == False:
+            return
+        else:
+            self.DM.say(player.name + ' casts Armor of Agathys at level ' + str(cast_level))
+            player.armor_of_agathys_cast += 1
+            player.has_armor_of_agathys = True
+            TempHP = 5*cast_level
+            player.agathys_dmg = 5*cast_level
+            player.addTHP(TempHP) #add THP to self
+
+    def cast_false_life(self, target, cast_level = 1):
+        #Only works for you
+        player = self.player
+        target = player
+        if self.make_spell_check(cast_level) == False: #check if castable
+            return
+        else:
+            self.DM.say(player.name + ' casts False Life at level '+ str(cast_level))
+            player.false_life_cast += 1
+            TempHP = 1.5 + 5*cast_level
+            player.addTHP(TempHP) #Add the THP
+
+    def cast_spiritual_weapon(self, target, cast_level = 2):
+        player = self.player
+        #target is first attack target
+        if self.make_spell_check(cast_level) == False:
+            return
+        else:
+            self.DM.say(player.name + ' casts Spiritual Weapon at level ' + str(cast_level))
+            player.spiritual_weapon_cast += 1
+            player.has_spiritual_weapon = True
+            player.SpiritualWeaponDmg = player.spell_mod + 4.5*(cast_level -1) 
+            player.SpiritualWeaponCounter = 0 #10 Rounds of Weapon
+
+            #Attack Once as BA
+            self.spiritual_weapon_attack(target)
+
+    def use_spiritual_weapon(self, target):
+        player = self.player
+        rules = [player.has_spiritual_weapon,
+                player.bonus_action == 1]
+        errors = [player.name + ' tried using the Spiritual Weapon without having one',
+                player.name + ' tried using the Spiritual Weapon without having a bonus action']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.spiritual_weapon_attack(target)
+
+    def spiritual_weapon_attack(self, target):
+        if type(target) == list:
+            target = target[0]
+        player = self.player
+        WeaponTohit = player.spell_mod + player.proficiency #ToHit of weapon
+        WeaponDmg = player.SpiritualWeaponDmg #Set by the Spell 
+        self.DM.say('Spiritual Weapon of ' + player.name + ' attacks: ')
+        #Make a weapon Attack against first target
+        self.player.attack(target, is_ranged=False, other_dmg=WeaponDmg, damage_type='force', tohit=WeaponTohit)
+        self.player.bonus_action = 0 #It uses the BA to attack
+
+    def cast_shatter(self, targets, cast_level=2):
+        if self.make_spell_check(cast_level) == False:
+            return
+        else:
+            if type(targets) != list: #maybe only one Element was passed
+                targets = [targets]  #make it a list then
+            self.DM.say(self.player.name + ' casts Shatter at Level: ' + str(cast_level))
+            self.player.shatter_cast += 1
+            damage = 13.5 + 4.5*(cast_level - 2)   #upcast dmg 3d8 + 1d8 per level over 2
+            spell_is_empowered = False
+            if self.player.empowered_spell:
+                damage=damage*1.21
+                self.player.empowered_spell = False
+                spell_is_empowered = True                
+            for i in targets:
+                Dmg = dmg(damage, 'thunder')
+                i.last_attacker = self.player    #target remembers last attacker
+                save = i.make_save(self.spell_save_type)           #let them make con saves
+                if spell_is_empowered:
+                    self.DM.say('Empowered: ', end='')
+                if save >= self.player.spell_dc:
+                    Dmg.multiply(1/2) #made save
+                i.changeCHP(Dmg, self.player, True)
+
+    def cast_conjure_animals(self, fight, cast_level=3):
+        #Work in Progress 
+        #Im am using a trick here, ususally a target is passed, but this spell needs the fight
+        #As a solution the score function of this spell passes the fight as 'targtes' 
+        #The cunjured Animals are initiated as fully functunal entity objects
+        #The Stats are loaded from the Archive
+        #If they reach 0 CHP they will die and not participate in the fight anymore
+        #The do_the_fightinf function will then pic them out and delete them from the fight list
+        player = self.player
+        if self.make_spell_check(cast_level) == False:
+            return 
+        else:
+            player.DM.say(player.name + ' cast cunjure Animals at level ' + str(cast_level))
+            player.conjure_animals_cast += 1
+            player.is_concentrating = True #Conc Spell
+
+            level = 10
+            while level > 2:
+                Index = int(random()*len(player.BeastForms))
+                AnimalName = player.BeastForms[Index]['Name'] #Random Animal
+                level = player.BeastForms[Index]['Level'] #Choose a Animal of level 2 or less
+
+            Number = int(2/level)     #8 from CR 1/4, 4 from CR 1/2 ...
+            
+            if cast_level < 5:
+                Number = Number
+            elif cast_level < 7:
+                Number = Number*2
+            elif cast_level < 9: 
+                Number = Number*3
+            else: 
+                Number = Number*4
+
+            #Initiate a new entity for the Animals ans add them to the fight
+            for i in range(0,Number):
+                animal = entity(AnimalName, player.team, player.DM, archive=True)
+                animal.name = 'Conjured ' + AnimalName + str(i+1)
+                self.DM.say(animal.name + ' appears')
+                animal.is_a_conjured_animal = True
+                animal.conjurer = player
+                fight.append(animal)
+                self.DM.relate(player, fight[-1], 'ConjuredAnimal')
+                player.has_animals_conjured = True
+
+    def cast_guiding_bolt(self, target, cast_level=1):
+        player = self.player
+        if type(target) == list:
+            target = target[0]
+        if self.make_spell_check(cast_level) == False:
+            return
+        else:
+            tohit = player.spell_mod + player.proficiency
+            dmg = 3*3.5 + 3.5*cast_level
+
+            if player.empowered_spell:
+                dmg = dmg*1.21
+                player.empowered_spell = False
+                self.DM.say('Empowered: ', end='')
+
+            self.DM.say(str(player.name) + ' casts guiding bolt at Level: ' + str(cast_level))
+            #all specifications for this spell are given to the attack function
+            damage_done = player.attack(target, is_ranged=True, other_dmg=dmg, damage_type= 'radiant', tohit=tohit)
+            if damage_done > 0:
+                self.DM.relate(player, target, 'GuidingBolt')
+                target.is_guiding_bolted = True
+                player.used_guiding_bolt = True
+            player.guiding_bolt_cast += 1
+            
 
 #---------------DMG Scores---------------
 #This Scores are returned to the choose_spell_AI function and should resemble about 
@@ -2445,6 +2712,12 @@ class spell:
             elif dmg_type in target.damage_immunity:
                 target_dmg = 0
             DMGScore += target_dmg #Add this dmg to Score
+
+            #Account for Hex
+            if target.is_hexed():
+                for x in self.DM.relations: 
+                    if x.type == 'Hex' and x.target == target and x.initiator == self.player:
+                        DMGScore += 3.5
         return DMGScore
 
     def return_0_score(self):
@@ -2455,60 +2728,100 @@ class spell:
         return Score, SpellTargets, CastLevel
 
     def random_score_scale(self):
-        Scale = 1+randint(-40,40)/100
+        Scale = 0.6+0.8*random()
         return Scale
 
-    #originally the quickened_Cast and twinned_cast where designed to encourage and discourage meta magic cast for every spell individually, currently this is already done for quickened cast for all spells in the choose spell function.
-    #But it could be done here too 
+    def choose_smallest_slot(self, MinLevel, MaxLevel):
+        #Returns the smallest spellslot that is still available
+        #MaxLevel is cast level, so MaxLevel = 4 means Level 4 Slot
+        #False, no Spell Slot available
+        if MaxLevel > 9: MaxLevel = 9
+        if MinLevel < 1: MinLevel = 1
+        for i in range(MinLevel-1, MaxLevel):
+            if self.player.spell_slot_counter[i]>0:
+                return i+1
+        return False 
 
-    def score_fire_bolt(self, fight, quickened_cast = False, twinned_cast = False):
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True)]
-        if SpellTargets == [False]: #No Target
-            return self.return_0_score()
-        if twinned_cast:
-            #Secound Target for Twin Cast
-            twin_target = self.player.AI.choose_att_target(fight, AttackIsRanged=True)
-            if twin_target == False:
-                return self.return_0_score()
-            SpellTargets.append(twin_target)
-        
+    def choose_highest_slot(self, MinLevel, MaxLevel):
+        #Returns the highest spellslot that is still available
+        #MinLevel is cast level, so MinLevel = 4 means Level 4 Slot
+        #False, no Spell Slot available
+        if MaxLevel > 9: MaxLevel = 9
+        if MinLevel < 1: MinLevel = 1
+        for i in reversed(range(MinLevel-1, MaxLevel)):
+            if self.player.spell_slot_counter[i]>0:
+                return i+1
+        return False 
+
+    #Scores and Targets 
+
+    def score_fire_bolt(self, fight, twinned_cast = False):
         CastLevel = 0 #always 0 for cantrip
         if self.player.level >=17: dmg= 5.5*4
         elif self.player.level >=11: dmg= 5.5*3
         elif self.player.level >= 5: dmg = 5.5*2
         else: dmg = 5.5        
+
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='fire')]
+        if SpellTargets == [False]: #No Target
+            return self.return_0_score()
+        if twinned_cast:
+            #Secound Target for Twin Cast
+            twin_target = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='fire')
+            if twin_target == False:
+                return self.return_0_score()
+            SpellTargets.append(twin_target)
+        
         #DMG Score
         Score = 0
         Score += self.dmg_score(SpellTargets, dmg, dmg_type='fire', SpellAttack=True)
+        if twinned_cast: Score = Score*2
 
         Score = Score*self.random_score_scale() # a little random power 
         return Score, SpellTargets, CastLevel
 
-    def score_entangle(self, fight, quickened_cast = False, twinned_cast = False):
+    def score_entangle(self, fight, twinned_cast = False):
         #Choose One Target
-        #Not twincastable currently
-        SpellTargets =  [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=0)]
-        if SpellTargets[0] == False: #No Target
+        player = self.player
+        SpellTargets = []
+        Choices = [x for x in fight if x.team != player.team and x.state == 1 and x.is_entangled() == False]
+        if len(Choices) > 0: #if there are any
+            SpellTargets.append(self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg=0, other_dmg_type='true')) #append best enemy to entangle
+        else: return self.return_0_score()
+        if twinned_cast:
+            Choices.remove(SpellTargets[0]) #Dont double haste
+            if len(Choices) > 0:
+                SpellTargets.append(self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg=0, other_dmg_type='true')) #append best 2nd enemy to entangle
+            else: return self.return_0_score()
+
+        #Maybe no targets found
+        if SpellTargets[0] == False:
             return self.return_0_score()
+        if len(SpellTargets) > 1:
+            if SpellTargets[1] == False:
+                return self.return_0_score()
+
         #Score is equal to how dangerous the target is
-        Score = (SpellTargets[0].AC - 12) + SpellTargets[0].dmg/2 + SpellTargets[0].level/3
-        if self.player.spell_slot_counter[0]>0:
-            CastLevel = 1
-        elif self.player.spell_slot_counter[0]>0:
-            CastLevel = 2
-        elif self.player.spell_slot_counter[0]>0:
-            CastLevel = 3
-        else: #just dont cast if entangle is the best u can do at lv 4
+        Score = 0
+        allies = [x for x in fight if x.state == 1 and x.team == player.team]
+        Score += sum([x.dmg*x.attacks/10 for x in fight if x.state == 1 and x.team == player.team])
+        for x in SpellTargets:
+            Score += x.dps()/4 #disadvantage helps do reduce dmg of enemy
+            #Add dmg for the other players
+            Score += player.spell_dc - 10 - x.modifier[0] #good against weak enemies
+        CastLevel = self.choose_smallest_slot(1,3)
+        if CastLevel == False: #Didnt find slot 3 or smaller
+        #just dont cast if entangle is the best u can do at lv 4
             CastLevel = 0
             Score = 0
         Score = Score*self.random_score_scale()
         return Score, SpellTargets, CastLevel
     
-    def score_burning_hands(self, fight, quickened_cast = False, twinned_cast = False):
+    def score_burning_hands(self, fight, twinned_cast = False):
         SpellTargets = self.player.AI.area_of_effect_chooser(fight, 115) #15ft**2/2
-        for j in range(0,9): #What Level to cast
-            if self.player.spell_slot_counter[8-j] > 0:
-                CastLevel = 8-j+1  #cast level is +1
+        CastLevel = self.choose_highest_slot(1,9)
+        if CastLevel == False: return self.return_0_score()
+
         Score = 0
         #Dmg Score
         dmg = 3*3.5 + 3.5*(CastLevel-1)
@@ -2516,18 +2829,18 @@ class spell:
         Score = Score*self.random_score_scale() #a little random power
         return Score, SpellTargets, CastLevel
 
-    def score_cure_wounds(self, fight, quickened_cast = False, twinned_cast = False):
+    def score_cure_wounds(self, fight, twinned_cast = False):
         return self.return_0_score() #at the moment, healing is handeled differently
 
-    def score_healing_word(self, fight, quickened_cast = False, twinned_cast = False):
+    def score_healing_word(self, fight, twinned_cast = False):
         return self.return_0_score() #at the moment, healing is handeled differently
 
-    def score_magic_missile(self, fight, quickened_cast = False, twinned_cast = False):
-        for j in range(0,9): #What Level to cast
-            if self.player.spell_slot_counter[8-j] > 0:
-                CastLevel = 8-j+1  #cast level is +1
+    def score_magic_missile(self, fight, twinned_cast = False):
+        CastLevel = self.choose_highest_slot(1,9)
+        if CastLevel == False: return self.return_0_score()
+
         TargetNumer = CastLevel + 2
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5) for i in range(0, TargetNumer)]
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='force') for i in range(0, TargetNumer)]
         if False in SpellTargets:
             return self.return_0_score()
 
@@ -2537,11 +2850,10 @@ class spell:
         Score = Score*self.random_score_scale() # +/-20% range to vary spells
         return Score, SpellTargets, CastLevel
 
-    def score_aganazzars_scorcher(self, fight, quickened_cast = False, twinned_cast = False):    
-        SpellTargets = self.player.AI.area_of_effect_chooser(fight, 150) #30ft*5ft
-        for j in range(0,8):
-            if self.player.spell_slot_counter[8-j] > 0:
-                CastLevel = 8-j+1  #cast level is +1
+    def score_aganazzars_scorcher(self, fight, twinned_cast = False):    
+        SpellTargets = self.player.AI.area_of_effect_chooser(fight, 300) #30ft*10ft
+        CastLevel = self.choose_highest_slot(2,9)
+        if CastLevel == False: return self.return_0_score()
         
         #DMG Score
         dmg = 13.5 + 4.5*(CastLevel-2)
@@ -2549,12 +2861,12 @@ class spell:
         Score = Score*self.random_score_scale()
         return Score, SpellTargets, CastLevel
 
-    def score_scorching_ray(self, fight, quickened_cast = False, twinned_cast = False):
-        for j in range(0,8): #What Level to cast
-            if self.player.spell_slot_counter[8-j] > 0:
-                CastLevel = 8-j+1  #cast level is +1
+    def score_scorching_ray(self, fight, twinned_cast = False):
+        CastLevel = self.choose_highest_slot(2,9)
+        if CastLevel == False: return self.return_0_score()
+
         TargetNumer = CastLevel + 1
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5) for i in range(0, TargetNumer)]
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='fire') for i in range(0, TargetNumer)]
         if False in SpellTargets: #No Target
             return self.return_0_score()
 
@@ -2565,49 +2877,53 @@ class spell:
         Score = Score*self.random_score_scale() # +/-20% range to vary spells
         return Score, SpellTargets, CastLevel
 
-    def score_fireball(self, fight, quickened_cast = False, twinned_cast = False):
-        SpellTargets = self.player.AI.area_of_effect_chooser(fight, 315) #pi*10ft**2
-        for j in range(0,7):
-            if self.player.spell_slot_counter[8-j] > 0:
-                CastLevel = 8-j+1  #cast level is +1
+    def score_fireball(self, fight, twinned_cast = False):
+        SpellTargets = self.player.AI.area_of_effect_chooser(fight, 1250) #pi*20ft**2
+        CastLevel = self.choose_highest_slot(3,9)
+        if CastLevel == False: return self.return_0_score()
         
         #DMG Score
-        dmg = 28
+        dmg = 28 + 3.5*(CastLevel - 3)
         Score = self.dmg_score(SpellTargets, dmg, dmg_type='fire', SpellAttack=False, SpellSave=True)
         Score = Score*self.random_score_scale()
         return Score, SpellTargets, CastLevel
 
-    def score_haste(self, fight, quickened_cast = False, twinned_cast = False):
-        SpellTargets = [self.player.AI.allies[randint(0,len(self.player.AI.allies)-1)]] #random Ally
-        Score = 0
-        Score += SpellTargets[0].dmg*SpellTargets[0].attacks
-        Score += SpellTargets[0].tohit
-        Score += SpellTargets[0].AC - self.player.AC
-        #Dont haste low Ally
-        if SpellTargets[0].CHP < SpellTargets[0].HP/4:
-            Score -= SpellTargets[0].dmg
+    def score_haste(self, fight, twinned_cast = False):
+        player = self.player
+        SpellTargets = []
+        Choices = [x for x in fight if x.team == player.team and x.state == 1  and x.is_hasted() == False]
+        ChoicesScore = [x.dmg*(random()*0.5 +0.5) + x.AC*(random()*0.2 +0.2) + x.CHP/3*(random()*0.2 + 0.1) for x in Choices]
+        SpellTargets.append(Choices[np.argmax(ChoicesScore)]) #append best player for Haste
+        if twinned_cast:
+            Choices.remove(SpellTargets[0]) #Dont double haste
+            if len(Choices) == 0:
+                return self.return_0_score()
+            ChoicesScore = [x.dmg*(random()*0.5 +0.5) + x.AC*(random()*0.2 +0.2) + x.CHP/3*(random()*0.2 + 0.1) for x in Choices]
+            SpellTargets.append(Choices[np.argmax(ChoicesScore)]) #append best player for 2nd Haste
 
-        if self.player.spell_slot_counter[2]>0:
-            CastLevel = 3
-        elif self.player.spell_slot_counter[3]>1:
-            CastLevel = 4
-        elif self.player.spell_slot_counter[4]>1:
-            CastLevel = 5
-        else: #just dont cast if Haste is the best u can do at lv 6
-            CastLevel = 0
-            Score = 0
+        Score = 0
+        for x in SpellTargets:
+            Score += x.dmg/2*(random()*3.5 + 0.7) #lasts for some rounds
+            Score += x.AC - player.AC #Encourage High AC
+            #Dont haste low Ally
+            if x.CHP < x.HP/4:
+                Score -= x.dmg
+
+        CastLevel = self.choose_smallest_slot(3,5) #not higher then 5
+        if CastLevel == False: return self.return_0_score()
+
         Score = Score*self.random_score_scale()
         return Score, SpellTargets, CastLevel
 
-    def score_shield(self, fight, quickened_cast = False, twinned_cast = False):
+    def score_shield(self, fight, twinned_cast = False):
         return self.return_0_score() #shield should not be considered to cast in turn 
 
-    def score_eldritch_blast(self, fight, quickened_cast = False, twinned_cast = False):
+    def score_eldritch_blast(self, fight, twinned_cast = False):
         if self.player.level >=17:TargetNumer = 4
         elif self.player.level >=11:TargetNumer = 3
         elif self.player.level >= 5:TargetNumer = 2
         else:TargetNumer = 1
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True) for i in range(0,TargetNumer)]
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=5.5, other_dmg_type='force') for i in range(0,TargetNumer)]
         if False in SpellTargets: #No Target
             return self.return_0_score()        
 
@@ -2619,4 +2935,154 @@ class spell:
         Score += self.dmg_score(SpellTargets, dmg, dmg_type='fire', SpellAttack=True)
         
         Score = Score*self.random_score_scale() # a little random power
+        return Score, SpellTargets, CastLevel
+
+    def score_hex(self, fight, twinned_cast = False):
+        SpellTargets = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='true') #Choose best target
+        if SpellTargets == False: return self.return_0_score()
+
+        Score = 0
+        Score = 3.5*self.player.attacks*(random()*2 + 3) #hex holds for some rounds
+        if self.player.SpellBook['MagicMissile'].is_known:
+            Score += 3.5
+        if self.player.SpellBook['EldritchBlast'].is_known:
+            Score += 3.5*2
+
+        CastLevel = self.choose_smallest_slot(1,9)
+        if CastLevel == False: return self.return_0_score()
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+
+    def score_armor_of_agathys(self, fight, twinned_cast = False):
+        player = self.player
+        SpellTargets = [player] #only self cast
+
+        #Choose Slot
+        Highest_Slot = self.choose_highest_slot(1,9)
+        if Highest_Slot != False:
+            CastLevel = self.choose_highest_slot(1,Highest_Slot-1) #Not use your highest slot
+            if CastLevel == False:
+                return self.return_0_score()
+        else: return self.return_0_score()
+
+        if player.has_armor_of_agathys: return self.return_0_score() #no double cast
+        
+        Score = 5*CastLevel #does at least 5dmg and 5 TPH for you
+        Score = Score*(3 - 2*player.CHP/player.HP) #tripples for low player 
+        Score -= player.THP*1.5 #If you still have THP, rather keep it
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+
+    def score_false_life(self, fight, twinned_cast = False):
+        player = self.player
+        SpellTargets = [player] #only self cast
+
+        #Choose Slot
+        Highest_Slot = self.choose_highest_slot(1,9)
+        if Highest_Slot != False:
+            CastLevel = self.choose_highest_slot(1,Highest_Slot-2) #Not use your highest slot
+            if CastLevel == False:
+                return self.return_0_score()
+        else: return self.return_0_score()
+
+        #Score 
+        Score = 3 + 3*CastLevel  #dmg equal value but for THP, a bit lower then 5
+        Score = Score*(3 - 2*player.CHP/player.HP) #tripples for low player
+        if player.THP > 0:
+            return self.return_0_score()
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+
+    def score_spiritual_weapon(self, fight, twinned_cast = False):
+        player = self.player
+
+        #Choose Slot
+        Highest_Slot = self.choose_highest_slot(2,9) 
+        if Highest_Slot != False:
+            CastLevel = self.choose_highest_slot(2,Highest_Slot-1) #Not use your highest slot
+            if CastLevel == False:
+                return self.return_0_score()
+        else: return self.return_0_score()
+
+        #DMG
+        SpellDmg = player.spell_mod + 4.5*(CastLevel - 1)
+
+        #Target
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=SpellDmg, other_dmg_type='force')]
+        if SpellTargets[0] == False:
+            return self.return_0_score()#no Enemy in reach
+
+        if player.has_spiritual_weapon:
+            return self.return_0_score() #has already sw 
+
+        Score = self.dmg_score(SpellTargets, dmg=SpellDmg, dmg_type='force', SpellAttack=True)
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+
+    def score_shatter(self, fight, twinned_cast = False):
+        SpellTargets = self.player.AI.area_of_effect_chooser(fight, 315) #pi*10ft**2
+        CastLevel = self.choose_highest_slot(2,7)
+        if CastLevel == False: return self.return_0_score()
+        
+        #DMG Score
+        dmg = 13.5 + 4.5*(CastLevel - 2)
+        Score = self.dmg_score(SpellTargets, dmg, dmg_type='thunder', SpellAttack=False, SpellSave=True)
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+
+    def score_conjure_animals(self, fight, twinned_cast = False):
+        #Work in Progress
+        player = self.player
+        SpellTargets = fight #this is a trick to pass the fight to the spell cast function
+        #Okay, the critical level are 3, 5, 7, 9
+        #So 4, 6, 8 would be a bit wasted
+        TryLevel = [9,7,5,3]
+        for x in TryLevel:
+            CastLevel = self.choose_smallest_slot(x,9)
+            if CastLevel != False: break
+
+        if CastLevel == False: return self.return_0_score()
+        Score = 0 #for now
+        if player.has_animals_conjured: quit() #nonsense
+        #Ape has CR 1/2 with +5 to hit, 6.5 dmg, 2 attacks -> 6.5/4 *2attacks /0.5CR -> 6.5dmg/1CR
+        #BrownBear CR 1 +5 9.75dmg, 2 attacks -> 4.8dmg/1CR
+        #Wolf 7dmg/4 /0.25CR -> 7dmg/1CR
+        #About 6 dmg/1CR, HP matters less because of Concentration
+
+        #As concentration can be interrupted, they might not last so long, lets say 1-3 Rounds
+        if CastLevel < 5:
+            TotalCR = 2
+        elif CastLevel < 7:
+            TotalCR = 4
+        elif CastLevel < 9: 
+            TotalCR = 6
+        else: 
+            TotalCR = 8
+        Score = TotalCR*6*(random()*1.2 + 1.5) #CR * 6dmg/CR * 1.5-2.7 Rounds
+        return Score, SpellTargets, CastLevel
+
+    def score_guiding_bolt(self, fight, twinned_cast = False):
+        CastLevel = self.choose_highest_slot(1,9)
+        if CastLevel == False: return self.return_0_score()
+        dmg = 3.5*3 + 3.5*CastLevel
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='radiant')]
+        if SpellTargets == [False]: #No Target
+            return self.return_0_score()
+        if twinned_cast:
+            #Secound Target for Twin Cast
+            twin_target = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='radiant')
+            if twin_target == False:
+                return self.return_0_score()
+            SpellTargets.append(twin_target)
+        
+        #DMG Score
+        Score = 0
+        Score += self.dmg_score(SpellTargets, dmg, dmg_type='radiant', SpellAttack=True)
+        Score += self.player.dps()*0.2 #to account for advantage given
+        if twinned_cast: Score = Score*2
+
+        Score = Score*self.random_score_scale() # a little random power 
         return Score, SpellTargets, CastLevel

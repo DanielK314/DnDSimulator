@@ -5,15 +5,7 @@
     },
     "Entities": [
         {
-            "name": "Barbarian Lv1",
-            "team": 0
-        },
-        {
-            "name": "Ogre",
-            "team": 1
-        },
-        {
-            "name": "Sorcerer Lv1",
+            "name": "Druid Lv5",
             "team": 0
         },
         {
@@ -21,8 +13,44 @@
             "team": 0
         },
         {
-            "name": "Bard Lv1",
+            "name": "Paladin Lv3",
             "team": 0
+        },
+        {
+            "name": "Sorcerer Lv1",
+            "team": 0
+        },
+        {
+            "name": "Displayer Beast",
+            "team": 1
+        },
+        {
+            "name": "Flameskull",
+            "team": 1
+        },
+        {
+            "name": "Pirate Captain",
+            "team": 1
+        },
+        {
+            "name": "Vamire Spawn",
+            "team": 1
+        },
+        {
+            "name": "Fire Elemental",
+            "team": 1
+        },
+        {
+            "name": "Goblin",
+            "team": 1
+        },
+        {
+            "name": "Pirate",
+            "team": 1
+        },
+        {
+            "name": "Young Dragon",
+            "team": 1
         }
     ]
 }

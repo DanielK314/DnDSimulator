@@ -2,6 +2,7 @@ import numpy as np
 from random import *
 from numpy import argmin
 from copy import copy
+from datetime import datetime
 
 from Entity_class import *
 
@@ -18,16 +19,19 @@ def fight_ongoing_check(fight): #this function takes the fighters and checks if 
 def do_the_fighting(fighters_unsorted): #here a list of fighters from different teams
     fight = roll_for_initiative(fighters_unsorted)     #roll all inits and return sorted list
     Init_counter = 0
-    rounds_number = 1
     DM = fighters_unsorted[0].DM
+    DM.reset() #resets the DM at start of fighting
 
-    DM.say('Runde ' + str(rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)))
+    DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)))
 
     while fight_ongoing_check(fight) == True:
         player = fight[Init_counter]
+
+        if player.state != -1:
+            print_text = '_____________'
+            DM.say(print_text)
         if player.state == 1:                            #player is alive
-            teamtag = player.team                        #which team        
-            enemies_left_list = enemies_left_sort(fight, teamtag)
+            enemies_left_list = [x for x in fight if x.team != player.team and x.state == 1]
 
             player.start_of_turn()
 
@@ -44,17 +48,21 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
         Init_counter += 1                                #set Init counter, reset round counter if ness.
         if Init_counter >= len(fight):
             Init_counter = 0
-            rounds_number += 1
+            DM.rounds_number += 1
             DM.say('')
-            DM.say('Runde ' + str(rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)))
+            DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)))
 
 
     #Only one Team is left alive
     DM.say('')
     DM.say("Fight over")
+    for x in fighters_unsorted:
+        if x.CHP == 0:
+            x.state = -1 #Everone who is unconscious in the loser Team is practically Dead now
+        if x.is_a_conjured_animal:
+            fight.remove(x)
     DM.say('HP left:')
     for i in fighters_unsorted:
-
         DM.say(str(i.name) + " " + str(i.CHP))
     DM.say('')
     DM.say('Damage dealed:')
@@ -71,7 +79,7 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
             winner_team = i.team
             break
     
-    return winner_team, rounds_number
+    return winner_team, DM.rounds_number
 
 #all statistical functions call this one and this one calls the 'do the fighting'
 #for multiple fightings, change here
@@ -87,13 +95,23 @@ def enemies_left_sort(fight, TeamTag):
     enemies_left_list = [x for x in fight if x.team != TeamTag and x.state == 1]
     return enemies_left_list
 
-def run_simulation(repetition, fighters):
+def run_simulation(repetition, fighters, progress = False):
     damage_statistic = []
     winner = []
     rounds_number = []
     deaths = []
+    unconscious = []
+    DeathNumber = np.zeros(repetition)#Counts the absolute Deaths per Repetition (only for team 0)
+    TeamHealth = [] #List with how much of the absolute Team Health is left
+    TeamHP = 0
+    for fighter in fighters:
+        if fighter.team == 0:
+            TeamHP += fighter.HP
 
     for i in range(0,repetition):
+        percent = str(round(i/repetition*100, 1))
+        if progress == True:
+            print('Progress : ' + percent +'%')
         simulation_results = do_the_fighting(fighters)
         winner.append(simulation_results[0])         # do the fight and get the winner, list of 0 (heros) or 1 (enemies)
         rounds_number.append(simulation_results[1])         # do the fight and get the rounds number
@@ -102,6 +120,20 @@ def run_simulation(repetition, fighters):
         for j in fighters:
             if j.state == -1:
                 deaths.append(j.name)
+                if j.team == 0:
+                    DeathNumber[i] += 1 #Counts the absolute Deaths per Repetition
+        
+        TeamCHP = 0
+        for fighter in fighters:
+            if fighter.team == 0:
+                TeamCHP += fighter.CHP
+        TeamHealth.append(TeamCHP/TeamHP) #how much Team health is left
+
+        UnconsciousSum = 0
+        for j in fighters:
+            if j.team == 0:
+                UnconsciousSum += j.unconscious_counter
+        unconscious.append(UnconsciousSum)
         
         for l in fighters:
             l.long_rest()           #rest by doing a long Rest
@@ -110,10 +142,13 @@ def run_simulation(repetition, fighters):
         damage_statistic_sorted.append([damage_statistic[i][j] for i in range(0,repetition)])
     names = [i.name for i in fighters]         #get names 
 
-    return names, damage_statistic_sorted, winner, rounds_number, deaths
+    return names, damage_statistic_sorted, winner, rounds_number, deaths, unconscious, DeathNumber, TeamHealth
 
 def most_valuable_player(repetition, fighters):
     DM = fighters[0].DM
+    Heros_List = [fighter for fighter in fighters if fighter.team == 0]
+    if len(Heros_List) == 1: # if only one Heros is in the team
+        return [[Heros_List[0].name], [0], Heros_List[0].name]
     fighters_without_one_hero = copy(fighters)
     player_name = []
     win_probability_without_player = []
@@ -121,7 +156,7 @@ def most_valuable_player(repetition, fighters):
         if fighters_without_one_hero[i].team == 0:
             fighters_without_one_hero.remove(fighters[i])
             player_name.append(fighters[i].name) 
-            names, damage_statistic_sorted, winner, rounds_number, deaths = run_simulation(repetition, fighters_without_one_hero)
+            names, damage_statistic_sorted, winner, rounds_number, deaths, unconscious, DeathNumber, TeamHealth = run_simulation(repetition, fighters_without_one_hero)
             
             #calc win prob.
             wins = 0
@@ -144,41 +179,64 @@ def most_valuable_player(repetition, fighters):
 def spell_cast_recap(repetition, fighters, text_result):  #only calls the objects data, simulation must be run beforehand
     for i in fighters:
         if i.fire_bolt_cast > 0:
-            text_result += str(i.name) + ' cast fire bolt: ' + str((i.fire_bolt_cast)/repetition) + '\n'
+            text_result += str(i.name) + ' cast fire bolt: ' + str(round(i.fire_bolt_cast/repetition,3)) + '\n'
             i.fire_bolt_cast = 0
         if i.entangle_cast > 0:
-            text_result += str(i.name) + ' cast entangle: ' + str(i.entangle_cast/repetition) + '\n'     
+            text_result += str(i.name) + ' cast entangle: ' + str(round(i.entangle_cast/repetition,3)) + '\n'     
             i.entangle_cast = 0
         if i.burning_hands_cast > 0:
-            text_result += str(i.name) + ' cast burning hand: ' + str(i.burning_hands_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast burning hand: ' + str(round(i.burning_hands_cast/repetition,3)) + '\n'
             i.burning_hands_cast = 0
         if i.cure_wounds_cast > 0:
-            text_result += str(i.name) + ' cast cure wounds: ' + str(i.cure_wounds_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast cure wounds: ' + str(round(i.cure_wounds_cast/repetition,3)) + '\n'
             i.cure_wounds_cast = 0
         if i.healing_word_cast > 0:
-            text_result += str(i.name) + ' cast healing word: ' + str(i.healing_word_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast healing word: ' + str(round(i.healing_word_cast/repetition,3)) + '\n'
             i.healing_word_cast = 0
         if i.magic_missile_cast > 0:
-            text_result += str(i.name) + ' cast magic missile: ' + str(i.magic_missile_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast magic missile: ' + str(round(i.magic_missile_cast/repetition,3)) + '\n'
             i.magic_missile_cast = 0
         if i.aganazzars_sorcher_cast > 0:
-            text_result += str(i.name) + ' cast aganazzarssorcher: ' + str(i.aganazzars_sorcher_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast aganazzarssorcher: ' + str(round(i.aganazzars_sorcher_cast/repetition,3)) + '\n'
             i.aganazzars_sorcher_cast = 0
         if i.scorching_ray_cast > 0:
-            text_result += str(i.name) + ' cast scorching ray: ' + str(i.scorching_ray_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast scorching ray: ' + str(round(i.scorching_ray_cast/repetition,3)) + '\n'
             i.scorching_ray_cast = 0
         if i.fireball_cast > 0:
-            text_result += str(i.name) + ' cast fireball: ' + str(i.fireball_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast fireball: ' + str(round(i.fireball_cast/repetition,3)) + '\n'
             i.fireball_cast = 0
         if i.haste_cast > 0:
-            text_result += str(i.name) + ' cast haste: ' + str(i.haste_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast haste: ' + str(round(i.haste_cast/repetition,3)) + '\n'
             i.haste_cast = 0
         if i.shield_cast > 0:
-            text_result += str(i.name) + ' cast shield: ' + str(i.shield_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast shield: ' + str(round(i.shield_cast/repetition,3)) + '\n'
             i.shield_cast = 0
         if i.eldritch_blast_cast > 0:
-            text_result += str(i.name) + ' cast eldritch blast: ' + str(i.eldritch_blast_cast/repetition) + '\n'
+            text_result += str(i.name) + ' cast eldritch blast: ' + str(round(i.eldritch_blast_cast/repetition,3)) + '\n'
             i.eldritch_blast_cast = 0
+        if i.hex_cast > 0:
+            text_result += str(i.name) + ' cast hex: ' + str(round(i.hex_cast/repetition,3)) + '\n'
+            i.hex_cast = 0
+        if i.armor_of_agathys_cast > 0:
+            text_result += str(i.name) + ' cast armor of agathys: ' + str(round(i.armor_of_agathys_cast/repetition,3)) + '\n'
+            i.armor_of_agathys_cast = 0
+        if i.false_life_cast > 0:
+            text_result += str(i.name) + ' cast false life: ' + str(round(i.false_life_cast/repetition,3)) + '\n'
+            i.false_life_cast = 0
+        if i.spiritual_weapon_cast > 0:
+            text_result += str(i.name) + ' cast spiritual weapon: ' + str(round(i.spiritual_weapon_cast/repetition,3)) + '\n'
+            i.spiritual_weapon_cast = 0
+        if i.shatter_cast > 0:
+            text_result += str(i.name) + ' cast shatter: ' + str(round(i.shatter_cast/repetition,3)) + '\n'
+            i.shatter_cast = 0
+        if i.conjure_animals_cast > 0:
+            text_result += str(i.name) + ' cast conjure animals: ' + str(round(i.conjure_animals_cast/repetition,3)) + '\n'
+            i.conjure_animals_cast = 0
+        if i.guiding_bolt_cast > 0:
+            text_result += str(i.name) + ' cast guiding bolt: ' + str(round(i.guiding_bolt_cast/repetition,3)) + '\n'
+            i.guiding_bolt_cast = 0
+
+
     return text_result
 
 def full_statistical_recap(repetition, fighters):
@@ -189,7 +247,7 @@ def full_statistical_recap(repetition, fighters):
     text_result = 'Simulation estimates:\n'
 
     #run simulation
-    names, damage_statistic_sorted, winner, rounds_number, deaths = run_simulation(repetition, fighters)
+    names, damage_statistic_sorted, winner, rounds_number, deaths, unconscious, DeathNumber, TeamHealth = run_simulation(repetition, fighters, progress=True)
     wins = 0
     defeats = 0
     for i in winner:
@@ -200,63 +258,156 @@ def full_statistical_recap(repetition, fighters):
     win_probability = wins/(wins + defeats)
 
     # run the most valuable player function with less repetitions
-    DM.block_print()
-    mvp_repetitions = int(repetition/10) +1
-    if mvp_repetitions > 100:
-        mvp_repetitions = 100
-    player_name, win_probability_without_player, mvp = most_valuable_player(mvp_repetitions, fighters)
-    DM.enable_print()
+    #This section was removed due to high performance impact
+    if False:
+        DM.block_print()
+        mvp_repetitions = int(repetition/10) +1
+        if mvp_repetitions > 100:
+            mvp_repetitions = 100
+        player_name, win_probability_without_player, mvp = most_valuable_player(mvp_repetitions, fighters)
+        DM.enable_print()
 
-    text_result += '_____________________\n'
-    text_result += 'Win Probability: ' + str(round(win_probability*100, 3)) + ' %\n'
-    text_result += 'Fight Length: ' + str(round(np.mean(rounds_number),1)) + ' +/- ' + str(round(np.std(rounds_number),1)) + '\n'
-    text_result += 'DEATHS: \n'
 
-    # Calaculate death rates  (If they win, if they loose, they all die obviously)
+    # Calaculate death rates  (if they loose, they all die obviously)
+    DeathProbabilities = []
+    Deaths_text_result = ''
     for i in fighters:
-        fighter_has_died_counter = 0   #death counter
-        for j in deaths:
-            if i.name == j:   #if name is in deaths from simulation
-                fighter_has_died_counter += 1
-        if fighter_has_died_counter > 0:
-            death_probability = fighter_has_died_counter/repetition
-            text_result += str(i.name) + ' dies: ' + str(round(death_probability*100,2)) + ' % Chance\n'
+        if i.team != 1:
+            fighter_has_died_counter = 0   #death counter
+            for j in deaths:
+                if i.name == j:   #if name is in deaths from simulation
+                    fighter_has_died_counter += 1
+            if fighter_has_died_counter > 0:
+                death_probability = fighter_has_died_counter/repetition
+                Deaths_text_result += str(i.name) + ' dies: ' + str(round(death_probability*100,2)) + ' %\n'
+            else:
+                death_probability = 0
+            DeathProbabilities.append(death_probability) # for late calc difficulty
 
+    #Calculate the Difficulty
+    Difficulty = calculate_difficulty(1-win_probability, np.mean(rounds_number), DeathProbabilities, unconscious, DeathNumber, TeamHealth)
+    Difficulty_Text = ['0',
+    'Insignificant', 'Easy', 'Medium', 'Challenging', 'Hard',
+    'Brutal', 'Insane', 'Death', 'Hell', 'How Dare You?']
+
+    Difficulty_Meaning = ['0',
+    'No chance of failure and the heroes will still have most of their recources',
+    'A low risk fight, that will leave but a scratch.',
+    'This might take some efford. Death will only come to those who take it lightly.',
+    'Finally, a worthy fight that will force the heroes to show what they are made of.',
+    'Death is a real danger now, fatal for those how are not prepared.',
+    'Some might not survive this fight, it is deadly and unforgiving.',
+    'This is madness and could bring death to all. Be cautious.',
+    'A total annihilation is likely. If some survive, at what cost?',
+    'Burn them all. The gods must have forsaken these poor heroes.',
+    'What are you thinking? You must hate them...'
+    ]
 
     damage_player = [np.mean(damage_statistic_sorted[i]) for i in range(0, len(damage_statistic_sorted))]
 
-
-    text_result += '\n'
-    text_result += 'SPELLS CAST:\n'
-    text_result = spell_cast_recap(repetition, fighters, text_result)
+    text_result += '_____________________\n'
+    text_result += 'Difficulty: ' + Difficulty_Text[Difficulty] + '\n'
+    text_result += 'Win Probability: ' + str(round(win_probability*100, 3)) + ' %\n'
+    text_result += 'Fight Length: ' + str(round(np.mean(rounds_number),1)) + ' +/- ' + str(round(np.std(rounds_number),1)) + '\n'
+    text_result += 'Team Health: ' + str(round(np.mean(TeamHealth)*100,1)) + ' %\n'
+    text_result += 'Total Party Kill: ' + str(round((1-win_probability)*100, 3)) + ' %\n\n'
+    text_result += Difficulty_Meaning[Difficulty] + '\n\n'
+    text_result += '----DEATHS----\n'
+    text_result += Deaths_text_result
     text_result += '\n'
     if win_probability > 0.01:
-        text_result += 'PLAYER PERFORMANCE: \n'
+        text_result += '----PLAYER PERFORMANCE----\n'
 
     #calculating the performance of the Players
-        #Performance evaluated as the win probability without them as a Player
-        performance_winrate = [(1 - i/win_probability) for i in win_probability_without_player]
         #Perfprmance as the part of Dmg done:
-        performance_damage = []
-        for i in range(0, len(damage_player)):
+        player = [x for x in fighters if x.team == 0]
+        damage_list = []
+        for i in range(0, len(fighters)):
             if fighters[i].team == 0:
-                performance_damage.append(damage_player[i])
+                damage_list.append(damage_player[i])
+        performance_damage = np.zeros(len(damage_list))
         for i in range(0, len(performance_damage)):
-            performance_damage[i] = performance_damage[i]/sum(performance_damage)
-
-        for i in range(0,len(player_name)):
-            text_result += str(player_name[i]) + ' : ' + str(int(100*(performance_winrate[i] + performance_damage[i])/2)) + '/100 \n'
+            performance_damage[i] = damage_list[i]/np.max(damage_list)
+        for i in range(0,len(player)):
+            text_result += str(player[i].name) + ' : ' + str(int(100*performance_damage[i])) + '/100 \n'
 
     text_result += '\n'
-    text_result += 'DAMAGE DONE: \n'
+    text_result += '----DAMAGE DONE----\n'
     for i in range(0,len(fighters)):
         text_result += fighters[i].name + ' : ' + str(int(damage_player[i])) + '\n'
+    text_result += '\n'
+    text_result += '----SPELLS CAST----\n'
+    text_result = spell_cast_recap(repetition, fighters, text_result)
+
 
 
     f = open('simulation_result.txt', 'w')
     f.write(text_result)
+
     return text_result
 
+def calculate_difficulty(TPKChance, Length, DeathProbabilities, Unconscious, DeathNumber, TeamHealth):
+    #TPK Chance = 1 - Winchance 
+    #Length of fight
+    #Deathprob List of Death chances 
+    #Unconscious Counters List
+    #Death Number is absolute Deaths per Simulation
+    #TeamHealth is list with how much of the total team CHP was left per run
+    #This function tries to estimate how difficult the encounter would be
+    #1 - Insignificant, no chance of fail
+    #2 - Easy, no death chance, easy fight    
+    #3 - Medium, will take some efford, minimal death chance
+    #4 - Challenging, some fight, chane of fail, flee maybe
+    #5 - Hard, will take efford, chance of death
+    #6 - Brutal, will propably lead to some deaths, maybe TPK
+    #7 - Insane, real chance of TPK
+    #8 - Death, a TPK is likely
+    #9 - Hell, a TPK is highly likely
+    #10 - How Dare You, just what were you thinking?
+    DeathPerPlayer = sum(DeathProbabilities)/len(DeathProbabilities)
+    MinDeaths = np.mean(np.sort(DeathNumber)[0:int(len(DeathNumber)/20+1)]) #lowest 5%
+    MinUnconscious = np.mean(np.sort(Unconscious)[0:int(len(Unconscious)/20+1)]) #lowest 5%
+    MeanTeamHealth = np.mean(TeamHealth)
+
+    #HowDareYou
+    if TPKChance > 0.9 and MinDeaths > 1:
+        return 10 #This is a 90% TPK
+    #Hell
+    elif TPKChance > 0.75 and DeathPerPlayer > 0.85 and MinDeaths > 1:
+        return 9 #This is likely TPK and at least 2 player die in any run
+    #Death
+    elif TPKChance > 0.5 and DeathPerPlayer > 0.6:
+        return 8 #50% TPK, at least one Player dies in any run
+    else:
+        #TPKChance>, Length>, >DeathPerPlayer MinDeath>, MinUncon>, MeanTeamHealth<
+        lv1 = [0.005, 3, 0.01, 0, 0.5, 0.8]
+        lv2 = [0.01, 5, 0.03, 0.1, 2, 0.7]
+        lv3 = [0.02, 7, 0.15, 0.5, 4, 0.5]
+        lv4 = [0.05, 10, 0.25, 1, 5, 0.3]
+        lv5 = [0.2, 15, 0.33, 2, 10, 0.1]
+        lv6 = [0.3, 20, 0.4, 2.5, 20, 0.05]
+        Level = [lv1,lv2, lv3, lv4, lv5, lv6]
+        Diff = 0
+        while Diff < 6: #Is right, because Diff starts at 0
+            #This Loop iterates the Boundries of the Level
+            #If one Value is higher then the Boundry, the Difficulty Level is risen
+            #else the current Diff is returned
+            if TPKChance > Level[Diff][0]:
+                Diff +=1
+            elif Length > Level[Diff][1]:
+                Diff +=1
+            elif DeathPerPlayer > Level[Diff][2]:
+                Diff +=1
+            elif MinDeaths > Level[Diff][3]:
+                Diff +=1
+            elif MinUnconscious > Level[Diff][4]:
+                Diff +=1
+            elif MeanTeamHealth < Level[Diff][5]:
+                Diff +=1
+            else:
+                return Diff + 1 #Diff starts with 0, but is 1
+        return 7
+        
 def teamhealth(fight, teamtag):
     healthlist = []
     for i in range(0, len(fight)):                  #sort team
