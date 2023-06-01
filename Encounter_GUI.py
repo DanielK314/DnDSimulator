@@ -1,13 +1,13 @@
 from Entity_class import *
 from Dm_class import *
-from tkinter import *
+from tkinter import Frame, Canvas, IntVar, Label, Entry, StringVar, Listbox, BOTH, VERTICAL, RIGHT, LEFT, ALL, Y, X, HORIZONTAL, BOTTOM
 import ttkbootstrap as ttk
 from tkinter import messagebox
 from functools import partial
 import os
 import json
 import subprocess
-from ttkbootstrap.constants import *
+#from ttkbootstrap.constants import *
 import platform #for figuring out windows/macOS
 
 #Controlls the Pages
@@ -175,7 +175,7 @@ class HomePage_cl(Frame):
         self.iterationlabel = Label(IterationFrame, text='Repetitions:', width=9)
         self.repetitions_entry = Entry(IterationFrame, bd=5, width=8)
         self.repetitions_entry.insert(0, '100')
-        self.b_run_stat = ttk.Button(IterationFrame, width = 9, text='Run Analysis', bootstyle="outline", command=self.run_statistical_recap)
+        self.b_run_stat = ttk.Button(IterationFrame, width = 12, text='Run Analysis', bootstyle="outline", command=self.run_statistical_recap)
         #Create Buttons
         ButtonFrame = Frame(BottomFrame)
         self.b_create_new = ttk.Button(ButtonFrame, text='Create New', width=12, bootstyle="outline", command= self.master.change_to_EntityPage)
@@ -1112,7 +1112,7 @@ class DM_page(Frame):
         self.Entry_dmg_type = [ttk.Combobox(self, values=self.master.DMG_Types, width= 10, state='readonly') for i in self.master.Fighters]   #what kind of dmg
         for dmg_type in self.Entry_dmg_type:
             dmg_type.set('slashing')
-        self.b_dmg = [ttk.Button(self, text='apply', width =4, bootstyle='outline', command=partial(self.apply_dmg, i)) for i in self.master.Fighters]  #apply
+        self.b_dmg = [ttk.Button(self, text='apply', width =6, bootstyle='outline', command=partial(self.apply_dmg, i)) for i in self.master.Fighters]  #apply
 
         #create Label
         self.label_Player_Init = Label(self, text='Init')
@@ -1229,6 +1229,7 @@ class DM_page(Frame):
             Player.is_concentrating = 0
             self.b_concentration[self.master.Fighters.index(Player)].configure(bootstyle = 'warning outline')
 
+
 def StartGUI():
     root = ttk.Window(themename="cyborg")
     root.title("DND Encounter Simulator")
@@ -1242,7 +1243,7 @@ def StartGUI():
     XFrame = Frame(MainFrame)
     XFrame.pack(fill=X,side=BOTTOM)
     # Create A Canvas
-    MainCanvas = Canvas(MainFrame)
+    MainCanvas =  Canvas(MainFrame)
     MainCanvas.pack(side=LEFT,fill=BOTH,expand=1)
     # Add A Scrollbars to Canvas
     XScrollbar = ttk.Scrollbar(XFrame,orient=HORIZONTAL,command=MainCanvas.xview, bootstyle="warning-round")
@@ -1264,4 +1265,6 @@ def StartGUI():
     app = Controller(GUIFrame)
     app.pack(expand=True, fill=BOTH, padx=10)
 
+    MainCanvas.addtag_all('all')
+    MainCanvas.scale('all', 0, 0, 2, 2)
     root.mainloop()

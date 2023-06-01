@@ -2,7 +2,7 @@ from Ifstatement_class import ifstatements
 from Dmg_class import dmg
 from AI_class import AI
 
-from random import *
+from random import random, shuffle
 import numpy as np
 import json
 
