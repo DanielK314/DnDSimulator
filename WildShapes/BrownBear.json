@@ -1,0 +1,18 @@
+{
+    "AC": 11,
+    "HP": 34,
+    "To_Hit": 6,
+    "Attacks": 2,
+    "Dmg": 9,
+    "Str": 19,
+    "Dex": 10,
+    "Con": 16,
+    "Int": 2,
+    "Wis": 13,
+    "Cha": 7,
+    "Damage_Type": "piercing",
+    "Damage_Resistance": "none",
+    "Damage_Immunity": "none",
+    "Damage_Vulnerability": "none",
+    "Other_Abilities" : "none"
+}

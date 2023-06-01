@@ -1,0 +1,28 @@
+{
+    "simulation_parameters": {
+        "printing_on": 0,
+        "repetitions": 100
+    },
+    "Entities": [
+        {
+            "name": "Barbarian Lv1",
+            "team": 0
+        },
+        {
+            "name": "Ogre",
+            "team": 1
+        },
+        {
+            "name": "Sorcerer Lv1",
+            "team": 0
+        },
+        {
+            "name": "Rogue Lv1",
+            "team": 0
+        },
+        {
+            "name": "Bard Lv1",
+            "team": 0
+        }
+    ]
+}
