@@ -226,4 +226,4 @@ If you want to use the system via the GUI you can just use StartSimulator.py it 
 
 If you want to work with the system yourself, you can use it without the GUI. The Encounter_Simulator.py holds all the function to do Simulations yourself. The 'run_simulation' function takes a list of fighters and a repetition number and returns the simulation results. 
 
-To initiate the characters import the Entity_class.py and initiate the character via the entity class. Just use: Character = entity('Name', 0, DM) where the name is the name of the json file. For an example look at playground.py. Have fun. 
+To initiate the characters import the Entity_class.py and initiate the character via the entity class. Just use: Character = entity('Name', 0, DM) where the name is the name of the json file. For an example look at playground.py. Have fun.
