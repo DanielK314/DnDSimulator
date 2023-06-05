@@ -47,4 +47,4 @@ Spells to do
 Game Test:
 1. You should be testing if the position management and attack choosing is sensable
 2. The Choose Att Target Function was been redone and need checking
-5. Test driven programming, pytest 
+5. Test driven programming, pytest
