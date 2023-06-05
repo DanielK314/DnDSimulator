@@ -37,6 +37,7 @@ ToDoList:
 111. Install Helper for dummies
 112. Move to GitHub
 113. Better Documentation
+114. Executable for all OS
 
 Spells to do
 -Ray of Frost, could be interesting with movement
