@@ -6,9 +6,9 @@ from tkinter import messagebox
 from functools import partial
 import os
 import json
-import subprocess
 #from ttkbootstrap.constants import *
 import platform #for figuring out windows/macOS
+from run_full_stat_recap import run_full_stat_recap
 
 #Controlls the Pages
 class Controller(Frame):
@@ -226,7 +226,8 @@ class HomePage_cl(Frame):
             json.dump({"simulation_parameters": simulation_parameters, "Entities": Entities}, f, indent=4)
 
         #using subprocess functions to call script
-        p = subprocess.run('python3 run_full_stat_recap.py', shell= True)
+#        p = subprocess.run('python3 run_full_stat_recap.py', shell= True)
+        run_full_stat_recap() #just a test
 
         text_result = open(application_path + '/simulation_result.txt').read()
         open(application_path + '/simulation_result.txt', 'w').write('')

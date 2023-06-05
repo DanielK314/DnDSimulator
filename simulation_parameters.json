@@ -1,6 +1,6 @@
 {
     "simulation_parameters": {
-        "printing_on": 0,
+        "printing_on": 1,
         "repetitions": 100
     },
     "Entities": [
@@ -13,15 +13,11 @@
             "team": 0
         },
         {
-            "name": "Bard Lv5",
-            "team": 0
-        },
-        {
             "name": "Displayer Beast",
             "team": 1
         },
         {
-            "name": "Goblin",
+            "name": "Flameskull",
             "team": 1
         }
     ]
