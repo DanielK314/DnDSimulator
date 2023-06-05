@@ -1,52 +1,20 @@
 {
     "simulation_parameters": {
-        "printing_on": 0,
-        "repetitions": 100
+        "printing_on": 1,
+        "repetitions": 1000
     },
     "Entities": [
         {
-            "name": "Druid Lv5",
+            "name": "Barbarian Lv5",
             "team": 0
         },
         {
-            "name": "Rogue Lv1",
+            "name": "Bard Lv5",
             "team": 0
         },
         {
-            "name": "Paladin Lv3",
+            "name": "Wizard Lv5",
             "team": 0
-        },
-        {
-            "name": "Sorcerer Lv1",
-            "team": 0
-        },
-        {
-            "name": "Displayer Beast",
-            "team": 1
-        },
-        {
-            "name": "Flameskull",
-            "team": 1
-        },
-        {
-            "name": "Pirate Captain",
-            "team": 1
-        },
-        {
-            "name": "Vamire Spawn",
-            "team": 1
-        },
-        {
-            "name": "Fire Elemental",
-            "team": 1
-        },
-        {
-            "name": "Goblin",
-            "team": 1
-        },
-        {
-            "name": "Pirate",
-            "team": 1
         },
         {
             "name": "Young Dragon",
