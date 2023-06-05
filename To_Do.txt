@@ -1,3 +1,4 @@
+ToDoList:
 20. Legendary Action
 30. bessere/mehr Monster
 40. Make it possible to simulate 2 or more encounters after one another, mybe short rest
