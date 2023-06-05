@@ -1,6 +1,7 @@
 from Ifstatement_class import ifstatements
 from Dmg_class import dmg
 from AI_class import AI
+from Token_class import *
 
 from random import random, shuffle
 import numpy as np
@@ -17,7 +18,7 @@ class entity:                                          #A NPC or PC
         file.close()
         self.data = data
         self.DM = DM
-
+        self.TM = TokenManager(self)  #Token Manager
 
     #Base Properties
         self.name = str(name)
@@ -122,19 +123,29 @@ class entity:                                          #A NPC or PC
         self.shatter_cast = 0
         self.conjure_animals_cast = 0
         self.guiding_bolt_cast = 0
+        self.chill_touch_cast = 0
+        self.blight_cast = 0
 
         #Spells known
         self.spell_list = data['Spell_List']
 
         #If this updates, the All_Spells in the GUI will load this
         #Keep this in Order of the Spell Level, so that it also fits for the GUI
-        self.SpellNames = ['FireBolt', 'EldritchBlast', 'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon', 'Fireball', 'Haste', 'ConjureAnimals']
+        self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
+                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield',
+                           'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
+                           'Fireball', 'Haste', 'ConjureAnimals',
+                           'Blight']
         self.SpellBook = {SpellName: spell(self, SpellName) for SpellName in self.SpellNames}
 
         #Haste
+        self.is_hasted = False
         self.haste_round_counter = 0    #when this counter hits 10, haste will wear off
         #Hex 
+        self.is_hexed = False
+        self.is_hexing = False
         self.can_choose_new_hex = False 
+        self.CurrentHexToken = False #This is the Hex Concentration Token
         #Armor of Agathys
         self.has_armor_of_agathys = False
         self.agathys_dmg = 0
@@ -143,12 +154,14 @@ class entity:                                          #A NPC or PC
         self.SpiritualWeaponDmg = 0
         self.SpiritualWeaponCounter = 0
         #Conjure Animals
-        self.has_animals_conjured = False
-        self.is_a_conjured_animal = False   #Is a constand state, see spell conjure animals
-        self.conjurer = False #This is the player that conjured this entity
+        self.is_summoned = False       #if True it will be removed from fight after dead
+        self.summoner = False      #general for all summoned entities
+        self.has_summons = False
         #Guiding Bolt
-        self.used_guiding_bolt = False
         self.is_guiding_bolted = False
+        #Chill Touch
+        self.chill_touched = False
+
 
 
     #Special Abilities
@@ -318,6 +331,15 @@ class entity:                                          #A NPC or PC
         self.knows_spider_web = False
         if 'SpiderWeb' in self.other_abilities:
             self.knows_spider_web = True
+        self.knows_poison_bite = False
+        self.poison_bites = 1         #Only once per turn
+        self.poison_bite_dmg = 0      #dmg of poison bite
+        self.poison_bite_dc = 0
+        if 'PoisonBite' in self.other_abilities:
+            self.knows_poison_bite = True
+            #Dmg roughly scales with Level
+            self.poison_bite_dmg = 8 + self.level*3
+            self.poison_bite_dc = int(11.1 + self.level/3)
         
 
     #Wild Shape
@@ -412,17 +434,7 @@ class entity:                                          #A NPC or PC
         #if u get uncounscious:
         self.end_rage()
         self.break_concentration()
-        if self.knows_aura_of_protection:
-            self.end_aura_of_protection()
-
-        if self.is_hasted():
-            self.break_haste()
-        if self.is_entangled():
-            self.break_entangle()
-        if self.is_hexed():
-            self.switch_hex()
-        if self.is_a_conjured_animal:
-            self.end_conjuration()
+        self.TM.unconscious()
         self.DM.say('\n', end='')
 
         if self.team == 1: #this is for Monsters
@@ -440,18 +452,7 @@ class entity:                                          #A NPC or PC
         #if u die:
         self.end_rage()
         self.break_concentration()
-        if self.knows_aura_of_protection:
-            self.end_aura_of_protection()
-
-
-        if self.is_hasted():
-            self.break_haste()
-        if self.is_entangled():
-            self.break_entangle()
-        if self.is_hexed():
-            self.switch_hex()
-        if self.is_a_conjured_animal:
-            self.end_conjuration()
+        self.TM.death()
 
     def check_uncanny_dodge(self, dmg):
         #-----------Uncanny Dodge
@@ -493,6 +494,7 @@ class entity:                                          #A NPC or PC
                 self.unconscious()
 
     def changeCHP(self, Dmg, attacker, was_ranged):
+        self.DM.say('\n', end='')
         self.check_uncanny_dodge(Dmg)
 
         damage = Dmg.calculate_for(self) #call dmg class, does the Resistances 
@@ -501,8 +503,8 @@ class entity:                                          #A NPC or PC
         #-----------Statistics
         if damage > 0:
             attacker.dmg_dealed += damage
-            if attacker.is_a_conjured_animal:
-                attacker.conjurer.dmg_dealed += damage
+            if attacker.is_summoned:   #Append the dmg of summons to summoner
+                attacker.summoner.dmg_dealed += damage
             attacker.last_used_DMG_Type = Dmg.damage_type()
         elif damage < 0:
             attacker.heal_given -= damage
@@ -543,12 +545,15 @@ class entity:                                          #A NPC or PC
             if self.state == -1:
                 self.DM.say('This is stupid, dead cant be healed')
                 quit()
-            if abs(self.HP - self.CHP) >= abs(damage):
+            if self.chill_touched: 
+                self.DM.say(self.name + ' is chill touched and cant be healed.')
+            elif abs(self.HP - self.CHP) >= abs(damage):
                 self.CHP -= damage    
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
             else:                     #if more heal then HP, only fill HP up
                 damage = -1*(self.HP - self.CHP)
                 self.CHP -= damage
-            self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
 
         self.check_new_state(was_ranged)
 
@@ -604,34 +609,9 @@ class entity:                                          #A NPC or PC
             Score = Score*0.9
         if self.prone == 1:
             Score = Score*0.95
-        if self.is_hasted() == 1:
+        if self.is_hasted:
             Score = Score*1.1
         return Score
-
-    def end_conjuration(self):
-        #This function is called if this entity is a conjured animal and should vanish
-        if self.is_a_conjured_animal:
-            self.DM.say(' ' + self.name + ' vanishes ', end='')
-            self.state = -1
-            if self.conjurer == False:
-                self.DM.say(self.name + ' should have a conjurer, but doesnt')
-                quit()
-            else:
-                if self.conjurer.is_concentrating and self.conjurer.has_animals_conjured:
-                    #The conjurer has not lost concentration but this entity simply died
-                    #Now check if it is maybe the last of the conjured animals
-                    ConjuredRelations = [x for x in self.DM.relations if x.type == 'ConjuredAnimal' and x.initiator == self.conjurer]
-                    #This is a list with all Relations of the players conjurer that are ConjuredAnimasl
-                    for x in ConjuredRelations:
-                        if x.target == self: self.DM.resolve(x) #resolve own relation
-                    ConjuredRelations = [x for x in self.DM.relations if x.type == 'ConjuredAnimal' and x.initiator == self.conjurer]
-                    if len(ConjuredRelations) == 0: #The conjurer is now free of conjurations
-                        self.conjurer.is_concentrating = False
-                        self.conjurer.has_animals_conjured = False
-                        self.DM.say(self.conjurer.name + ' is no longer concentrated')
-        else:
-            self.DM.say(self.name + ' cant vanish, is not a conjured animal')
-            quit()
 
     def update_additional_resistances(self):
         #If this function is called it checks all possible things that could add a resisantace
@@ -647,46 +627,54 @@ class entity:                                          #A NPC or PC
         result = d20_roll + self.modifier[which_check]  #calc modifier
         return result
 
-    def check_advantage(self, which_save):
+    def check_advantage(self, which_save, extraAdvantage = 0, notSilent = True):
         saves_adv_dis = [0,0,0,0,0,0] #calculate all factors to saves:
         if self.restrained == 1:  #disadvantage in dex if restrained
             saves_adv_dis[1] -= 1
-            self.DM.say('restrained, ', end='')
+            if notSilent: self.DM.say('restrained, ', end='')
         if self.raged == 1:   #str ad if raged
             saves_adv_dis[0] += 1
-            self.DM.say('raging, ', end='')
-        if self.is_hasted():
+            if notSilent: self.DM.say('raging, ', end='')
+        if self.is_hasted:
             saves_adv_dis[1] += 1
-            self.DM.say('hasted, ', end='')
-        if self.is_hexed():
+            if notSilent: self.DM.say('hasted, ', end='')
+        if self.is_hexed:
             HexType = int(random()*2 + 1) #random hex disad at Str, Dex or Con
             HexText = ['Str ', 'Dex ', 'Con ']
-            self.DM.say('hexed ' + HexText[HexType] + ', ', end='')
+            if notSilent: self.DM.say('hexed ' + HexText[HexType] + ', ', end='')
             saves_adv_dis[HexType] -= 1 #one rand disad 
-        return saves_adv_dis[which_save]
+        if extraAdvantage != 0: #an extra, external source of advantage
+            if extraAdvantage > 0:
+                if notSilent: self.DM.say('adv, ', end='')
+            else:
+                if notSilent: self.DM.say('disad, ', end='')
+        return saves_adv_dis[which_save] + extraAdvantage
 
-    def make_save(self, which_save):          #0-Str, 1-Dex, ...
+    def make_save(self, which_save, extraAdvantage = 0, DC = False):          #0-Str, 1-Dex, 2-Con, 3-Int, 4-Wis, 5-Cha
     #how to disadvantage and advantage here !!!
+        save_text = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha']
         self.DM.say(str(self.name) + ' is ', end='')
-        Advantage = self.check_advantage(which_save)
+        Advantage = self.check_advantage(which_save, extraAdvantage = extraAdvantage)
         AuraBonus = self.protection_aura()
         if AuraBonus > 0:
             self.DM.say('in protection aura, ', end='')
         if Advantage < 0:
             d20_roll = self.rollD20(advantage_disadvantage=-1)
-            self.DM.say('in disadvantage doing the save: ' + str(d20_roll), end='')
+            self.DM.say('in disadvantage doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
         elif Advantage > 0:
             d20_roll = self.rollD20(advantage_disadvantage=1)
-            self.DM.say('in advantage doing the save: ' + str(d20_roll), end='')
+            self.DM.say('in advantage doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
         else:
             d20_roll = self.rollD20(advantage_disadvantage=0)
-            self.DM.say('doing the save: ' + str(d20_roll), end='')
+            self.DM.say('doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
 
         result = d20_roll + self.modifier[which_save] + AuraBonus #calc modifier
-        save_text = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha']
         if save_text[which_save] in self.saves_prof: #Save Proficiency
             result += self.proficiency
-        self.DM.say(' + ' + str(int(result - d20_roll)))
+        self.DM.say(' + ' + str(int(result - d20_roll)), end='')
+        if DC != False: self.DM.say(' / ' + str(DC), end='')
+        else: self.DM.say('', end='')
+
         return result
 
     def make_death_save(self):
@@ -720,164 +708,25 @@ class entity:                                          #A NPC or PC
         text = '(' + str(self.death_counter) + '-/' + str(self.heal_counter) + '+)'
         return text 
 
-#---------------Concentration and Concentration Spells-----------
+#---------------Concentration and Conjuration Spells-----------
     def make_concentration_check(self, damage):
         if self.is_concentrating:
-            save_res = self.make_save(2)
-            if save_res >= damage/2 and save_res >= 10:   #concentration is con save
+            saveDC = 10
+            if damage/2 > 10: saveDC = damage/2
+            save_res = self.make_save(2, DC=saveDC)
+            if save_res >= saveDC:   #concentration is con save
                 return 
             else:
+                self.DM.say('')
                 self.break_concentration()
                 return 
         else:
             return
 
     def break_concentration(self):
-        player_was_concentrating = self.is_entangling() or self.is_hasting() or self.is_hexing() or self.has_animals_conjured
-        if player_was_concentrating:
-            self.DM.say(self.name + ' lost concentration, ', end='')
-
-        self.is_concentrating = False  #no longer concentrated
-        #break entangled
-        if self.is_entangling():
-            relations_to_resolve = [x for x in self.DM.relations if x.type == 'Entangle' and x.initiator == self]
-            for x in relations_to_resolve:
-                #resolve all entangle relations 
-                x.target.break_entangle()
-        #break Haste
-        if self.is_hasting():
-            #Here it is important to not do it in a loop, as the break haste removes the relation from the list and this can mess with the loop
-            relations_to_resolve = [x for x in self.DM.relations if x.type == 'Haste' and x.initiator == self]
-            for x in relations_to_resolve:
-                #resolve all initiated hastes by this player
-                x.target.break_haste()
-        #Break Hex
-        if self.is_hexing():
-            relations_to_resolve = [x for x in self.DM.relations if x.type == 'Hex' and x.initiator == self]
-            for x in relations_to_resolve:
-                #resolve all Hex of this player
-                self.DM.resolve(x)
-                self.DM.say('hex is lifted from ' + x.target.name + ', ', end='')
-        #Break Conjured Animals
-        if self.has_animals_conjured:
-            self.break_conjured_animals()
-        
-        if player_was_concentrating:
-            self.DM.say('\n', end= '')
-
-    def break_haste(self):
-        if self.is_hasted():
-            #First find the haste realtion
-            for x in self.DM.relations:
-                if x.type == 'Haste' and x.target == self:
-                    HasteRelation = x
-                    break
-            Haster = HasteRelation.initiator
-            #Selfs Haste wares of
-            self.DM.say(self.name + ' Haste wares of, ', end='')
-            self.DM.resolve(HasteRelation)
-            #If not hasting anymore, because it was the only haste, return concentration
-            if Haster.is_hasting() == False and Haster.is_concentrating:
-                #If this function is called via the break concentration, concentration is already 0
-                self.DM.say(Haster.name + ' no longer concentrated, ', end='')
-                Haster.is_concentrating = False
-
-            #reset hast counter
-            self.haste_round_counter = 0
-
-    def is_hasted(self):
-        #advantage in Dex saves in make_save function
-        #additional Attack in start_of_turn_function
-        #AC added in start_of_turn_function
-        #This function checks if the player is hasted and if so, returns True
-        #To do so it checks the relations of the DM for itself beeing hasted
-        for x in self.DM.relations:
-            if x.type == 'Haste' and x.target == self:
-                return True
-        return False #not hasted
-    
-    def is_hasting(self):
-        #Returns True if self is hasting anyone
-        for x in self.DM.relations:
-            if x.type == 'Haste' and x.initiator == self:
-                return True
-        return False
-
-    def break_entangle(self):
-        if self.is_entangled():
-            #Find the entangle raltion
-            for x in self.DM.relations:
-                if x.type == 'Entangle' and x.target == self:
-                    EntangleRelation = x
-                    break
-            Entangler = EntangleRelation.initiator
-            #Self Entangle Breaks
-            self.DM.say(self.name + ' breaks Entangle, ', end='')
-            self.DM.resolve(EntangleRelation)
-            self.restrained = 0 #no longer restrained
-            #If the Caster is not entangling anymore, because was only entangle, break concentration
-            if Entangler.is_entangling() == False and Entangler.is_concentrating:
-                #If this function is called via the break concentration, concentration is already 0
-                self.DM.say(Entangler.name + ' no longer concentrated, ', end='')
-                Entangler.is_concentrating = False
-
-    def try_break_entangle(self):  #makes an effort to break entangle
-        rules = [self.is_entangled(), self.action != 0]
-        errors = [self.name + ' tried to break entangle but is not entangled',
-                self.name + ' tried to break entangle but has no action left']
-        ifstatements(rules, errors, self.DM).check()
-
-        self.DM.say(self.name + ' tries to break entangle: ', end = '')
-        result = self.make_check(0)
-        for x in self.DM.relations:
-            if x.type == 'Entangle' and x.target == self:
-                Entangler = x.initiator
-                break
-        self.DM.say(str(result) + '/' + self.Entangler.spell_dc)
-        if result < self.Entangler.spell_dc:
-            self.action = 0
-            return
-        else:
-            self.action = 0
-            self.break_entangle()
-            return
-
-    def is_entangled(self):
-        #This function checks if the player is entangled and if so, returns True
-        #To do so it checks the relations of the DM for itself beeing hasted
-        for x in self.DM.relations:
-            if x.type == 'Entangle' and x.target == self:
-                return True
-        return False
-
-    def is_entangling(self):
-        #Returns True if self is entangling anyone
-        for x in self.DM.relations:
-            if x.type == 'Entangle' and x.initiator == self:
-                return True
-        return False
-
-    def switch_hex(self):
-        #This function is called if a hexed player goes unconscious or dead
-        #It is not called if a player loses concentration and hex is broken
-        HexRelations = [x for x in self.DM.relations if x.type == 'Hex' and x.target == self]
-        #This is a list of all hex targeted at this player, which is now unconscious or dead
-        for x in HexRelations:
-            x.initiator.can_choose_new_hex = True #This player can now choose a new hex on turn
-            self.DM.resolve(x) #Then resolve the old hex
-            self.DM.say('hex of ' + x.initiator.name + ' is unbound, ', end='')
-
-    def is_hexed(self):
-        for x in self.DM.relations:
-            if x.type == 'Hex' and x.target == self:
-                return True
-        return False
-    
-    def is_hexing(self):
-        for x in self.DM.relations:
-            if x.type == 'Hex' and x.initiator == self:
-                return True
-        return False
+        self.TM.break_concentration()
+        #Will test for concentration tokens
+        #If Concentration breaks, it will say so
 
     def break_armor_of_agathys(self):
         if self.has_armor_of_agathys and self.THP > 0:
@@ -896,35 +745,6 @@ class entity:                                          #A NPC or PC
             self.SpiritualWeaponDmg = 0
             self.DM.say('Spiritual Weapon of ' + self.name + ' vanishes, ')
     
-    def break_conjured_animals(self):
-        #This function is called if all the conjured animals of the player should vanish
-        #Is called in break concentration
-        if self.has_animals_conjured:
-            self.is_concentrating = False
-            self.has_animals_conjured = False
-            AnimalRelations = [x for x in self.DM.relations if x.type == 'ConjuredAnimal' and x.initiator == self]
-            for x in AnimalRelations:
-                x.target.death() #The Animal vanishes
-                self.DM.resolve(x)
-
-    def end_guiding_bolt(self):
-        Relations = [x for x in self.DM.relations if x.type == 'GuidingBolt' and x.initiator == self and x.InitRound == self.DM.rounds_number - 1]
-        #All Guding Bolt relations from this player from last round
-        BoltedPlayer = [x.target for x in Relations]
-        #Resolve all Guided Bolts with this player as initiator from last round
-        for x in Relations:
-            self.DM.say('For ' + x.target.name + ' guiding bolt ends')
-            self.DM.resolve(x)
-        #Check is the player are now no longer guided bolted
-        RemainingRelations = [x for x in self.DM.relations if x.type == 'GuidingBolt']
-        for x in BoltedPlayer:
-            if x not in [y.target for y in RemainingRelations]:
-                #No longer bolted
-                x.is_guiding_bolted = False
-        #Check if self is still guiding bolting
-        if self not in [x.initiator for x in RemainingRelations]:
-            self.used_guiding_bolt = False
-
     def end_turned_undead(self):
         self.is_a_turned_undead == False #no longer turned
         self.turned_undead_round_counter = 0
@@ -1235,8 +1055,10 @@ class entity:                                          #A NPC or PC
             self.DM.say(target.name + ' wolf totem, ', end='')
             advantage_disadvantage += 1
         if target.is_guiding_bolted:
+            #This is set by the guidingBolted Token triggered bevore
             self.DM.say('guiding bolt, ', end='')
             advantage_disadvantage += 1
+            target.is_guiding_bolted = False #reset being boltet
 
         #Roll the Die to hit
         if advantage_disadvantage > 0:
@@ -1281,11 +1103,12 @@ class entity:                                          #A NPC or PC
             self.is_combat_inspired = False
 
     def check_hex(self, Dmg, target):
-        for x in self.DM.relations:
-            if x.type == 'Hex' and x.target == target and x.initiator == self:
-                Dmg.add(3.5, 'necrotic')
-                self.DM.say('\n' + target.name + ' was cursed with a hex', end='')
-                return
+        for x in target.TM.TokenList:
+            if x.subtype == 'hex': #Target is hexed
+                if x.origin.TM == self.TM: #is Hexed by you
+                    Dmg.add(3.5, 'necrotic')
+                    self.DM.say('\n' + target.name + ' was cursed with a hex: ', end='')
+                    return
 
     def check_great_weapon_fighting(self, Dmg, is_ranged, other_dmg):
         rules = [self.knows_great_weapon_fighting,
@@ -1321,6 +1144,8 @@ class entity:                                          #A NPC or PC
             self.DM.say('off hand, ', end='')
             self.uses_offhand == False
 
+        target.TM.isAttacked()     #Triggers All Tokens, that trigger if target is attacked
+
         d20, advantage_disadvantage = self.make_attack_roll(target, is_ranged, is_opportunity_attack)
                 
         if d20 == 20 or (self.knows_improved_critical and d20 == 19):
@@ -1342,11 +1167,13 @@ class entity:                                          #A NPC or PC
                 ACBonus += target.inspired
                 self.inspired = 0
                 self.is_combat_inspired = False
-        
+
+        #Gives Bard Chance to protect himself with cutting Words
         if target.knows_cutting_words and target.inspiration_counter > 0:
             if d20 + self.tohit > target.AC:
                 self.DM.say(target.name + ' uses cutting word, ', end='')
                 Modifier += -target.inspiration_die
+                target.inspiration_counter -= 1 #One Use
                 target.reaction = 0 #uses reaction
         
         if self.knows_archery and is_ranged:
@@ -1368,6 +1195,15 @@ class entity:                                          #A NPC or PC
             self.check_hex(Dmg, target)
         #GreatWeapon
             self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg)
+        #poison Bite
+            if self.knows_poison_bite and self.poison_bites == 1:
+                self.poison_bites = 0 #only once per turn
+                poisonDMG = self.poison_bite_dmg
+                poisonDC = self.poison_bite_dc
+                self.DM.say('\n' + self.name + ' uses poison bite, ', end = '')
+                if target.make_save(2, DC = poisonDC) >= poisonDC: #Con save
+                    poisonDMG = poisonDMG/2
+                Dmg.add(poisonDMG, 'poison')
         #Critical
             if is_crit: Dmg.multiply(1.8)
         #add rage dmg
@@ -1380,7 +1216,6 @@ class entity:                                          #A NPC or PC
         else:
             Dmg = dmg(amount=0)   #0 dmg
             self.DM.say(str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus) + ' miss', end= '')
-        self.DM.say('\n', end='')
         target.changeCHP(Dmg, self, is_ranged)  #actually change HP
         self.reset_all_smites()
         target.last_attacker = self
@@ -1630,12 +1465,13 @@ class entity:                                          #A NPC or PC
         self.DM.say(self.name + ' used action surge')
 
     def use_aura_of_protection(self, allies):
-        #passiv ability, restes at end of turn for the targets
+        #passiv ability, restes at start of Turn or if unconscious
         if self.knows_aura_of_protection:
             if len(allies) > 5: #at least 4 ally
-                targetnumber = int(random()*3 +1) #plus self
+                targetnumber = int(random() + 2.5) #2-3 plus self
+                if self.level >= 18: targetnumber += 1 #30ft at lv 18
             elif len(allies) > 1:
-                targetnumber = int(random() + 1)
+                targetnumber = int(random() + 1.5)  #1-2
             else:
                 targetnumber = 0 #only self
 
@@ -1648,27 +1484,19 @@ class entity:                                          #A NPC or PC
                 targets.append(AllyChoice[i])
             
             #Now apply Bonus
+            links = []
             for ally in targets:
-                self.DM.relate(self, ally, 'AuraOfProtection')
+                links.append(ProtectionAuraToken(ally.TM)) #a link for every Ally
+            EmittingProtectionAuraToken(self.TM, links)
         else: return
 
     def protection_aura(self):
-        #Returns the current Bonus of all Auras of Protection in relation to self
+        #Returns the current Bonus of all Auras of Protection 
         AuraBonus = 0
-        for x in self.DM.relations:
-            if x.type == 'AuraOfProtection' and x.target == self:
-                PlayerBonus = x.initiator.modifier[5]
-                if PlayerBonus < 1:
-                    PlayerBonus = 1 #Aura of Protection min +1
-                AuraBonus += PlayerBonus #Add to Bonus, Aura stacks
+        if self.TM.checkFor('aop') == True: #Check if you have a aura of protection Token
+            for x in self.TM.TokenList:
+                if x.subtype == 'aop': AuraBonus += x.auraBonus #take the Aura Bonus from Token
         return AuraBonus
-
-    def end_aura_of_protection(self):
-        #Resolve all your aura relations
-        OldAuraRelations = [x for x in self.DM.relations if x.type == 'AuraOfProtection' and x.initiator == self]
-        for x in OldAuraRelations: self.DM.resolve(x)
-        if self.state != 1:
-            self.DM.say(', aura of protection fades ', end='')
 
     def use_second_wind(self):
         rules = [self.bonus_action==1, self.knows_second_wind, self.has_used_second_wind == False]
@@ -1695,7 +1523,7 @@ class entity:                                          #A NPC or PC
         self.DM.say(self.name + ' uses turn undead:')
         for target in targets:
             if target.type == 'undead':
-                if target.make_save(4) < self.spell_dc:
+                if target.make_save(4, DC = self.spell_dc) < self.spell_dc:
                     #Destroy undead
                     if target.level <= self.destroy_undead_CR:
                         self.DM.say(target.name + ' is destroyed')
@@ -1721,21 +1549,23 @@ class entity:                                          #A NPC or PC
 
 #---------------Round Handling------------
     def start_of_turn(self):
-        #Attention is called in the do the fighting function
+        #Attention, is called in the do the fighting function
         #ONLY called if player state = 1
         self.reckless = 0
         self.stepcounter=0 
         self.attack_counter = self.attacks #must be on start of turn, as in the round an attack of opportunity could have happened 
         self.AC = self.shape_AC  #reset AC to the AC of the shape (maybe wild shape)
+        self.TM.startOfTurn() 
 
         if self.knows_dragons_breath: #charge Dragons Breath
             if random() > 2/3:
                 self.dragons_breath_is_charged = True
+
         if self.knows_spider_web: #charge Spider Web
             if random() > 2/3:
                 self.spider_web_is_charged = True
 
-        if self.is_hasted():#additional Hast attack
+        if self.is_hasted:#additional Hast attack
             self.attack_counter += 1
             self.AC += 2
 
@@ -1755,6 +1585,7 @@ class entity:                                          #A NPC or PC
             self.reaction = 1
         self.action = 1
         self.cast = 1
+        self.poison_bites = 1
         self.sneak_attack_counter = 1
         self.no_attack_of_opportunity_yet = True
         self.action_surge_used = False
@@ -1762,6 +1593,7 @@ class entity:                                          #A NPC or PC
         self.is_attacking = False
         self.has_wolf_mark = False #reset totem of wolf mark
 
+        self.TM.endOfTurn() #Resolve and Count all Tokens
 
         #If you have not dashed this round, you should not have a dash target anymore
         if self.has_dashed_this_round == False:
@@ -1774,20 +1606,12 @@ class entity:                                          #A NPC or PC
             self.rage_round_counter += 1 #another round of rage
             if self.rage_round_counter >= 10:
                 self.end_rage()
-
-        if self.is_hasted():        #for haste spell counter
-            self.haste_round_counter += 1
-            if self.haste_round_counter >= 10:  #if longer then 1min / 10 rounds, haste ends
-                self.break_haste()
         
         if self.has_spiritual_weapon:
             self.SpiritualWeaponCounter += 1
             if self.SpiritualWeaponCounter >= 10:
                 self.break_spiritual_weapon()
-        
-        if self.used_guiding_bolt:
-            self.end_guiding_bolt()
-        
+                
         if self.is_a_turned_undead:
             self.turned_undead_round_counter += 1
             if self.turned_undead_round_counter >= 10:
@@ -1795,6 +1619,8 @@ class entity:                                          #A NPC or PC
 
         if self.interseption_amount != 0:
             self.interseption_amount = 0 #no longer in interseption
+        
+        self.chill_touched = False
 
     def long_rest(self):       #resets everything to initial values
         self.name = self.orignial_name
@@ -1809,7 +1635,8 @@ class entity:                                          #A NPC or PC
             self.spell_slot_counter[i] = self.spell_slots[i]
 
         self.reset_all_smites()
-        self.DM.reset_relations()
+        self.break_concentration()
+        self.TM.resolveAll()
 
         self.wailsfromthegrave_counter = self.proficiency
         self.sneak_attack_counter = 1
@@ -1824,6 +1651,7 @@ class entity:                                          #A NPC or PC
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False
+        self.poison_bites = 1 #restore Poison bite 
 
         self.wild_shape_HP = 0
         self.wild_shape_uses = 2
@@ -1864,6 +1692,7 @@ class entity:                                          #A NPC or PC
 
         #Haste
         self.haste_round_counter = 0    #when this counter hits 10, haste will wear off
+        #Hex
         self.can_choose_new_hex = False
         #Armor of Agathys
         self.has_armor_of_agathys = False
@@ -1872,13 +1701,10 @@ class entity:                                          #A NPC or PC
         self.has_spiritual_weapon = False
         self.SpiritualWeaponDmg = 0
         self.SpiritualWeaponCounter = 0
-        #ConjureAnimals
-        self.has_animals_conjured = False
-        self.is_a_conjured_animal = False #Should be anyway
-        self.conjurer = False #Should be anyway
+        #Summons
+        self.has_summons = False
         #Guiding Bolt
         self.is_guiding_bolted = False
-        self.used_guiding_bolt = False
         #TurnUnded
         self.is_a_turned_undead = False
         self.turned_undead_round_counter = 0
@@ -1897,10 +1723,10 @@ class entity:                                          #A NPC or PC
             self.DM.say(self.name + ' is breathing fire')
             self.dragons_breath_is_charged = False
             for target in targets:
-                target.last_attacker = self    #target remembers last attacker
-                save = target.make_save(1)           #let them make saves
-                Dmg = dmg(20 + int(self.level*3.1), DMG_Type)
                 DragonBreathDC = 12 + self.Con + int((self.level - 10)/3)  #Calculate the Dragons Breath DC 
+                target.last_attacker = self    #target remembers last attacker
+                save = target.make_save(1, DC=DragonBreathDC)           #let them make saves
+                Dmg = dmg(20 + int(self.level*3.1), DMG_Type)
                 if save >= DragonBreathDC:
                     Dmg.multiply(1/2)
                 target.changeCHP(Dmg, self, True)
@@ -1913,9 +1739,10 @@ class entity:                                          #A NPC or PC
             target.last_attacker = self #remember last attacker
             SpiderWebDC = 9 + self.Dex
             #Shoot Web at random Target
-            if target.make_save(1) < SpiderWebDC:
-                self.DM.say(target.name + ' is caugth in the web and restrained')
-                target.restrained = 1
+            if target.make_save(1, DC = SpiderWebDC) < SpiderWebDC:
+                self.DM.say('\n' + target.name + ' is caugth in the web and restrained')
+                SpiderToken = Token(target.TM)
+                SpiderToken.subtype = 'r'  #restrain Target, no break condition yet
             self.action = 0
 
 class spell:
@@ -1923,6 +1750,7 @@ class spell:
         #this class is initiated at the entity for spellcasting
         self.DM = player.DM
         self.player = player            #the Player that is related to this spell Object and which will cast this spell        
+        self.TM = self.player.TM
         if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactived
             self.player = entity('test', 0, 0)
         self.spell_name = spell_name          #Specify the Spell
@@ -1952,6 +1780,15 @@ class spell:
             self.is_twin_castable = True
             self.cast = self.cast_fire_bolt
             self.score = self.score_fire_bolt
+        
+        elif spell_name == 'ChillTouch':
+            self.spell_level = 0
+            self.is_bonus_action_spell = False
+            self.is_concentration_spell = False
+            self.is_cantrip = True
+            self.is_twin_castable = True
+            self.cast = self.cast_chill_touch
+            self.score = self.score_chill_touch
 
         elif spell_name == 'Entangle':
             self.spell_level = 1
@@ -2093,6 +1930,13 @@ class spell:
             self.is_twin_castable = True
             self.cast = self.cast_guiding_bolt
             self.score = self.score_guiding_bolt
+        
+        elif spell_name == 'Blight':
+            self.spell_level = 4
+            self.spell_save_type = 2 #Con
+            self.is_twin_castable = True
+            self.cast = self.cast_blight
+            self.score = self.score_blight
 
     #any spell has a specific Spell cast function that does what the spell is supposed to do
     #To do so, the make_spell_check function makes sure, that everything is in order for the self.player to cast the spell
@@ -2213,17 +2057,26 @@ class spell:
                 self.player.sorcery_points -= cast_level
                 self.player.spell_slot_counter[cast_level -1] += 1 #add another spell Slots as two will be used in the twin cast
             self.DM.say(self.player.name + ' twinned casts ' + self.spell_name)
-            for x in targets:
-                #everything will be enabeled in order for the spell do be cast twice
+            if self.is_concentration_spell and self.is_twin_castable:
+                #Must enable these here again, as they are disabled in make_action_check()
                 if self.is_bonus_action_spell:
                     self.player.bonus_action = 1
                 else:
                     self.player.action = 1
                 if self.is_cantrip == False:
                     self.player.cast = 1
-                if self.is_concentration_spell:
-                    self.player.is_concentrating = False #enable double concentration castst
-                self.cast(x, cast_level)
+                #This kind of spells must handle thier twin cast in the cast function
+                self.cast(targets, cast_level, twinned=True)
+            else:
+                for x in targets:
+                    #everything will be enabeled in order for the spell do be cast twice
+                    if self.is_bonus_action_spell:
+                        self.player.bonus_action = 1
+                    else:
+                        self.player.action = 1
+                    if self.is_cantrip == False:
+                        self.player.cast = 1
+                    self.cast(x, cast_level)
 
     def quickened_cast(self, targets, cast_level=False):
         rules = [self.player.knows_quickened_spell,
@@ -2268,7 +2121,37 @@ class spell:
             #all specifications for this spell are given to the attack function
             self.player.attack(target, is_ranged=True, other_dmg=dmg, damage_type='fire', tohit=tohit)
             self.player.fire_bolt_cast += 1
-    
+
+    def cast_chill_touch(self, target, cast_level=0):
+        if type(target) == list:
+            target = target[0]
+        if self.make_cantrip_check() == False:
+            return
+        else:
+            tohit = self.player.spell_mod + self.player.proficiency
+
+            if self.player.level < 5:
+                dmg = 4.5
+            elif self.player.level < 11:
+                dmg = 4.5*2
+            elif self.player.level < 17:
+                dmg = 4.5*3
+            else:
+                dmg = 4.5*4
+
+            if self.player.empowered_spell:
+                dmg = dmg*1.21
+                self.player.empowered_spell = False
+                self.DM.say('Empowered: ', end='')
+
+            self.DM.say(str(self.player.name) + ' casts chill touch: ')
+            #all specifications for this spell are given to the attack function
+            dmg_dealed = self.player.attack(target, is_ranged=True, other_dmg=dmg, damage_type='necrotic', tohit=tohit)
+            if dmg_dealed > 0:
+                target.chill_touched = True
+                self.DM.say(str(target.name) + ' was chill touched')
+            self.player.chill_touch_cast += 1
+
     def cast_eldritch_blast(self, targets, cast_level=0):
         if self.make_cantrip_check() == False:
             return
@@ -2308,27 +2191,28 @@ class spell:
 
             self.player.eldritch_blast_cast += 1
 
-    def cast_entangle(self, target, cast_level=1):
-        if type(target) == list:
-            target = target[0]
-        if target.is_entangled():
-            self.DM.say(self.player.name + ' tried to entangle ' + target.name + ', who is already entangled')
-            quit()#double cast makes no sene 
+    def cast_entangle(self, targets, cast_level=1, twinned = False):
+        if len(targets) > 2 or len(targets) == 2 and twinned == False: 
+            print('Too many entangle targets')
+            quit()
         if self.make_spell_check(cast_level) == False:
             return
         else:
-            target.last_attacker = self.player    #target remembers last attacker
-            save = target.make_save(0)           #let them make save
-            if save < self.player.spell_dc:
-                #write the entagle variables for the player and target
-                self.DM.say(self.player.name + ' casts Entangle and ' + str(target.name) + ' failed save with: ' + str(save))
-                self.player.entangle_cast += 1
-                self.player.is_concentrating = True
-                self.DM.relate(self.player, target, 'Entangle')
-                target.restrained = 1               #make them restrained
-            else:
-                self.DM.say(self.player.name + ' casts Entangle but ' + str(target.name) + ' made save with: ' + str(save))
-                self.player.entangle_cast += 1
+            self.player.entangle_cast += 1
+            EntangleTokens = []
+            for target in targets:
+                target.last_attacker = self.player    #target remembers last attacker
+                save = target.make_save(0, DC = self.player.spell_dc)           #let them make save
+                self.player.DM.say('')
+                if save < self.player.spell_dc:
+                    EntangleToken = EntangledToken(target.TM, subtype='r')
+                    EntangleTokens.append(EntangleToken)
+                    self.DM.say(self.player.name + ' casts Entangle and ' + str(target.name) + ' failed save with: ' + str(save))
+                else:
+                    self.DM.say(self.player.name + ' casts Entangle but ' + str(target.name) + ' made save with: ' + str(save))
+            if len(EntangleTokens) != 0:
+                ConcentrationToken(self.TM, EntangleTokens)
+                #player is concentrating on a Entagled Target or targets
 
     def cast_burning_hands(self, targets, cast_level=1):
         if self.make_spell_check(cast_level) == False:
@@ -2346,7 +2230,7 @@ class spell:
             for i in targets:
                 Dmg = dmg(damage, 'fire')
                 i.last_attacker = self.player    #target remembers last attacker
-                save = i.make_save(1)           #let them make dex saves
+                save = i.make_save(1,DC = self.player.spell_dc)           #let them make dex saves
                 if save >= self.player.spell_dc:
                     Dmg.multiply(1/2)                 #save made
                 i.changeCHP(Dmg, self.player, True)
@@ -2393,10 +2277,8 @@ class spell:
             while missile_counter > 0:    #loop for missile cast
                 missile_counter -= 1
                 Dmg = dmg(damage, 'force')
-                for x in self.DM.relations:
-                    if x.type == 'Hex' and x.target == targets[target_counter] and x.initiator == self.player:
-                        Dmg.add(3.5,'necrotic')
-                        self.DM.say(' Hex ', end= '')
+                #Check for Hex
+                self.player.check_hex(Dmg, targets[target_counter])
                 targets[target_counter].last_attacker = self.player    #target remembers last attacker
                 targets[target_counter].changeCHP(Dmg, self.player, True)    #target takes damage
                 target_counter += 1
@@ -2420,7 +2302,7 @@ class spell:
             for i in targets:
                 Dmg = dmg(damage, 'fire')
                 i.last_attacker = self.player    #target remembers last attacker
-                save = i.make_save(1)           #let them make saves
+                save = i.make_save(1,DC = self.player.spell_dc)           #let them make saves
                 if save >= self.player.spell_dc:
                     Dmg.multiply(1/2)             #save made
                 i.changeCHP(Dmg, self.player, True)
@@ -2466,26 +2348,28 @@ class spell:
             for i in targets:
                 Dmg = dmg(damage, 'fire')
                 i.last_attacker = self.player    #target remembers last attacker
-                save = i.make_save(1)           #let them make saves
+                save = i.make_save(1,DC = self.player.spell_dc)           #let them make saves
                 if spell_is_empowered:
                     self.DM.say('Empowered: ', end='')
                 if save >= self.player.spell_dc:
                     Dmg.multiply(1/2)                #save made
                 i.changeCHP(Dmg, self.player, True)
 
-    def cast_haste(self, target, cast_level = 3):
-        if type(target) == list:
-            target = target[0]
-        if target.is_hasted():
-            self.DM.say(self.player.name + ' tried to cast Haste for ' + target.name + ', who is already hasted')
-            quit()#double cast makes no sene 
+    def cast_haste(self, targets, cast_level = 3, twinned = False):
+        if len(targets) > 2 or len(targets) == 2 and twinned == False: 
+            print('Too many entangle targets')
+            quit()
         if self.make_spell_check(cast_level) == False:
             return
         else:
-            self.DM.say(self.player.name + ' casts Haste for ' + target.name)
+            HasteTokens = []
             self.player.haste_cast += 1
-            self.player.is_concentrating = True 
-            self.DM.relate(self.player, target, 'Haste')
+            for target in targets:
+                HasteToken = HastedToken(target.TM, subtype='h')
+                HasteTokens.append(HasteToken)
+                self.DM.say(self.player.name + ' casts Haste for ' + target.name)
+            ConcentrationToken(self.TM, HasteTokens)
+            #Player is now concentrated on 1-2 Haste Tokens
     
     def cast_shield(self, cast_level = 1):
         if self.make_spell_check(cast_level): #return True if everything is in order, reaction and spellslots are then expendet
@@ -2502,8 +2386,9 @@ class spell:
         else:
             self.DM.say(self.player.name + ' casts Hex at ' + target.name + ' with level ' + str(cast_level))
             self.player.hex_cast += 1
-            self.player.is_concentrating = True
-            self.DM.relate(self.player, target, 'Hex')
+            HexToken = HexedToken(target.TM, subtype='hex') #hex the Tagret
+            self.player.CurrentHexToken = HexingToken(self.TM, HexToken) #Concentration on the caster
+            #Assign that Token as the Current HEx Token of the Player
 
     def change_hex(self, target):
         rules = [self.player.can_choose_new_hex,
@@ -2519,8 +2404,9 @@ class spell:
         self.DM.say(self.player.name + ' changes the hex to ' + target.name)
         self.player.bonus_action = 0 #takes a BA
         self.player.can_choose_new_hex = False
-        self.DM.relate(self.player, target, 'Hex')
-
+        NewHexToken = HexedToken(target.TM, subtype='hex') #hex the Tagret
+        self.player.CurrentHexToken.addLink(NewHexToken) #Add the new Hex Token
+            
     def cast_armor_of_agathys(self, target, cast_level = 1):
         #Armor only works for self
         player = self.player
@@ -2558,6 +2444,11 @@ class spell:
             player.has_spiritual_weapon = True
             player.SpiritualWeaponDmg = player.spell_mod + 4.5*(cast_level -1) 
             player.SpiritualWeaponCounter = 0 #10 Rounds of Weapon
+
+            #If a player cast this spell for the first time, the choice will be aded to the AI
+            #The Score function will still check if the player is allowed to use it
+            
+            player.AI.Choices.append(player.AI.spiritualWeaponChoice)
 
             #Attack Once as BA
             self.spiritual_weapon_attack(target)
@@ -2600,7 +2491,7 @@ class spell:
             for i in targets:
                 Dmg = dmg(damage, 'thunder')
                 i.last_attacker = self.player    #target remembers last attacker
-                save = i.make_save(self.spell_save_type)           #let them make con saves
+                save = i.make_save(self.spell_save_type, DC = self.player.spell_dc)           #let them make con saves
                 if spell_is_empowered:
                     self.DM.say('Empowered: ', end='')
                 if save >= self.player.spell_dc:
@@ -2609,21 +2500,21 @@ class spell:
 
     def cast_conjure_animals(self, fight, cast_level=3):
         #Work in Progress 
-        #Im am using a trick here, ususally a target is passed, but this spell needs the fight
+        #Im am using a trick here, ususally only a target is passed, but this spell needs the fight
         #As a solution the score function of this spell passes the fight as 'targtes' 
         #The cunjured Animals are initiated as fully functunal entity objects
         #The Stats are loaded from the Archive
         #If they reach 0 CHP they will die and not participate in the fight anymore
-        #The do_the_fightinf function will then pic them out and delete them from the fight list
+        #The do_the_fighting function will then pic them out and delete them from the fight list
         player = self.player
         if self.make_spell_check(cast_level) == False:
             return 
         else:
             player.DM.say(player.name + ' cast cunjure Animals at level ' + str(cast_level))
             player.conjure_animals_cast += 1
-            player.is_concentrating = True #Conc Spell
 
-            level = 10
+
+            level = 10 #will be set to BEast level for test
             while level > 2:
                 Index = int(random()*len(player.BeastForms))
                 AnimalName = player.BeastForms[Index]['Name'] #Random Animal
@@ -2640,16 +2531,19 @@ class spell:
             else: 
                 Number = Number*4
 
-            #Initiate a new entity for the Animals ans add them to the fight
+
+            #Initiate a new entity for the Animals and add them to the fight
+            conjuredAnimals = []
             for i in range(0,Number):
                 animal = entity(AnimalName, player.team, player.DM, archive=True)
                 animal.name = 'Conjured ' + AnimalName + str(i+1)
                 self.DM.say(animal.name + ' appears')
-                animal.is_a_conjured_animal = True
-                animal.conjurer = player
+                animal.summoner = player
                 fight.append(animal)
-                self.DM.relate(player, fight[-1], 'ConjuredAnimal')
-                player.has_animals_conjured = True
+
+                conjuredAnimals.append(SummenedToken(animal.TM, 'ca')) #add a SummonedToken to the animal
+            #Add a Summoner Token to the Player
+            SummonerToken(self.TM, conjuredAnimals)
 
     def cast_guiding_bolt(self, target, cast_level=1):
         player = self.player
@@ -2670,11 +2564,40 @@ class spell:
             #all specifications for this spell are given to the attack function
             damage_done = player.attack(target, is_ranged=True, other_dmg=dmg, damage_type= 'radiant', tohit=tohit)
             if damage_done > 0:
-                self.DM.relate(player, target, 'GuidingBolt')
-                target.is_guiding_bolted = True
-                player.used_guiding_bolt = True
+                LinkToken = GuidingBoltedToken(target.TM) #Target gets guiding bolted token
+                GuidingBoltToken(self.TM, [LinkToken]) #Timer Dock Token for player
             player.guiding_bolt_cast += 1
             
+    def cast_blight(self, target, cast_level=4):
+        if type(target) == list:
+            target = target[0]  #ensures only one starget
+        if self.make_spell_check(cast_level) == False:
+            return
+        else:
+            self.DM.say(self.player.name + ' casts Blight at Level: ' + str(cast_level))
+            self.player.blight_cast += 1
+            damage = 18 + 4.5*cast_level   #upcast dmg 8d8 + 1d8 per level over 4
+            spell_is_empowered = False
+            if self.player.empowered_spell:
+                damage=damage*1.21
+                self.player.empowered_spell = False
+                spell_is_empowered = True                
+            Dmg = dmg(damage, 'necrotic')
+            target.last_attacker = self.player    #target remembers last attacker, usually in attack function
+
+            if target.type == 'plant': extraAdvantage = -1 #disadvantage for plants
+            else: extraAdvantage = 0
+            save = target.make_save(2, extraAdvantage=extraAdvantage, DC = self.player.spell_dc)           #let them make saves
+            if spell_is_empowered:
+                self.DM.say('Empowered: ', end='')
+            if save >= self.player.spell_dc:
+                Dmg.multiply(1/2)                #save made
+            if target.type == 'undead' or target.type == 'construct':
+                Dmg.multiply(0) #no effect on this types
+            elif target.type == 'plant':
+                Dmg = dmg(32 + 8*cast_level, 'necrotic')  #full dmg
+                self.DM.say('is Plant: ', end='')
+            target.changeCHP(Dmg, self.player, True)
 
 #---------------DMG Scores---------------
 #This Scores are returned to the choose_spell_AI function and should resemble about 
@@ -2691,9 +2614,14 @@ class spell:
         return prop
 
     def save_sucess_propability(self, target):
-        SaveMod = target.modifier[self.spell_save_type]  #Currently Dex
+        SaveMod = target.modifier[self.spell_save_type]
+        Advantage = target.check_advantage(self.spell_save_type, notSilent = False)
         #Save Sucess Propability:
         prop = (20 - self.player.spell_dc + SaveMod)/20
+        if Advantage < 0:
+            prop = prop*prop  #Disadvantage, got to get it twice
+        elif Advantage > 0:
+            prop = 1 - (1-prop)**2  #would have to miss twice
         return prop
 
     def dmg_score(self, SpellTargets, dmg, dmg_type, SpellAttack=True, SpellSave=False):
@@ -2714,10 +2642,11 @@ class spell:
             DMGScore += target_dmg #Add this dmg to Score
 
             #Account for Hex
-            if target.is_hexed():
-                for x in self.DM.relations: 
-                    if x.type == 'Hex' and x.target == target and x.initiator == self.player:
+            if target.is_hexed and self.player.is_hexing:
+                for HexToken in self.player.CurrentHexToken.links: #This is your Hex target
+                    if HexToken.TM.player == target:
                         DMGScore += 3.5
+                        break
         return DMGScore
 
     def return_0_score(self):
@@ -2754,7 +2683,6 @@ class spell:
         return False 
 
     #Scores and Targets 
-
     def score_fire_bolt(self, fight, twinned_cast = False):
         CastLevel = 0 #always 0 for cantrip
         if self.player.level >=17: dmg= 5.5*4
@@ -2780,16 +2708,43 @@ class spell:
         Score = Score*self.random_score_scale() # a little random power 
         return Score, SpellTargets, CastLevel
 
+    def score_chill_touch(self, fight, twinned_cast = False):
+        CastLevel = 0 #always 0 for cantrip
+        if self.player.level >=17: dmg= 4.5*4
+        elif self.player.level >=11: dmg= 4.5*3
+        elif self.player.level >= 5: dmg = 4.5*2
+        else: dmg = 4.5
+
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='necrotic')]
+        if SpellTargets == [False]: #No Target
+            return self.return_0_score()
+        if twinned_cast:
+            #Secound Target for Twin Cast
+            twin_target = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='necrotic')
+            if twin_target == False:
+                return self.return_0_score()
+            SpellTargets.append(twin_target)
+        
+        #DMG Score
+        Score = 0
+        Score += self.dmg_score(SpellTargets, dmg, dmg_type='necrotic', SpellAttack=True)
+        Score += SpellTargets[0].heal_given/20 #for the anti heal effect
+        if twinned_cast: Score = Score*2
+
+        Score = Score*self.random_score_scale() # a little random power 
+        return Score, SpellTargets, CastLevel
+
     def score_entangle(self, fight, twinned_cast = False):
         #Choose One Target
         player = self.player
         SpellTargets = []
-        Choices = [x for x in fight if x.team != player.team and x.state == 1 and x.is_entangled() == False]
+        Choices = [x for x in fight if x.team != player.team and x.state == 1]
+
         if len(Choices) > 0: #if there are any
             SpellTargets.append(self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg=0, other_dmg_type='true')) #append best enemy to entangle
         else: return self.return_0_score()
         if twinned_cast:
-            Choices.remove(SpellTargets[0]) #Dont double haste
+            Choices.remove(SpellTargets[0]) #Dont double cast
             if len(Choices) > 0:
                 SpellTargets.append(self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg=0, other_dmg_type='true')) #append best 2nd enemy to entangle
             else: return self.return_0_score()
@@ -2809,6 +2764,7 @@ class spell:
             Score += x.dps()/4 #disadvantage helps do reduce dmg of enemy
             #Add dmg for the other players
             Score += player.spell_dc - 10 - x.modifier[0] #good against weak enemies
+            if x.restrained: Score = 0 #Do not cast on restrained targets
         CastLevel = self.choose_smallest_slot(1,3)
         if CastLevel == False: #Didnt find slot 3 or smaller
         #just dont cast if entangle is the best u can do at lv 4
@@ -2891,7 +2847,7 @@ class spell:
     def score_haste(self, fight, twinned_cast = False):
         player = self.player
         SpellTargets = []
-        Choices = [x for x in fight if x.team == player.team and x.state == 1  and x.is_hasted() == False]
+        Choices = [x for x in fight if x.team == player.team and x.state == 1]
         ChoicesScore = [x.dmg*(random()*0.5 +0.5) + x.AC*(random()*0.2 +0.2) + x.CHP/3*(random()*0.2 + 0.1) for x in Choices]
         SpellTargets.append(Choices[np.argmax(ChoicesScore)]) #append best player for Haste
         if twinned_cast:
@@ -3019,6 +2975,7 @@ class spell:
             return self.return_0_score() #has already sw 
 
         Score = self.dmg_score(SpellTargets, dmg=SpellDmg, dmg_type='force', SpellAttack=True)
+        Score = Score*3 #expecting to hit with it multiple times
         Score = Score*self.random_score_scale()
         return Score, SpellTargets, CastLevel
 
@@ -3046,7 +3003,9 @@ class spell:
 
         if CastLevel == False: return self.return_0_score()
         Score = 0 #for now
-        if player.has_animals_conjured: quit() #nonsense
+        if player.has_summons:
+            print('Has sommons already')
+            quit() #nonsense
         #Ape has CR 1/2 with +5 to hit, 6.5 dmg, 2 attacks -> 6.5/4 *2attacks /0.5CR -> 6.5dmg/1CR
         #BrownBear CR 1 +5 9.75dmg, 2 attacks -> 4.8dmg/1CR
         #Wolf 7dmg/4 /0.25CR -> 7dmg/1CR
@@ -3082,6 +3041,35 @@ class spell:
         Score = 0
         Score += self.dmg_score(SpellTargets, dmg, dmg_type='radiant', SpellAttack=True)
         Score += self.player.dps()*0.2 #to account for advantage given
+        if twinned_cast: Score = Score*2
+
+        Score = Score*self.random_score_scale() # a little random power 
+        return Score, SpellTargets, CastLevel
+
+    def score_blight(self, fight, twinned_cast = False):
+        CastLevel = self.choose_highest_slot(4,9)
+        if CastLevel == False: return self.return_0_score()
+        dmg = 4.5*4 + 4.5*CastLevel
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='necrotic')]
+        if SpellTargets == [False]: #No Target
+            return self.return_0_score()
+        if twinned_cast:
+            #Secound Target for Twin Cast
+            twin_target = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type='necrotic')
+            if twin_target == False:
+                return self.return_0_score()
+            SpellTargets.append(twin_target)
+
+        #Creature Type        
+        addedDmg = 0
+        for x in SpellTargets:
+            if x.type == 'plant': addedDmg += dmg/1.5
+            if x.type == 'undead' or x.type == 'construct': addedDmg -= dmg
+        dmg += addedDmg #account for plants, constructs and undead
+
+        #DMG Score
+        Score = 0
+        Score += self.dmg_score(SpellTargets, dmg, dmg_type='necrotic', SpellAttack=False, SpellSave=True)
         if twinned_cast: Score = Score*2
 
         Score = Score*self.random_score_scale() # a little random power 

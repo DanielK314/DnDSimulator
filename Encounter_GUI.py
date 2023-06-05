@@ -33,9 +33,10 @@ class Controller(Frame):
         'Rage', 'RecklessAttack', 'Frenzy', 'BearTotem', 'EagleTotem', 'WolfTotem',
         'Smite', 'AuraOfProtection', 'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
         'WildShape', 'CombatWildShape', 'Inspiration', 'CuttingWords', 'CombatInspiration',
-        'AgonizingBlast','TurnUndead', 'DragonsBreath', 'SpiderWeb']
+        'AgonizingBlast','TurnUndead',
+        'DragonsBreath', 'SpiderWeb', 'PoisonBite']
 
-        self.All_Types = ['normal', 'undead', 'beast']
+        self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct']
 
         #Initialize the Pages, attention, Order matters
         self.ArchivePage = Archive(self)
@@ -547,7 +548,7 @@ class EntityPage_cl(Frame):
         for i in range(0, len(self.SpellList)):
             self.SpellButton[i].grid(row=1 + i, column=0, sticky='w', pady=5, padx = 5)
         #Arrange all the Spell Level Frames 
-        for i in range(0, 4):
+        for i in range(0, 5):
             Spellframes[i].grid(row=i+1, column = 0, sticky='ew', pady=3) #ew ensures that they all have the same width
         self.SpellBookListFrame.grid(row=1, column=0, pady=10, sticky='w')
 
@@ -578,7 +579,7 @@ class EntityPage_cl(Frame):
                 7:{'name':'Bard', 'Number':3},
                 8:{'name':'Warlock', 'Number':1},
                 9:{'name':'Cleric', 'Number':1},
-                10:{'name':'Monster', 'Number':2}}
+                10:{'name':'Monster', 'Number':3}}
         Class_Frames = []
         ChoosenFrame = self.Abilities1Frame
         for i in range(0, len(Class)):
@@ -1228,7 +1229,6 @@ class DM_page(Frame):
         else:
             Player.is_concentrating = 0
             self.b_concentration[self.master.Fighters.index(Player)].configure(bootstyle = 'warning outline')
-
 
 def StartGUI():
     root = ttk.Window(themename="cyborg")

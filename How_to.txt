@@ -1,0 +1,108 @@
+Character Classes:
+1. Fighter 
+1.3 Battle Master Maneuvers not imp
+2. Barbarian
+2.1 Berserker done up to lv5
+2.2 Totem Spirits, bear, eagle, wolf, done
+2.3 next: Aspect of the Beast
+3. Cleric
+3.1 Channel Devinity, turn undead, destroy undead
+4. Druid
+4.1 pretty far done, create more spells and Wild Shape Forms
+5.Paladin
+5.1 Fighting Style
+5.2 Aura of protection implemented
+6. Bard 
+6.1 Inspiration, Combat Inspiration
+6.2 Cutting Words
+
+
+Zu adden in Character Sheet: 
+Legendary Action
+
+!!! If Team == 1 it is considered a Monster, every other tag like 0, 1, 2 is considered a PC for PvP for example
+Also, Statistical Recap might not work for teams other then 0 vs 1
+
+
+Creature Types:
+normal
+undead
+beast
+plant
+construct
+
+
+Damage Types:
+acid
+bludgeoning
+cold
+fire
+force
+lightning
+necrotic
+piercing
+poison
+psychic
+radiant
+slashing
+thunder
+
+How To: 
+
+New BeastForms:
+1.add Beast Entity to Archive
+2.add to Beast Forms in Entity Class
+
+New Other_Abilities: 
+1.add Ability to Entity Class Init under special Abilites
+2.Implement the feature in the code
+3.Add Name to All_Abilities in GUI Controller Class
+4.Change it in the GUI build_ability_page, just change the Number for the added Class feature
+
+New Spells:
+1. Add Spell Stats to the Spell Calss __init__
+2. Add a Cast Function for the Spell
+2.1 remember empowered Spells 
+2.1 How to Handle Targtes
+2.3 make spell/cantrip check
+2.4 Add 1 to Cast Counter 
+2.5 Change Concentration if necessary, Break Concentration
+3. Add a Score Function for the Spell
+3.1 must return a dmg equal score, target and spelllevel
+4. Add Spell to Spell Name List in Entity Class
+4.1 Add cast Counter in Entity 
+5. If concentration Spell: check break concentration 
+5.1 in the upper line 'lost concentraation'
+5.2 Implement the break concentration in dead and unconscious function
+5.3 remember to rest counter or variables of the spell at end of turn or long rest
+6. The Spell should be listed automatically in GUI
+6.1. Add to Spellrecap
+
+New Token relation:
+1. Create a Link Token, via the LinkToken class or via a subclass
+2. Initiate one or more Link Token
+3. Create a DockToken or a subclass of a DockToken
+3.1 wenn Initiateing the DockToken, give a List of the Link Dokens.
+3.2 The Link Tokens will be resolved if the Dock is, or vici verca if all links are resolved
+4. You can add resolve conditions to the Tokens
+5. You might add smt to the update function of the TM
+
+Add to GUI
+1.Spells must not be add manually, only in SpellNames in entity class
+2.Other Abilies must only be added in Controller __init__ and in the build abilites page, add the counter for the corresponding class
+
+3.Now how to add a Entry for a entity stat
+3.1 Add the Stat to the entity class, use python add_to_all_json
+3.2 Add a Label and Entry to the GUI and grid it
+3.2.1 For Other Abilies this is done in the build other abilities page 
+3.3 Add new stat to fetch_Entity_stats
+3.4 Add to fetch_GUI_stats
+3.5 Add to update_page
+
+New Chreature Type:
+1. Add to Controller __init__ as all types
+
+Run Time Benchmark:
+1. Configure Benchmark in run_time_benchmark.py
+2. The Benchmark Entities are in a folder
+3. Then run TimeAnalysis
