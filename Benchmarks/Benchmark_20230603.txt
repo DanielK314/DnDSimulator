@@ -1,0 +1,50 @@
+Sat Jun  3 13:36:14 2023    profile_results
+
+         44846464 function calls (44846222 primitive calls) in 17.009 seconds
+
+   Ordered by: cumulative time
+   List reduced from 504 to 40 due to restriction <40>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      5/1    0.000    0.000   17.009   17.009 {built-in method builtins.exec}
+        1    0.000    0.000   17.009   17.009 <string>:1(<module>)
+        1    0.000    0.000   17.009   17.009 /Users/danielkohl/git/dnd_simulator/run_time_benchmark.py:7(run_time_benchmark)
+        1    0.001    0.001   17.001   17.001 /Users/danielkohl/git/dnd_simulator/Encounter_Simulator.py:246(full_statistical_recap)
+        1    0.002    0.002   16.998   16.998 /Users/danielkohl/git/dnd_simulator/Encounter_Simulator.py:97(run_simulation)
+      200    0.040    0.000   16.981    0.085 /Users/danielkohl/git/dnd_simulator/Encounter_Simulator.py:18(do_the_fighting)
+13300/13205    0.058    0.000   16.815    0.001 /Users/danielkohl/git/dnd_simulator/AI_class.py:42(do_your_turn)
+    24230    0.042    0.000   14.842    0.001 /Users/danielkohl/git/dnd_simulator/AI_class.py:75(<listcomp>)
+    63908    0.051    0.000   14.546    0.000 /Users/danielkohl/git/dnd_simulator/Choice_class.py:243(score)
+    63908    1.391    0.000   14.495    0.000 /Users/danielkohl/git/dnd_simulator/AI_class.py:452(choose_spell)
+   242545    0.524    0.000   11.650    0.000 /Users/danielkohl/git/dnd_simulator/AI_class.py:249(choose_att_target)
+  1460990    3.000    0.000   10.102    0.000 /Users/danielkohl/git/dnd_simulator/AI_class.py:282(target_attack_score)
+    14807    0.020    0.000    3.983    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:2967(score_magic_missile)
+    14807    0.022    0.000    3.925    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:2972(<listcomp>)
+  1449837    1.351    0.000    3.627    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:948(need_dash)
+  1301377    1.074    0.000    3.085    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:992(will_provoke_Attack)
+    12396    0.015    0.000    1.885    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:2993(score_scorching_ray)
+    12396    0.014    0.000    1.826    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:2998(<listcomp>)
+    14001    0.028    0.000    1.817    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:3220(score_blight)
+     8361    0.013    0.000    1.459    0.000 /Users/danielkohl/git/dnd_simulator/Choice_class.py:75(execute)
+  1424319    1.398    0.000    1.398    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:970(<listcomp>)
+    18174    0.026    0.000    1.238    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:3197(score_guiding_bolt)
+  1273959    1.228    0.000    1.228    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:998(<listcomp>)
+    25045    0.032    0.000    1.085    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:2861(score_fire_bolt)
+   410911    0.084    0.000    0.873    0.000 {built-in method numpy.core._multiarray_umath.implement_array_function}
+   257159    0.147    0.000    0.829    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:1028(enemies_reachable_sort)
+   334638    0.101    0.000    0.672    0.000 <__array_function__ internals>:177(argmax)
+    14614    0.018    0.000    0.556    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:1165(make_normal_attack_on)
+  1392006    0.342    0.000    0.542    0.000 /Users/danielkohl/git/dnd_simulator/AI_class.py:383(spell_cast_check)
+   334638    0.129    0.000    0.478    0.000 /opt/homebrew/lib/python3.10/site-packages/numpy/core/fromnumeric.py:1153(argmax)
+  1424319    0.423    0.000    0.423    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:971(<listcomp>)
+     8856    0.011    0.000    0.407    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:2886(score_chill_touch)
+    10678    0.013    0.000    0.393    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:3128(score_spiritual_weapon)
+    57835    0.104    0.000    0.390    0.000 /Users/danielkohl/git/dnd_simulator/AI_class.py:146(area_of_effect_chooser)
+   160408    0.168    0.000    0.385    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:2803(dmg_score)
+  1273959    0.379    0.000    0.379    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:999(<listcomp>)
+  1424319    0.364    0.000    0.364    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:972(<listcomp>)
+   334638    0.114    0.000    0.349    0.000 /opt/homebrew/lib/python3.10/site-packages/numpy/core/fromnumeric.py:51(_wrapfunc)
+  2949975    0.328    0.000    0.328    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:600(dps)
+  1273959    0.325    0.000    0.325    0.000 /Users/danielkohl/git/dnd_simulator/Entity_class.py:1000(<listcomp>)
+
+

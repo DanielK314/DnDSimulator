@@ -36,14 +36,14 @@ class do_attack(choice):
                 dmg += player.rage_dmg
             if player.knows_frenzy:
                 attacks += 1
-            if player.is_hasted():
+            if player.is_hasted:
                 attacks += 1
         
         if player.knows_reckless_attack:
             dmg = dmg*1.2 #improved chance to hit
-        if player.is_entangled():
+        if player.restrained:
             dmg = dmg*0.8
-        if player.is_hexing():
+        if player.is_hexing:
             dmg += 3.5
 
         #dmg score is about dmg times the attacks
@@ -125,11 +125,12 @@ class do_inspire(choice):
         super().__init__(player)
     
     def score(self, fight):
+        Score = 0
         if self.player.knows_inspiration == False: return 0
-        if self.player.inspiration_counter < 1: return 0
         if self.player.bonus_action != 1: return 0
-        if random() > 0.5: return self.player.level*2
-        return 0
+        if random() > 0.5: Score = self.player.level*2
+        if self.player.inspiration_counter < 1: Score = Score/2
+        return Score
     
     def execute(self, fight):
         rules = [self.player.knows_inspiration, 
@@ -199,7 +200,7 @@ class use_action_surge(choice):
         self.player.use_action_surge()
         self.player.AI.do_your_turn(fight) #use action surge and start turn again
 
-class use_spiritual_weapon(choice):
+class do_spiritual_weapon(choice):
     def __init__(self, player):
         super().__init__(player)
 
@@ -213,6 +214,7 @@ class use_spiritual_weapon(choice):
         target = player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=player.SpiritualWeaponDmg, other_dmg_type='force')
         if target != False:
             player.SpellBook['SpiritualWeapon'].use_spiritual_weapon(target)
+        else: player.bonus_action = 0 
 
 class do_turn_undead(choice):
     def __init__(self, player):

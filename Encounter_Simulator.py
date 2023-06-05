@@ -58,7 +58,7 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
     for x in fighters_unsorted:
         if x.CHP == 0:
             x.state = -1 #Everone who is unconscious in the loser Team is practically Dead now
-        if x.is_a_conjured_animal:
+        if x.is_summoned:  #let summend characters vanish after dead
             fight.remove(x)
     DM.say('HP left:')
     for i in fighters_unsorted:
@@ -180,6 +180,9 @@ def spell_cast_recap(repetition, fighters, text_result):  #only calls the object
         if i.fire_bolt_cast > 0:
             text_result += str(i.name) + ' cast fire bolt: ' + str(round(i.fire_bolt_cast/repetition,3)) + '\n'
             i.fire_bolt_cast = 0
+        if i.chill_touch_cast > 0:
+            text_result += str(i.name) + ' cast chill touch: ' + str(round(i.chill_touch_cast/repetition,3)) + '\n'
+            i.chill_touch_cast = 0
         if i.entangle_cast > 0:
             text_result += str(i.name) + ' cast entangle: ' + str(round(i.entangle_cast/repetition,3)) + '\n'     
             i.entangle_cast = 0
@@ -234,7 +237,9 @@ def spell_cast_recap(repetition, fighters, text_result):  #only calls the object
         if i.guiding_bolt_cast > 0:
             text_result += str(i.name) + ' cast guiding bolt: ' + str(round(i.guiding_bolt_cast/repetition,3)) + '\n'
             i.guiding_bolt_cast = 0
-
+        if i.blight_cast > 0:
+            text_result += str(i.name) + ' cast blight: ' + str(round(i.blight_cast/repetition,3)) + '\n'
+            i.blight_cast = 0
 
     return text_result
 

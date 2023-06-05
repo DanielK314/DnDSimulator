@@ -11,16 +11,11 @@ class DungeonMaster:
         self.density = self.Battlefield[0][1]
         #density: 0 - loose, 1 - normal, 2 - dense
         self.rounds_number = 1
-        self.relations = [] #is a list with inter player relations, see class relation
 
     def reset(self):
         #This function is called a the start of the fighting and resets the DM
         self.rounds_number = 1
-        self.relations = []
     
-    def reset_relations(self):
-        self.relations = []
-
     def block_print(self):
         self.printing_on = False
 
@@ -39,27 +34,3 @@ class DungeonMaster:
                 print(text)
             else:
                 print(text, end = end)
-
-    def relate(self, initiator, target, type):
-        #create new relation
-        self.relations.append(relation(initiator, target, type, self.rounds_number))
-    
-    def resolve(self, relation):
-        #This function resolves an existing relation
-        self.relations.remove(relation)
-
-
-class relation:
-    def __init__(self, initiator, target, type, InitRound):
-        self.initiator = initiator
-        self.target = target
-        #Type is what kind of relation this is
-        #Haste 
-        #Entangle
-        #AuraOfProtection
-        #Hex
-        #ConjuredAnimal
-        #GuidingBolt
-        self.type = type
-        self.InitRound = InitRound #The Round in which this was initialized
-

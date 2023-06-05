@@ -1,0 +1,48 @@
+20. Legendary Action
+30. bessere/mehr Monster
+40. Make it possible to simulate 2 or more encounters after one another, mybe short rest
+41. Maybe one day, the Entities are Initiated with Items, which then are their own class
+
+44. ttk use multiprocessing and progressbars for calculating encounters
+48. Documentation FLow Chart verbessern 
+
+61. implement better Smart Heal, is already pretty good I think
+61.1 Think about how to handle healing potion
+62. are unconscious Players attacked too often
+68. Update the GUI that the Spell Book displays Casting Time for the Spell
+75. Progress Bar improve
+87. Improve the Performance Calculation in Statistical Recap
+88. Spider Web targets remain restreained
+89. make a Benchmark, meaning a variety of fight Situations for the Attacking Player to do their turn
+89.1 make an analysis of their choices, an analysis of their Attack targets
+
+92. twin cast for heal
+93. Add a python script that checks the current entity and archive and updates the json files
+94. automate spell cast recap 
+95. redo spells as subclasses
+96. improve inspiration choice class score
+97. Spellcasting draws a lot of time (about 4s in Benchmark)
+98. heal takes some time also
+99. greatweapon fighting
+103. added chilled touch, check this
+103.1 Add chill touch to heal choice AI
+105. Polymorph
+106. target_attack_score takes a lot of time
+107. Make Spells as subclasses
+108. Maybe give Scores to Tokens, so that Choices and Score Functions can loop a Characters Tokens instead of a long if else list
+109. Check Combat Inspiration, maybe Token?
+110. Make Poison Bite Costimizable
+
+111. Install Helper for dummies
+112. Move to GitHub
+113. Better Documentation
+
+Spells to do
+-Ray of Frost, could be interesting with movement
+-think about spike growth
+-Web, could be interesting
+
+Game Test:
+1. You should be testing if the position management and attack choosing is sensable
+2. The Choose Att Target Function was been redone and need checking
+5. Test driven programming, pytest 

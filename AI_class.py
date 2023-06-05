@@ -21,10 +21,12 @@ class AI:
         self.Choices = [
             ch.do_attack(player),
             ch.do_offhand_attack(player),
-            ch.do_spellcasting(player),
             ch.do_monster_ability(player),
             ch.do_heal(player)
         ]
+        for spell in self.player.SpellNames:
+            if self.player.SpellBook[spell].is_known:
+                self.Choices.append(ch.do_spellcasting(player))#if any Spell is known, add this choice option
         if self.player.knows_inspiration:
             self.Choices.append(ch.do_inspire(player))
         if self.player.knows_action_surge:
@@ -33,6 +35,9 @@ class AI:
             self.Choices.append(ch.do_turn_undead(player))
         if self.player.knows_wild_shape:
             self.Choices.append(ch.go_wildshape(player))
+
+        #Conditional Choices        
+        self.spiritualWeaponChoice = ch.do_spiritual_weapon(player) #This will be later added to the Choices list, if a Character casts spiritual weapon
 
     def do_your_turn(self,fight):
         player = self.player
@@ -43,12 +48,7 @@ class AI:
         if player.prone == 1 and player.restrained == 0:
             player.stand_up()
 
-        #Aura of Protection (Passiv) resets at the start of do your turn by the player emitting the aura
-        #It is handeled via DM relations
-        #First resolve all old relations
-        OldAuraRelations = [x for x in player.DM.relations if x.type == 'AuraOfProtection' and x.initiator == player]
-        for x in OldAuraRelations: player.DM.resolve(x)
-        #Choosing new Aura targets:
+        #Choosing Aura of Protection Targets:
         if player.knows_aura_of_protection: player.use_aura_of_protection(self.allies)
 
         #Choose new Hex
@@ -206,14 +206,14 @@ class AI:
                 dmg += player.rage_dmg
             if player.knows_frenzy:
                 attacks += 1
-            if player.is_hasted():
+            if player.is_hasted:
                 attacks += 1
 
         if player.knows_reckless_attack:
             dmg = dmg*1.2 #improved chance to hit
-        if player.is_entangled():
+        if player.restrained: #decreases Chance to hit
             dmg = dmg*0.8
-        if player.is_hexing():
+        if player.is_hexing:
             dmg += 3.5
 
         #dmg score is about dmg times the attacks
@@ -275,6 +275,7 @@ class AI:
             return target_list[np.argmax(ThreatScore)]
 
     def target_attack_score(self, fight, target, dmg_type, dmg):
+        #This functions helps in decision on a att taget by assining a score
         player = self.player
         Score = 0
         RandomWeight = 2 #random factor between 1 and the RandomWeight
@@ -318,16 +319,19 @@ class AI:
 
 
         #Spells
-        if player.is_entangled():
-            for x in player.DM.relations:
-                if x.type == 'Entangle' and x.target == player and x.initiator == target:
+        if player.restrained:
+            for x in player.TM.TokenList:
+                if x.type == 'r' and x.origin == target:
                     Score += PlayerDPS*2*(random()*RandomWeight + 1) #This player is entangling you 
-        if player.is_hexing():
-            for x in player.DM.relations:
-                if x.type == 'Hex' and x.target == target and x.initiator == player:
-                    Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+        if player.is_hexing: #Check for hexing
+            for x in player.TM.TokenList:
+                if x.subtype == 'hexn': #You are hexing
+                    for HexToken in x.links:
+                        if HexToken.TM.player == target:
+                            Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+                    break
         if target.is_concentrating: Score += TargetDPS/3*(random()*RandomWeight + 1)
-        if target.has_animals_conjured: Score += TargetDPS/2*(random()*RandomWeight + 1)
+        if target.has_summons: Score += TargetDPS/2*(random()*RandomWeight + 1)
         if target.has_armor_of_agathys: Score -= PlayerDPS/3*(random()*RandomWeight + 1)
         if target.restrained or target.prone or target.blinded:
             Score += TargetDPS/4*(random()*RandomWeight + 1)
@@ -436,7 +440,7 @@ class AI:
         if player.sorcery_points < player.sorcery_points_base/2: QuickScore = QuickScore*0.9 #disencourage for low SP
         elif player.sorcery_points < player.sorcery_points_base/3: QuickScore = QuickScore*0.8
         elif player.sorcery_points < player.sorcery_points_base/5: QuickScore = QuickScore*0.7
-        if player.is_entangled(): QuickScore = QuickScore*1.1  #Do something against the entangle
+        if player.restrained: QuickScore = QuickScore*1.1  #Do something against restrained
         #Random Power for quickened Spell
         QuickScore = QuickScore*(0.65 + random()*0.7) #+/- 35%
         if QuickScore > 100:
