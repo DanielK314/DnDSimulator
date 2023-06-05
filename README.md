@@ -4,7 +4,12 @@ This is a private project of mine. The Simulator can help to test end balance Dn
 
 I am still working to improve the simulation and to add more abilities to the system. If you have any ideas how to improve this or you observed any weird behaviours in the simulation, please let me know. Thanks and have fun with your DnD adventure.
 
-# Start the Program
+# Quick Install
+The easiest way to install is to go to the releases and download the DNDSimulator.zip for either Windows10 or MacOS. Unpack the .zip and click on the StartSimulator.exe. After a moment the interface should pop up. Have fun.
+
+https://github.com/DanielK314/DnDSimulator/releases/tag/v1.0.1
+
+# Using Python to run
 
 The project is done with python only, so download or clone the repository, install the required modules and then run StartSimulator.py with python in your console.
 
