@@ -5,7 +5,11 @@ import json
 
 def run_full_stat_recap():
     #read out Informations for the simulation from json file
-    f = open('simulation_parameters.json')
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    elif __file__:
+        application_path = os.path.dirname(__file__)
+    f = open(application_path + '/simulation_parameters.json')
     data = json.load(f)
     parameters = data['simulation_parameters']
     Loaded_Entities = data['Entities']

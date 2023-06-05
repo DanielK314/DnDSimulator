@@ -6,13 +6,21 @@ from Token_class import *
 from random import random, shuffle
 import numpy as np
 import json
+import os
+import sys
 
 class entity:                                          #A NPC or PC
     def __init__(self, name, team, DM, archive = False):                  #Atk - Attack [+x to Hit, mean dmg]
+
+        if getattr(sys, 'frozen', False):
+            application_path = os.path.dirname(sys.executable)
+        elif __file__:
+            application_path = os.path.dirname(__file__)
+
         if archive == False:
-            path = 'Entities/' + str(name) + '.json'
+            path = application_path + '/Entities/' + str(name) + '.json'
         else:
-            path = 'Archive/' + str(name) + '.json'
+            path = application_path + '/Archive/' + str(name) + '.json'
         file = open(path)
         data = json.load(file)
         file.close()

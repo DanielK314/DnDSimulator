@@ -1,5 +1,7 @@
 from datetime import datetime
 import numpy as np
+import os
+import sys
 
 
 class DungeonMaster:
@@ -7,7 +9,13 @@ class DungeonMaster:
         self.AI_blank = False #just ignore, but MUST be False, see AI Class
         self.printing_on = False
         self.start_time = datetime.now()
-        self.Battlefield = np.genfromtxt('Battlefield.txt', delimiter= ',')      #load Informations from Battlefield
+
+        if getattr(sys, 'frozen', False):
+            application_path = os.path.dirname(sys.executable)
+        elif __file__:
+            application_path = os.path.dirname(__file__)
+
+        self.Battlefield = np.genfromtxt(application_path + '/Battlefield.txt', delimiter= ',')      #load Informations from Battlefield
         self.density = self.Battlefield[0][1]
         #density: 0 - loose, 1 - normal, 2 - dense
         self.rounds_number = 1
