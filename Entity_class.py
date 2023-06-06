@@ -2,6 +2,7 @@ from Ifstatement_class import ifstatements
 from Dmg_class import dmg
 from AI_class import AI
 from Token_class import *
+from Spell_class import *
 
 from random import random, shuffle
 import numpy as np
@@ -132,11 +133,18 @@ class entity:                                          #A NPC or PC
         #If this updates, the All_Spells in the GUI will load this
         #Keep this in Order of the Spell Level, so that it also fits for the GUI
         self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
-                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield',
+                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds'
                            'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
                            'Fireball', 'Haste', 'ConjureAnimals',
                            'Blight']
-        self.SpellBook = {SpellName: spell(self, SpellName) for SpellName in self.SpellNames}
+        #Add here all Spell classes that are impemented
+        Spell_classes = [firebolt, inflict_wounds, chill_touch, scorching_ray]
+        #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
+        self.SpellBook = dict()
+        for x in Spell_classes:
+            spell_to_lern = x(self)  #Initiate Spell
+            if spell_to_lern.is_known: #If Spell is known, append to SpellBook
+                self.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
         #Haste
         self.is_hasted = False
@@ -1155,7 +1163,7 @@ class entity:                                          #A NPC or PC
 
         #Does the target AI wants to use Reaction to cast shield? 
         if target.state == 1: #is still alive?
-            if target.reaction == 1 and target.SpellBook['Shield'].is_known:
+            if target.reaction == 1 and 'Shield' in target.SpellBook:
                 target.AI.want_to_cast_shield(self, Dmg)  #call the target AI for shield
 
         Modifier = 0 # Will go add to the attack to hit
@@ -2899,9 +2907,9 @@ class spell:
 
         Score = 0
         Score = 3.5*self.player.attacks*(random()*2 + 3) #hex holds for some rounds
-        if self.player.SpellBook['MagicMissile'].is_known:
+        if 'MagicMissile' in self.player.SpellBook:
             Score += 3.5
-        if self.player.SpellBook['EldritchBlast'].is_known:
+        if 'EldritchBlast' in self.player.SpellBook:
             Score += 3.5*2
 
         CastLevel = self.choose_smallest_slot(1,9)
