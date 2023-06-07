@@ -11,27 +11,30 @@ Character2 = entity('Druid Lv5', 0, DM, archive=True)
 Character3 = entity('Druid Lv5', 0, DM, archive=True)
 Enemy = entity('Ogre', 1, DM, archive=True)
 Enemy2 = entity('Ogre', 1, DM, archive=True)
+Enemy2.name = 'Ogre2'
 Enemy3 = entity('Ogre', 1, DM, archive=True)
+Enemy3.name = 'Ogre3'
 
-fight = [Character, Character2, Character3, Enemy, Enemy2, Enemy3]
+fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3]
 
 # Character.AI.do_your_turn(fight)
 # DM.say('')
 # Enemy.make_normal_attack_on(Character, fight)
 
+Character.DM.rounds_number = 2
+Enemy.heal_given = 100
+Enemy.dmg_dealed = 20
+print(Character.SpellBook['ChillTouch'].score(fight))
+print(Character)
 
-if 'ChillTouch' in Character.SpellBook:
-    print('Yes')
 
-#Character3.make_normal_attack_on(Enemy2, fight)
-#Character2.make_normal_attack_on(Enemy, fight)
-Character.CHP = 1
 
-Enemy.type = 'undead'
-Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)
-for x in Character.Spell_classes:
-    test_spell = x(Character)
-    print(x.score)
+
+# Enemy.type = 'undead'
+# Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)
+# for x in Character.Spell_classes:
+#     test_spell = x(Character)
+#     print(x.score)
 # Character.action = 1
 # Character.attack(Enemy, is_ranged=True, other_dmg=200, tohit=100)
 # Character.end_of_turn()

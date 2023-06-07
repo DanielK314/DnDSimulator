@@ -317,7 +317,6 @@ class AI:
         elif dmg_type in target.damage_resistances:
             Score -= TargetDPS*2*(random()*RandomWeight + 1)
 
-
         #Spells
         if player.restrained:
             for x in player.TM.TokenList:
