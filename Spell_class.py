@@ -34,6 +34,8 @@ class spell:
         if self.spell_name in player.spell_list:
             self.is_known = True
 
+        self.was_cast = 0
+
     #any spell has a specific Spell cast function that does what the spell is supposed to do
     #This Function is the cast function and will be overwritten in the subclasses
     #To do so, the make_spell_check function makes sure, that everything is in order for the self.player to cast the spell
@@ -60,6 +62,7 @@ class spell:
         
         #If everything is autorized, set cast_level
         self.cast_level = cast_level
+        self.was_cast += 1  #for spell recap
 
     def announce_cast(self):
         self.player.DM.say(self.player.name + ' casts ' + self.spell_text + ' at lv.' + str(self.cast_level))

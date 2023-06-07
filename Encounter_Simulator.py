@@ -176,71 +176,10 @@ def most_valuable_player(repetition, fighters):
     return player_name, win_probability_without_player, player_name[mvp_index]
 
 def spell_cast_recap(repetition, fighters, text_result):  #only calls the objects data, simulation must be run beforehand
-    for i in fighters:
-        if i.fire_bolt_cast > 0:
-            text_result += str(i.name) + ' cast fire bolt: ' + str(round(i.fire_bolt_cast/repetition,3)) + '\n'
-            i.fire_bolt_cast = 0
-        if i.chill_touch_cast > 0:
-            text_result += str(i.name) + ' cast chill touch: ' + str(round(i.chill_touch_cast/repetition,3)) + '\n'
-            i.chill_touch_cast = 0
-        if i.entangle_cast > 0:
-            text_result += str(i.name) + ' cast entangle: ' + str(round(i.entangle_cast/repetition,3)) + '\n'     
-            i.entangle_cast = 0
-        if i.burning_hands_cast > 0:
-            text_result += str(i.name) + ' cast burning hand: ' + str(round(i.burning_hands_cast/repetition,3)) + '\n'
-            i.burning_hands_cast = 0
-        if i.cure_wounds_cast > 0:
-            text_result += str(i.name) + ' cast cure wounds: ' + str(round(i.cure_wounds_cast/repetition,3)) + '\n'
-            i.cure_wounds_cast = 0
-        if i.healing_word_cast > 0:
-            text_result += str(i.name) + ' cast healing word: ' + str(round(i.healing_word_cast/repetition,3)) + '\n'
-            i.healing_word_cast = 0
-        if i.magic_missile_cast > 0:
-            text_result += str(i.name) + ' cast magic missile: ' + str(round(i.magic_missile_cast/repetition,3)) + '\n'
-            i.magic_missile_cast = 0
-        if i.aganazzars_sorcher_cast > 0:
-            text_result += str(i.name) + ' cast aganazzarssorcher: ' + str(round(i.aganazzars_sorcher_cast/repetition,3)) + '\n'
-            i.aganazzars_sorcher_cast = 0
-        if i.scorching_ray_cast > 0:
-            text_result += str(i.name) + ' cast scorching ray: ' + str(round(i.scorching_ray_cast/repetition,3)) + '\n'
-            i.scorching_ray_cast = 0
-        if i.fireball_cast > 0:
-            text_result += str(i.name) + ' cast fireball: ' + str(round(i.fireball_cast/repetition,3)) + '\n'
-            i.fireball_cast = 0
-        if i.haste_cast > 0:
-            text_result += str(i.name) + ' cast haste: ' + str(round(i.haste_cast/repetition,3)) + '\n'
-            i.haste_cast = 0
-        if i.shield_cast > 0:
-            text_result += str(i.name) + ' cast shield: ' + str(round(i.shield_cast/repetition,3)) + '\n'
-            i.shield_cast = 0
-        if i.eldritch_blast_cast > 0:
-            text_result += str(i.name) + ' cast eldritch blast: ' + str(round(i.eldritch_blast_cast/repetition,3)) + '\n'
-            i.eldritch_blast_cast = 0
-        if i.hex_cast > 0:
-            text_result += str(i.name) + ' cast hex: ' + str(round(i.hex_cast/repetition,3)) + '\n'
-            i.hex_cast = 0
-        if i.armor_of_agathys_cast > 0:
-            text_result += str(i.name) + ' cast armor of agathys: ' + str(round(i.armor_of_agathys_cast/repetition,3)) + '\n'
-            i.armor_of_agathys_cast = 0
-        if i.false_life_cast > 0:
-            text_result += str(i.name) + ' cast false life: ' + str(round(i.false_life_cast/repetition,3)) + '\n'
-            i.false_life_cast = 0
-        if i.spiritual_weapon_cast > 0:
-            text_result += str(i.name) + ' cast spiritual weapon: ' + str(round(i.spiritual_weapon_cast/repetition,3)) + '\n'
-            i.spiritual_weapon_cast = 0
-        if i.shatter_cast > 0:
-            text_result += str(i.name) + ' cast shatter: ' + str(round(i.shatter_cast/repetition,3)) + '\n'
-            i.shatter_cast = 0
-        if i.conjure_animals_cast > 0:
-            text_result += str(i.name) + ' cast conjure animals: ' + str(round(i.conjure_animals_cast/repetition,3)) + '\n'
-            i.conjure_animals_cast = 0
-        if i.guiding_bolt_cast > 0:
-            text_result += str(i.name) + ' cast guiding bolt: ' + str(round(i.guiding_bolt_cast/repetition,3)) + '\n'
-            i.guiding_bolt_cast = 0
-        if i.blight_cast > 0:
-            text_result += str(i.name) + ' cast blight: ' + str(round(i.blight_cast/repetition,3)) + '\n'
-            i.blight_cast = 0
-
+    for fighter in fighters:
+        for spell_name, spell in fighter.SpellBook:
+            if spell.was_cast > 0:
+                text_result += str(fighter.name) + ' cast ' + spell.spell_text + str(round(spell.was_cast/repetition,3)) + '\n'
     return text_result
 
 def full_statistical_recap(repetition, fighters):

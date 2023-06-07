@@ -109,31 +109,8 @@ class entity:                                          #A NPC or PC
         self.spell_mod = int(data['Spell_Mod'])                    #spell modifier
         self.spell_dc = int(data['Spell_DC'])                                #spell save DC
 
-
         self.spell_slots = [int(data['Spell_Slot_' + str(i)]) for i in range(1,10)]  #fixed spell slots available ( 0 - Level1, 1 - Level2, ...)
         self.spell_slot_counter = [int(data['Spell_Slot_' + str(i)]) for i in range(1,10)] #current counter for used spell slots 
-
-        self.fire_bolt_cast = 0
-        self.entangle_cast = 0
-        self.burning_hands_cast = 0
-        self.cure_wounds_cast = 0
-        self.healing_word_cast = 0
-        self.magic_missile_cast = 0
-        self.aganazzars_sorcher_cast = 0
-        self.scorching_ray_cast = 0
-        self.fireball_cast = 0
-        self.haste_cast = 0
-        self.shield_cast = 0
-        self.eldritch_blast_cast = 0
-        self.hex_cast = 0
-        self.armor_of_agathys_cast = 0
-        self.false_life_cast = 0
-        self.spiritual_weapon_cast = 0
-        self.shatter_cast = 0
-        self.conjure_animals_cast = 0
-        self.guiding_bolt_cast = 0
-        self.chill_touch_cast = 0
-        self.blight_cast = 0
 
         #Spells known
         self.spell_list = data['Spell_List']
