@@ -94,7 +94,7 @@ class AI:
         #is someone dying
             dying_allies_deathcounter = np.array([i.death_counter for i in self.dying_allies])
             if np.max(dying_allies_deathcounter) > 1:
-                if 'CureWounds' in player.SpellBook and sum(player.spell_slot_counter) > 0 and player.bonus_action == 1:
+                if 'CureWounds' in player.SpellBook and sum(player.spell_slot_counter) > 0 and player.bonus_action == 1 and player.raged == False:
                     player.wild_reshape()
                     target = self.dying_allies[np.argmax(dying_allies_deathcounter)]
                     for i in range(0,9):
@@ -131,7 +131,7 @@ class AI:
 
     def want_to_cast_shield(self, attacker, damage):
         #This function is called in the attack function as a reaction, if Shild spell is known
-        if self.player.CHP < damage.abs_amount():
+        if all([self.player.CHP < damage.abs_amount(), self.player.raged == False, self.player.wild_shape_HP == 0]):
             for i in range(9):
                 if self.player.spell_slot_counter[i] > 0:
                     self.player.SpellBook['Shield'].cast(target=False, cast_level=i+1)   #spell level is i + 1
@@ -392,6 +392,8 @@ class AI:
             if good_slots == 0:
                 return False
         
+        if player.raged:
+            return False
         if player.wild_shape_HP > 0:
             return False
         elif spell.is_concentration_spell and player.is_concentrating:

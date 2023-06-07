@@ -669,7 +669,7 @@ class entity:                                          #A NPC or PC
         if save_text[which_save] in self.saves_prof: #Save Proficiency
             result += self.proficiency
         self.DM.say(' + ' + str(int(result - d20_roll)), end='')
-        if DC != False: self.DM.say(' / ' + str(DC), end='')
+        if DC != False: self.DM.say(' / ' + str(DC), end=' ')
         else: self.DM.say('', end='')
 
         return result
@@ -1464,13 +1464,13 @@ class entity:                                          #A NPC or PC
     def use_aura_of_protection(self, allies):
         #passiv ability, restes at start of Turn or if unconscious
         if self.knows_aura_of_protection:
-            if len(allies) > 5: #at least 4 ally
-                targetnumber = int(random() + 2.5) #2-3 plus self
-                if self.level >= 18: targetnumber += 1 #30ft at lv 18
-            elif len(allies) > 1:
-                targetnumber = int(random() + 1.5)  #1-2
+            if len(allies) > 5: #at least 5 allies
+                targetnumber = int(random() + 2.2) #2-3 plus self
+            elif len(allies) > 2:  #at least 2 allies and self
+                targetnumber = int(random() + 0.8)  #0-1
             else:
                 targetnumber = 0 #only self
+            if self.level >= 18: targetnumber += 1 #30ft at lv 18
 
             #Now choose random targtes plus self
             targets = []
@@ -1478,12 +1478,15 @@ class entity:                                          #A NPC or PC
             AllyChoice = [ally for ally in allies if ally != self]
             shuffle(AllyChoice)
             for i in range(0,targetnumber):
+                if i >= len(AllyChoice): break #no allies left
                 targets.append(AllyChoice[i])
-            
+            targets.append(self) #always in aura
+
             #Now apply Bonus
             links = []
+            auraBonus = self.modifier[5] #wis mod 
             for ally in targets:
-                links.append(ProtectionAuraToken(ally.TM)) #a link for every Ally
+                links.append(ProtectionAuraToken(ally.TM, auraBonus)) #a link for every Ally
             EmittingProtectionAuraToken(self.TM, links)
         else: return
 
@@ -1543,6 +1546,13 @@ class entity:                                          #A NPC or PC
             if self.has_armor_of_agathys:
                 AgathysDmg.add(self.agathys_dmg, 'cold')
         return AgathysDmg #is 0 if nothig added
+
+    def summon_entity(self, Name, archive=True):
+        #This is to initialize a entity
+        #For spells like conjure animals
+        summon = entity(Name, self.team, self.DM, archive=True)
+        return summon
+
 
 #---------------Round Handling------------
     def start_of_turn(self):
@@ -2988,7 +2998,6 @@ class spell:
         return Score, SpellTargets, CastLevel
 
     def score_conjure_animals(self, fight, twinned_cast = False):
-        #Work in Progress
         player = self.player
         SpellTargets = fight #this is a trick to pass the fight to the spell cast function
         #Okay, the critical level are 3, 5, 7, 9

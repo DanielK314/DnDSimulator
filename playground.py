@@ -14,8 +14,10 @@ Enemy2 = entity('Ogre', 1, DM, archive=True)
 Enemy2.name = 'Ogre2'
 Enemy3 = entity('Ogre', 1, DM, archive=True)
 Enemy3.name = 'Ogre3'
+Enemy4 = entity('Ogre', 1, DM, archive=True)
+Enemy4.name = 'Ogre4'
 
-fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3]
+fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 
 # Character.AI.do_your_turn(fight)
 # DM.say('')
@@ -24,7 +26,7 @@ fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3]
 Character.DM.rounds_number = 2
 Enemy.heal_given = 100
 Enemy.dmg_dealed = 20
-print(Character.SpellBook['ChillTouch'].score(fight))
+print(Character.SpellBook['Fireball'].score(fight))
 print(Character)
 
 

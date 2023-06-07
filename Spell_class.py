@@ -2,6 +2,8 @@ from Ifstatement_class import ifstatements
 from random import random
 from Entity_class import * #should be disabled before running
 from Token_class import *
+from numpy import argmax
+
 
 class spell:
     def __init__(self, player):
@@ -260,7 +262,7 @@ class spell:
     def dmg_score(self, SpellTargets, SpellAttack=True, SpellSave=False):
         #This returns a dmg score for the score functions
         DMGScore = 0
-        dmg = self.spell_dmg()#is defined in the subclasses that need it
+        dmg = self.spell_dmg() #is defined in the subclasses that need it
         for target in SpellTargets:
             target_dmg = dmg
             if SpellSave: #Prop that target makes save
@@ -370,7 +372,7 @@ class attack_spell(spell):
         else:
             CastLevel = self.choose_highest_slot(self.spell_level,9) #Choose highest Spell Slot
             if CastLevel == False: return self.return_0_score()
-
+        self.cast_level = CastLevel #do that the following dmg_score functions works prop
 
         #Find a suitable target/targts for this spell
         SpellTargets = []
@@ -547,6 +549,7 @@ class chill_touch(attack_spell):
         #class cast function returns dealed dmg
         dmg_dealed = super().cast(target, cast_level, twinned)
 
+        if type(target) == list: target = target[0]
         if dmg_dealed > 0:
             target.chill_touched = True
             self.DM.say(str(target.name) + ' was chill touched')
@@ -662,12 +665,13 @@ class guiding_bolt(attack_spell):
         dmg_type = 'radiant'
         self.spell_name = 'GuidingBolt'
         super().__init__(player, dmg_type)
-        self.spell_text = 'guifing bolt'
+        self.spell_text = 'guiding bolt'
         self.spell_level = 1
         self.is_twin_castable = True
         self.is_range_spell = True
 
     def cast(self, target, cast_level=False, twinned=False):
+        if type(target) == list: target = target[0]
         dmg_dealed = super().cast(target, cast_level, twinned)
 
         #On hit:
@@ -729,9 +733,9 @@ class entangle(save_spell):
         for i in range(0,TargetNumber): #choose 1-2 targets
             Target = self.player.AI.choose_att_target(TargetChoices, AttackIsRanged=True, other_dmg=0, other_dmg_type='true') # Find target for entangle
             if Target == False: return self.return_0_score() #no target
-            else: SpellTargets.append(Target)
-            TargetChoices.remove(SpellTargets[0]) #Dont double cast
-
+            else:
+                SpellTargets.append(Target)
+                TargetChoices.remove(Target) #Dont double cast
         Score = 0
         
         for x in SpellTargets:
@@ -809,6 +813,25 @@ class hex(spell):
         NewHexToken = HexedToken(target.TM, subtype='hex') #hex the Tagret
         self.player.CurrentHexToken.addLink(NewHexToken) #Add the new Hex Token
 
+    def score(self, fight, twinned_cast=False):
+        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='necrotic') #Choose best target
+        if SpellTarget == False: return self.return_0_score()
+
+        Score = 0
+        attacks = self.player.attacks
+        if 'EldritchBlast' in self.player.SpellBook:
+            Score += 3.5 #A warlock would want to cast hex
+            attacks = self.player.SpellBook['EldritchBlast'].number_of_attacks
+        Score = 3.5*attacks*(random()*3 + 2) #hex holds for some rounds
+        if 'MagicMissile' in self.player.SpellBook:
+            Score += 3.5 #Mag Missile Combi
+
+        CastLevel = self.choose_smallest_slot(1,9)
+        if CastLevel == False: return self.return_0_score()
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTarget, CastLevel 
+
 class armor_of_agathys(spell):
     def __init__(self, player):
         self.spell_name = 'ArmorOfAgathys'
@@ -824,6 +847,27 @@ class armor_of_agathys(spell):
         player.agathys_dmg = TempHP
         player.addTHP(TempHP) #add THP to self
 
+    def score(self, fight, twinned_cast=False):
+        player = self.player
+        SpellTargets = [player] #only self cast
+
+        #Choose Slot
+        Highest_Slot = self.choose_highest_slot(1,9)
+        if Highest_Slot != False:
+            CastLevel = self.choose_highest_slot(1,Highest_Slot-1) #Not use your highest slot
+            if CastLevel == False:
+                return self.return_0_score()
+        else: return self.return_0_score()
+
+        if player.has_armor_of_agathys: return self.return_0_score() #no double cast
+        
+        Score = 10*CastLevel #does at least 5dmg and 5 TPH for you
+        Score = Score*(3 - 2*player.CHP/player.HP) #tripples for low player
+        Score -= player.THP*2 #If you still have THP, rather keep it
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+ 
 class false_life(spell):
     def __init__(self, player):
         self.spell_name = 'FalseLife'
@@ -835,6 +879,27 @@ class false_life(spell):
         super().cast(target, cast_level, twinned)
         TempHP = 1.5 + 5*self.cast_level
         self.player.addTHP(TempHP) #Add the THP
+
+    def score(self, fight, twinned_cast=False):
+        player = self.player
+        SpellTargets = [player] #only self cast
+
+        #Choose Slot
+        Highest_Slot = self.choose_highest_slot(1,9)
+        if Highest_Slot != False:
+            CastLevel = self.choose_highest_slot(1,Highest_Slot-1) #Not use your highest slot
+            if CastLevel == False:
+                return self.return_0_score()
+        else: return self.return_0_score()
+
+        #Score 
+        Score = 1.5 + 3*CastLevel  #dmg equal value but for THP, a bit lower then 5
+        Score = Score*(3 - 2*player.CHP/player.HP) #tripples for low player
+        if player.THP > 0:
+            return self.return_0_score()
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
 
 class shield(spell):
     def __init__(self, player):
@@ -914,6 +979,7 @@ class spiritual_weapon(spell):
         super().__init__(player)
         self.spell_text = 'spiritual weapon'
         self.spell_level = 1
+        self.dmg_type = 'force'
     
     def cast(self, target, cast_level=False, twinned=False):
         super().cast(target, cast_level, twinned)
@@ -952,6 +1018,35 @@ class spiritual_weapon(spell):
         #Make a weapon Attack against first target
         self.player.attack(target, is_ranged=False, other_dmg=WeaponDmg, damage_type='force', tohit=WeaponTohit)
         self.player.bonus_action = 0 #It uses the BA to attack
+
+    def spell_dmg(self):
+        return self.player.spell_mod + 4.5*(self.cast_level - 1)
+
+    def score(self, fight, twinned_cast=False):
+        player = self.player
+
+        if player.has_spiritual_weapon:
+            return self.return_0_score() #has already sw 
+
+        #Choose Slot
+        Highest_Slot = self.choose_highest_slot(2,9) 
+        if Highest_Slot != False:
+            CastLevel = self.choose_highest_slot(2,Highest_Slot-1) #Not use your highest slot
+            if CastLevel == False:
+                return self.return_0_score()
+        else: return self.return_0_score()
+        self.cast_level = CastLevel #That the dmg_score for choose_att works prop
+
+        #Choose Target for first attack
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=self.spell_dmg(), other_dmg_type=self.dmg_type)]
+        if SpellTargets[0] == False:
+            return self.return_0_score()#no Enemy in reach
+
+
+        Score = self.dmg_score(SpellTargets, SpellAttack=True)
+        Score = Score*(2 + 2*random()) #expecting to hit with it multiple times
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
 
 #3-Level Spell
 class fireball(aoe_dmg_spell):
@@ -1005,6 +1100,33 @@ class haste(spell):
         ConcentrationToken(self.TM, HasteTokens)
         #Player is now concentrated on 1-2 Haste Tokens
 
+    def score(self, fight, twinned_cast=False):
+        player = self.player
+        SpellTargets = []
+        Choices = [x for x in fight if x.team == player.team and x.state == 1]
+        ChoicesScore = [x.dmg*(random()*0.5 +0.5) + x.AC*(random()*0.2 +0.2) + x.CHP/3*(random()*0.2 + 0.1) for x in Choices]
+        SpellTargets.append(Choices[argmax(ChoicesScore)]) #append best player for Haste
+        if twinned_cast:
+            removeIndex = argmax(ChoicesScore)
+            Choices.pop(removeIndex) #Dont double haste
+            ChoicesScore.pop(removeIndex)
+            if len(Choices) == 0: return self.return_0_score()
+            SpellTargets.append(Choices[argmax(ChoicesScore)]) #append best player for 2nd Haste
+
+        Score = 0
+        for x in SpellTargets:
+            Score += x.dmg/2*(random()*3.5 + 0.7) #lasts for some rounds
+            Score += x.AC - player.AC #Encourage High AC
+            #Dont haste low Ally
+            if x.CHP < x.HP/4:
+                Score -= x.dmg
+
+        CastLevel = self.choose_smallest_slot(3,9) #smalles slot 
+        if CastLevel == False: return self.return_0_score()
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+
 class conjure_animals(spell):
     def __init__(self, player):
         self.spell_name = 'ConjureAnimals'
@@ -1027,7 +1149,7 @@ class conjure_animals(spell):
         #Initiate a new entity for the Animals and add them to the fight
         conjuredAnimals = []
         for i in range(0,Number):
-            animal = entity(AnimalName, player.team, player.DM, archive=True)
+            animal = player.summon_entity(AnimalName, archive=True)
             animal.name = 'Conjured ' + AnimalName + str(i+1)
             self.DM.say(animal.name + ' appears')
             animal.summoner = player
@@ -1036,8 +1158,6 @@ class conjure_animals(spell):
             conjuredAnimals.append(SummenedToken(animal.TM, 'ca')) #add a SummonedToken to the animal
         #Add a Summoner Token to the Player
         SummonerToken(self.TM, conjuredAnimals)
-
-
 
     def choose_animal(self):
         level = 10 #will be set to Beast level for test
@@ -1058,6 +1178,44 @@ class conjure_animals(spell):
             Number = Number*4
         
         return Number, AnimalName
+
+    def score(self, fight, twinned_cast=False):
+        player = self.player
+        SpellTargets = fight #this is a trick to pass the fight to the spell cast function
+        #Okay, the critical level are 3, 5, 7, 9
+        #So 4, 6, 8 would be a bit wasted
+        TryLevel = [9,7,5,3]
+        CastLevel = False
+        for x in TryLevel:  #find best slot
+            if self.player.spell_slot_counter[x-1] > 0:
+                CastLevel = x
+                break
+        if CastLevel == False:
+            CastLevel = self.choose_smallest_slot(x,9)
+
+        if CastLevel == False: return self.return_0_score()  #no slot
+
+
+        Score = 0 #for now
+        if player.has_summons:
+            print('Has sommons already')
+            quit() #nonsense
+        #Ape has CR 1/2 with +5 to hit, 6.5 dmg, 2 attacks -> 6.5/4 *2attacks /0.5CR -> 6.5dmg/1CR
+        #BrownBear CR 1 +5 9.75dmg, 2 attacks -> 4.8dmg/1CR
+        #Wolf 7dmg/4 /0.25CR -> 7dmg/1CR
+        #About 6 dmg/1CR, HP matters less because of Concentration
+
+        #As concentration can be interrupted, they might not last so long, lets say 1-3 Rounds
+        if CastLevel < 5:
+            TotalCR = 2
+        elif CastLevel < 7:
+            TotalCR = 4
+        elif CastLevel < 9: 
+            TotalCR = 6
+        else: 
+            TotalCR = 8
+        Score = TotalCR*6*(random()*2 + 1.5) #CR * 6dmg/CR * 1.5-3.5 Rounds
+        return Score, SpellTargets, CastLevel
 
 #4-Level Spell
 
@@ -1096,5 +1254,38 @@ class blight(aoe_dmg_spell):
             self.apply_dmg(target, damage=damage/2)        
         else: self.apply_dmg(target, damage=damage)
     
+    def score(self, fight, twinned_cast=False):
+        CastLevel = self.choose_highest_slot(4,9)
+        if CastLevel == False: return self.return_0_score()
+        self.cast_level = CastLevel
+
+        self.addedDmg = 0  #is later added for plants, undead and constructs
+        dmg = self.spell_dmg()
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)]
+        if SpellTargets == [False]: #No Target
+            return self.return_0_score()
+        if twinned_cast:
+            #Secound Target for Twin Cast
+            twin_target = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)
+            if twin_target == False:
+                return self.return_0_score()
+            SpellTargets.append(twin_target)
+
+        
+        #DMG Score
+        Score = 0
+        Score += self.dmg_score(SpellTargets, SpellAttack=False, SpellSave=True)
+
+        #Creature Type 
+        for x in SpellTargets:
+            if x.type == 'plant': Score += dmg/1.5
+            if x.type == 'undead' or x.type == 'construct': Score -= dmg
+
+        if twinned_cast: Score = Score*2
+
+        Score = Score*self.random_score_scale() # a little random power 
+        return Score, SpellTargets, CastLevel
+
     def spell_dmg(self):
-        return 0 #will not be used anyway for blight
+        dmg = 4.5*4 + 4.5*self.cast_level
+        return dmg

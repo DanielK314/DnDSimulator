@@ -337,9 +337,9 @@ class EmittingProtectionAuraToken(DockToken):
         #every Round other protected
 
 class ProtectionAuraToken(LinkToken):
-    def __init__(self, TM,):
+    def __init__(self, TM, auraBonus):
         subtype = 'aop'  #aura of protection
         super().__init__(TM, subtype)
-        self.auraBonus = self.origin.TM.player.modifier[5] #Wisdom Mod of origin player
+        self.auraBonus = auraBonus #Wisdom Mod of origin player
         if self.auraBonus < 1: self.auraBonus = 1
 

@@ -214,7 +214,7 @@ class do_spiritual_weapon(choice):
         target = player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=player.SpiritualWeaponDmg, other_dmg_type='force')
         if target != False:
             player.SpellBook['SpiritualWeapon'].use_spiritual_weapon(target)
-        else: player.bonus_action = 0 
+        else: player.bonus_action = 0
 
 class do_turn_undead(choice):
     def __init__(self, player):
