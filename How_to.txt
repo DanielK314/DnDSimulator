@@ -106,3 +106,8 @@ Run Time Benchmark:
 1. Configure Benchmark in run_time_benchmark.py
 2. The Benchmark Entities are in a folder
 3. Then run TimeAnalysis
+
+Create a Exe File
+Use the program pyinstall
+'pyinstall --onefile StartSimulator.py'
+Add the rest of the Stuff and .zip it 

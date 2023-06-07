@@ -2,6 +2,7 @@ from random import random, shuffle
 import numpy as np
 import Choice_class as ch
 from functools import partial
+from Spell_class import spell
 
 if __name__ == '__main__':
     from Entity_class import entity
@@ -24,9 +25,8 @@ class AI:
             ch.do_monster_ability(player),
             ch.do_heal(player)
         ]
-        for spell in self.player.SpellNames:
-            if self.player.SpellBook[spell].is_known:
-                self.Choices.append(ch.do_spellcasting(player))#if any Spell is known, add this choice option
+        if len(self.player.SpellBook) > 0:
+            self.Choices.append(ch.do_spellcasting(player))#if any Spell is known, add this choice option
         if self.player.knows_inspiration:
             self.Choices.append(ch.do_inspire(player))
         if self.player.knows_action_surge:
@@ -94,7 +94,7 @@ class AI:
         #is someone dying
             dying_allies_deathcounter = np.array([i.death_counter for i in self.dying_allies])
             if np.max(dying_allies_deathcounter) > 1:
-                if player.SpellBook['CureWounds'].is_known and sum(player.spell_slot_counter) > 0 and player.bonus_action == 1:
+                if 'CureWounds' in player.SpellBook and sum(player.spell_slot_counter) > 0 and player.bonus_action == 1:
                     player.wild_reshape()
                     target = self.dying_allies[np.argmax(dying_allies_deathcounter)]
                     for i in range(0,9):
@@ -463,14 +463,15 @@ class AI:
         Choices = []
 
         #Check Spells
-        for spellname in player.SpellNames:
-            Checkvalue = self.spell_cast_check(player.SpellBook[spellname])
-            if Checkvalue == 1:#check is spell is castable
-                Choices.append(player.SpellBook[spellname].cast)
-            if Checkvalue == 1 and player.SpellBook[spellname].is_twin_castable and player.knows_twinned_spell and player.sorcery_points > player.SpellBook[spellname].spell_level and player.sorcery_points > 1:
-                Choices.append(player.SpellBook[spellname].twin_cast)
+        for x, spell in player.SpellBook.items():
+            Checkvalue = self.spell_cast_check(spell) #check if castable
+            if Checkvalue == 1: #Check, Spell is castable
+                Choices.append(spell.cast)
+                #Check if Twin cast is an option
+            if all(Checkvalue == 1, spell.is_twin_castable, player.knows_twinned_spell, player.sorcery_points > spell.spell_level, player.sorcery_points > 1):
+                Choices.append(spell.twin_cast)
             elif Checkvalue == 2: #Spell is only castable via quickened spell
-                Choices.append(player.SpellBook[spellname].quickened_cast)
+                Choices.append(spell.quickened_cast)
 
         #This function determines if the player wants to cast a quickened spell this round
         if player.knows_quickened_spell:
@@ -491,20 +492,19 @@ class AI:
         #This Score is assigned by a function of the spellcasting class 
         #This function also evalues if it is good to use a quickened or twin cast
         #The evaluation of quickened Cast is currently not handled by these functions
-            for spell in player.SpellNames:
-                if Choice == player.SpellBook[spell].cast:
-                    Score, SpellTargets, CastLevel = player.SpellBook[spell].score(fight)
-                elif Choice == player.SpellBook[spell].quickened_cast:
+            for x, spell in player.SpellBook.items():
+                if Choice == spell.cast:
+                    Score, SpellTargets, CastLevel = spell.score(fight)
+                elif Choice == spell.quickened_cast:
                     if cast_quickened_this_round == True:
-                        Score, SpellTargets, CastLevel = player.SpellBook[spell].score(fight)
+                        Score, SpellTargets, CastLevel = spell.score(fight)
                     else:
                         #Basically dont cast quickened this round
                         Score = 0
                         SpellTargets = [player]
                         CastLevel = 0
-                elif Choice == player.SpellBook[spell].twin_cast:
-                    Score, SpellTargets, CastLevel = player.SpellBook[spell].score(fight, twinned_cast=True)
-
+                elif Choice == spell.twin_cast:
+                    Score, SpellTargets, CastLevel = spell.score(fight, twinned_cast=True)
             ChoiceScores[i] = Score
             TargetList[i] = SpellTargets
             LevelList[i] = CastLevel
@@ -568,7 +568,7 @@ class AI:
 
     def choose_heal_spellslot(self, MinLevel = 1):
         player = self.player
-        spells = player.SpellBook['HealingWord']
+        spells = spell(player)
         #It has no meaning which spell is used, I only want to use the choose lowest/highest spell function
         SpellPower = sum([player.spell_slot_counter[i]*np.sqrt((i + 1)) for i in range(0,9)])
         MaxSlot = 0 # Which is the max spell slot left

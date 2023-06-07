@@ -74,7 +74,7 @@ class do_attack(choice):
 
     def execute(self, fight):
         player = self.player
-        #This function then actually does the attack
+        #This function then actually does the attack<<
         if player.action == 1: #if nothing else, attack
             #Smite if u can and have not cast
             if player.knows_smite:
@@ -246,12 +246,10 @@ class do_spellcasting(choice):
         self.SpellScore = 0
         self.ChoosenSpell = False
 
-        for spell in player.SpellNames: #check if player knows any spells
-            if player.SpellBook[spell].is_known:
-                if player.bonus_action == 1 or player.action == 1: #if you have still action left 
-                    #print(self.choose_spell(fight))
-                    self.ChoosenSpell, self.SpellScore = player.AI.choose_spell(fight)
-                    break
+        if len(player.SpellBook) > 0:# check if player knows any spells
+            if player.bonus_action == 1 or player.action == 1: #if you have still action left 
+                #print(self.choose_spell(fight))
+                self.ChoosenSpell, self.SpellScore = player.AI.choose_spell(fight)
         return self.SpellScore
     
     def execute(self, fight):
@@ -326,10 +324,12 @@ class do_heal(choice):
         #Check for heal
         if player.lay_on_hands_counter > 0 and player.action == 1:
             self.has_heal = True
-        if player.AI.spell_cast_check(player.SpellBook['CureWounds']) != False:
-            self.has_heal = True
-        if player.AI.spell_cast_check(player.SpellBook['HealingWord']) != False:
-            self.has_heal = True
+        if 'CureWounds' in player.SpellBook:
+            if player.AI.spell_cast_check(player.SpellBook['CureWounds']) != False:
+                self.has_heal = True
+        if 'HealingWord' in player.SpellBook:
+            if player.AI.spell_cast_check(player.SpellBook['HealingWord']) != False:
+                self.has_heal = True
 
         if self.has_heal == False: return 0
         else:
@@ -392,9 +392,13 @@ class do_heal(choice):
             return
 
         #Choose Heal
-        HealingWordValue = player.AI.spell_cast_check(player.SpellBook['HealingWord'])
-        CureWoundsValue = player.AI.spell_cast_check(player.SpellBook['CureWounds'])
-        level = self.choose_heal_spellslot(MinLevel=1)
+        HealingWordValue = 0
+        CureWoundsValue = 0
+        if 'HealingWord' in player.SpellBook:
+            HealingWordValue = player.AI.spell_cast_check(player.SpellBook['HealingWord'])
+        if 'CureWounds' in player.SpellBook:
+            CureWoundsValue = player.AI.spell_cast_check(player.SpellBook['CureWounds'])
+        level = self.player.AI.choose_heal_spellslot(MinLevel=1)
         if HealingWordValue == 1: #HealingWord is castable
             player.SpellBook['HealingWord'].cast(target, cast_level=level)
         elif player.lay_on_hands_counter > 0 and player.action ==1:
@@ -408,31 +412,4 @@ class do_heal(choice):
         else:
             #This should not happen
             print('This is stupid, no Heal in AI, check do_heal class')
-            quit()        
-
-    def choose_heal_spellslot(self, MinLevel = 1):
-        player = self.player
-        spells = player.SpellBook['HealingWord']
-        #It has no meaning which spell is used, I only want to use the choose lowest/highest spell function
-        SpellPower = sum([player.spell_slot_counter[i]*np.sqrt((i + 1)) for i in range(0,9)])
-        MaxSlot = 0 # Which is the max spell slot left
-        for i in reversed(range(0,9)):
-            if player.spell_slot_counter[i] > 0:
-                MaxSlot = i + 1
-                break
-
-        TestLevel = int(SpellPower/5 + 1.5)
-        if TestLevel == MaxSlot:
-            #Never use best slot to heal
-            TestLevel -= 1
-        
-        #Use the TestLevel Slot or the next best lower then it
-        LowLevel = spells.choose_highest_slot(1,TestLevel)
-        if LowLevel != False:
-            return LowLevel
-        #if no low level left, try higher
-        HighLevel = spells.choose_smallest_slot(TestLevel+1,9)
-        if HighLevel != False:
-            return HighLevel
-        return False #No Spellslot
-
+            quit() 
