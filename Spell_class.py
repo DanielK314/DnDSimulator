@@ -16,7 +16,11 @@ class spell:
         #Initial
         if hasattr(self, 'spell_name') == False:
             self.spell_name = 'undefined'          #Give Name, if not specified in subclass
+        if hasattr(self, 'spell_text') == False:
+            self.spell_text = 'undefined'         #This is the text name that will be printed
+
         self.spell_level = 0
+        self.cast_level = 0 #Will be set before every cast
         self.spell_save_type = False        #Type of the Spell Save 
         self.is_bonus_action_spell = False
         self.is_concentration_spell = False
@@ -36,14 +40,14 @@ class spell:
     #The make_action_check function checks if Action, Bonus Action is used
     #the spell class objects will be linked to the player casting it by self.player
 
-    def cast(self, targets, cast_level=0, twinned = False):
-        #This function is a placeholder, it should be implemented in the subclasses
-        self.player.DM.say('No cast function was implemented for ' + self.spell_name)
-        quit()
+    def cast(self, targets, cast_level = False, twinned = False):
+        if cast_level == False: cast_level = self.spell_level
+        self.autorize_cast(cast_level)
+        self.announce_cast()
 
     def autorize_cast(self, cast_level):
         #Checks if cast is autorized
-        #Make a check if cast is possible 
+        #Make a check if cast is possible
         if cast_level == False:
             cast_level = self.spell_level #cast as level if nothing else
 
@@ -53,6 +57,12 @@ class spell:
         else:
             if self.make_spell_check(cast_level=cast_level) == False:
                 return
+        
+        #If everything is autorized, set cast_level
+        self.cast_level = cast_level
+
+    def announce_cast(self):
+        self.player.DM.say(self.player.name + ' casts ' + self.spell_text + ' at lv.' + str(self.cast_level))
 
     def score(self, fight, twinned_cast = False):
         #The Score function is called in the Choices Class
@@ -314,11 +324,10 @@ class attack_spell(spell):
     def cast(self, targets, cast_level=False, twinned=False):
         if type(targets) != list:
             targets = [targets]  #if a list, take first target
-
-        self.autorize_cast(cast_level)
+        super().cast(targets, cast_level, twinned) #self.cast_level is not set
         #Cast is authorized, so make a spell attack
         tohit = self.player.spell_mod + self.player.proficiency
-        dmg = self.spell_dmg(cast_level)
+        dmg = self.spell_dmg()
 
         if self.player.empowered_spell:
             dmg = dmg*1.21
@@ -331,7 +340,6 @@ class attack_spell(spell):
 
     def make_spell_attack(self,targets, dmg, tohit):
         #This function is called in cast function and makes the spell attacks
-        self.DM.say(str(self.player.name) + ' casts ' + self.spell_text)
         #all specifications for this spell are given to the attack function
         #Can attack multiple targts, if one target is passed and num of attacks == 1 this is just one attack
         target_counter = 0
@@ -345,7 +353,7 @@ class attack_spell(spell):
                 target_counter = 0  #if all targets were attacked once, return to first
         return dmg_dealed
 
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         #This function will return the dmg according to Cast Level
         print('No dmg defined for spell: ' + self.spell_name)
 
@@ -358,13 +366,11 @@ class save_spell(spell):
         self.spell_save_type = spell_save_type
         self.spell_text = 'spell name' #This will be written as the spell name in print
 
-    def cast(self, target, cast_level=0, twinned=False):
-        self.autorize_cast(cast_level)
+    def cast(self, target, cast_level=False, twinned=False):
+        super().cast(target, cast_level, twinned)
+        self.make_save(self, target, twinned)
 
-        self.player.DM.say(self.player.name + ' casts ' + self.spell_text)
-        self.make_save(self, target, cast_level, twinned)
-
-    def make_save(self, target, cast_level, twinned):
+    def make_save(self, target, twinned):
         #Single Target only
         if type(target) == list:
             target = target[0]
@@ -374,11 +380,11 @@ class save_spell(spell):
         if save < self.player.spell_dc:
             #If failed, then take the individual effect
             self.DM.say(': failed the save')
-            self.take_effect(target, cast_level, twinned)
+            self.take_effect(target, twinned)
         else:
             self.DM.say(': made the save')
     
-    def take_effect(self, target, cast_level, twinned):
+    def take_effect(self, target, twinned):
         #Take effect on a single target
         #This must be implemented in the subclasses
         print('The Save Spell has no effect')
@@ -393,14 +399,14 @@ class aoe_dmg_spell(spell):
         self.dmg_type = dmg_type
         self.spell_text = 'spell name' #This will be written as the spell name in print
 
-
-    def cast(self, targets, cast_level=0, twinned=False):
+    def cast(self, targets, cast_level=False, twinned=False):
         #Multiple Targts
-        self.autorize_cast(cast_level)
-        self.player.DM.say(self.player.name + ' casts ' + self.spell_text)
+        if type(targets) != list: targets = [targets]
+        super().cast(targets, cast_level, twinned) #self.cast_level now set
+
 
         #Damage and empowered Spell
-        damage = self.spell_dmg(cast_level)
+        damage = self.spell_dmg()
         if self.player.empowered_spell:
             damage = damage*1.21
             self.player.empowered_spell = False
@@ -419,7 +425,7 @@ class aoe_dmg_spell(spell):
         target.last_attacker = self.player
         target.changeCHP(dmg_to_apply, self.player, True)
 
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         #This function will return the dmg according to Cast Level
         print('No dmg defined for spell: ' + self.spell_name)
 
@@ -445,7 +451,7 @@ class firebolt(attack_spell):
         self.is_range_spell = True
         self.is_twin_castable = True
     
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         return self.firebolt_dmg
 
 class chill_touch(attack_spell):
@@ -471,7 +477,7 @@ class chill_touch(attack_spell):
         self.is_range_spell = False
         self.is_twin_castable = True
 
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         return self.chill_touch_dmg
     
     def cast(self, target, cast_level=0, twinned=False):
@@ -505,17 +511,17 @@ class eldritch_blast(attack_spell):
         self.is_range_spell = True
         self.is_twin_castable = False
     
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         spell_dmg = self.blast_dmg
         #Aganizing Blast
         if self.player.knows_agonizing_blast:
             spell_dmg += self.player.modifier[5] #Add Cha Mod
         return spell_dmg
 
-    def cast(self, targets, cast_level=2, twinned=False):
+    def cast(self, targets, cast_level=False, twinned=False):
         if self.player.knows_agonizing_blast:
             self.DM.say('Agonizing: ', end='')
-        return super().cast(targets, cast_level, twinned)
+        super().cast(targets, cast_level, twinned)
 
 #1-Level Spell
 class burning_hands(aoe_dmg_spell):
@@ -527,10 +533,42 @@ class burning_hands(aoe_dmg_spell):
         self.spell_level = 1
         self.is_range_spell = True
 
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         #Return the spell dmg
-        damage = 7 + 3.5*(cast_level)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 7 + 3.5*(self.cast_level)   #upcast dmg 3d6 + 1d6 per level over 2
         return damage
+
+class magic_missile(spell):
+    def __init__(self, player):
+        self.spell_name = 'MagicMissile'
+        super().__init__(player)
+        self.spell_text = 'magic missile'
+        self.spell_level = 1
+        self.is_range_spell = True
+    
+    def cast(self, targets, cast_level=False, twinned=False):
+        damage = 3.5   #1d4 + 1
+        if self.player.empowered_spell:
+            damage = damage*1.21
+            self.player.empowered_spell = False
+            self.DM.say('Empowered: ', end='')
+        super().cast(targets, cast_level, twinned)
+        if type(targets) != list: targets = [targets]
+        self.hurl_missile(targets, damage)
+
+    def hurl_missile(self, targets, damage):
+        missile_counter = 2 + self.cast_level          #overcast mag. mis. for more darts 
+        target_counter = 0
+        while missile_counter > 0:    #loop for missile cast
+            missile_counter -= 1
+            Dmg = dmg(damage, 'force')
+            #Check for Hex
+            self.player.check_hex(Dmg, targets[target_counter])
+            targets[target_counter].last_attacker = self.player    #target remembers last attacker
+            targets[target_counter].changeCHP(Dmg, self.player, True)    #target takes damage
+            target_counter += 1
+            if target_counter == len(targets):    #if all targets are hit once, restart 
+                target_counter = 0
 
 class entangle(save_spell):
     def __init__(self, player):
@@ -543,25 +581,71 @@ class entangle(save_spell):
         self.is_concentration_spell = True
         self.is_range_spell = True
     
-    def cast(self, targets, cast_level=0, twinned=False):
+    def cast(self, targets, cast_level=False, twinned=False):
         #Rewrite cast function to be suited for entangle
         #Entangle takes one target, or two if twinned
         if len(targets) > 2 or len(targets) == 2 and twinned == False: 
             print('Too many entangle targets')
             quit()
-
-        self.autorize_cast(cast_level)
+        if cast_level == False: cast_level = self.spell_level
+        self.autorize_cast(cast_level) #self.cast_level now set
         self.player.DM.say(self.player.name + ' casts ' + self.spell_text)
+
         self.EntangleTokens = [] #List for entagle Tokens
         for target in targets:
-            self.make_save(target, cast_level, twinned)  #This triggeres the super class make save function, if failed the take_effect function is called
+            self.make_save(target, twinned)  #This triggeres the super class make save function, if failed the take_effect function is called
         if len(self.EntangleTokens) != 0:
             ConcentrationToken(self.TM, self.EntangleTokens)
             #player is concentrating on a Entagled Target or targets
 
-    def take_effect(self, target, cast_level, twinned):
+    def take_effect(self, target, twinned):
         EntangleToken = EntangledToken(target.TM, subtype='r') #Target gets a entangled token
         self.EntangleTokens.append(EntangleToken) #Append to list
+
+class cure_wounds(spell):
+    def __init__(self, player):
+        self.spell_name = 'CureWounds'
+        super().__init__(player)
+        self.spell_text = 'cure wounds'
+        self.spell_level = 1
+        self.is_twin_castable = True
+    
+    def cast(self, target, cast_level=False, twinned=False):
+        if type(target) == list: target = target[0]
+        super().cast(target, cast_level, twinned)
+        heal = 4.5*self.cast_level + self.player.spell_mod
+        self.DM.say(self.player.name + ' touches ' + target.name + ' with magic:', end='')
+        target.changeCHP(dmg(-heal, 'heal'), self.player, False)
+
+class healing_word(spell):
+    def __init__(self, player):
+        self.spell_name = 'HealingWord'
+        super().__init__(player)
+        self.spell_text = 'healing word'
+        self.spell_level = 1
+        self.is_twin_castable = True
+        self.is_range_spell = True
+        self.is_bonus_action_spell = True
+    
+    def cast(self, target, cast_level=False, twinned=False):
+        if type(target) == list: target = target[0]
+        super().cast(target, cast_level, twinned)
+        heal = 2.5*self.cast_level + self.player.spell_mod
+        if heal < 0: heal = 1
+        self.DM.say(self.player.name + ' speaks to ' + target.name, end='')
+        target.changeCHP(dmg(-heal, 'heal'), self.player, True)
+
+class shield(spell):
+    def __init__(self, player):
+        self.spell_name = 'Shield'
+        super().__init__(player)
+        self.spell_text = 'shield'
+        self.spell_level = 1
+        self.is_reaction_spell = True
+    
+    def cast(self, target=False, cast_level=False, twinned=False):
+        super().cast(target, cast_level, twinned)
+        self.player.AC += 5
 
 class inflict_wounds(attack_spell):
     def __init__(self, player):
@@ -572,8 +656,10 @@ class inflict_wounds(attack_spell):
         self.spell_level = 1
         self.is_twin_castable = True
     
-    def spell_dmg(self, cast_level):
-        return 11 + 5.5*cast_level #3d10 + 1d10/level > 1
+    def spell_dmg(self):
+        return 11 + 5.5*self.cast_level #3d10 + 1d10/level > 1
+
+#2-Level Spell
 
 class scorching_ray(attack_spell):
     def __init__(self, player):
@@ -584,13 +670,28 @@ class scorching_ray(attack_spell):
         self.spell_level = 2
         self.is_range_spell = True
     
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         return 7 #2d6 dmg per ray
 
-    def cast(self, targets, cast_level=2, twinned=False):
+    def cast(self, targets, cast_level=False, twinned=False):
+        if cast_level == False: cast_level = self.spell_level
         self.number_of_attacks = 1 + cast_level
         #Set the number of attacks, then let the super cast function handle the rest
-        return super().cast(targets, cast_level, twinned)
+        super().cast(targets, cast_level, twinned)
+
+class aganazzars_sorcher(aoe_dmg_spell):
+    def __init__(self, player):
+        spell_save_type = 1 #Dex
+        self.spell_name = 'AganazzarsSorcher'
+        super().__init__(player, spell_save_type, dmg_type='fire')
+        self.spell_text = 'aganazzars scorcher'
+        self.spell_level = 2
+        self.is_range_spell = True
+
+    def spell_dmg(self):
+        #Return the spell dmg
+        damage = 13.5 + 4.5*(self.cast_level-2)   #upcast dmg 3d6 + 1d6 per level over 2
+        return damage
 
 #3-Level Spell
 class fireball(aoe_dmg_spell):
@@ -602,17 +703,46 @@ class fireball(aoe_dmg_spell):
         self.spell_level = 3
         self.is_range_spell = True
 
-    def spell_dmg(self, cast_level):
+    def spell_dmg(self):
         #Return the spell dmg
-        damage = 28 + 3.5*(cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 28 + 3.5*(self.cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
         return damage
 
+class lightningBolt(aoe_dmg_spell):
+    def __init__(self, player):
+        spell_save_type = 1 #Dex
+        self.spell_name = 'LightningBolt'
+        super().__init__(player, spell_save_type, dmg_type='lightning')
+        self.spell_text = 'lightning bolt'
+        self.spell_level = 3
+        self.is_range_spell = True
 
+    def spell_dmg(self):
+        #Return the spell dmg
+        damage = 28 + 3.5*(self.cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
+        return damage
 
-
-
-
-
-
+class haste(spell):
+    def __init__(self, player):
+        self.spell_name = 'Haste'
+        super().__init__(player)
+        self.spell_text = 'haste'
+        self.spell_level = 3
+        self.is_twin_castable = True
+        self.is_concentration_spell = True
+        self.is_range_spell = True
+    
+    def cast(self, targets, cast_level=False, twinned=False):
+        if len(targets) > 2 or len(targets) == 2 and twinned == False: 
+            print('Too many entangle targets')
+            quit()
+        super().cast(targets, cast_level, twinned)
+        HasteTokens = []
+        for target in targets:
+            HasteToken = HastedToken(target.TM, subtype='h')
+            HasteTokens.append(HasteToken)
+            self.DM.say(self.player.name + ' gives haste to ' + target.name)
+        ConcentrationToken(self.TM, HasteTokens)
+        #Player is now concentrated on 1-2 Haste Tokens
 
 

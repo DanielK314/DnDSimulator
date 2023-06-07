@@ -143,13 +143,13 @@ class entity:                                          #A NPC or PC
         self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
                            'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds'
                            'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
-                           'Fireball', 'Haste', 'ConjureAnimals',
+                           'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals',
                            'Blight']
         #Add here all Spell classes that are impemented
         Spell_classes = [firebolt, chill_touch, eldritch_blast,
-                         burning_hands, inflict_wounds, entangle,
-                         scorching_ray, eldritch_blast,
-                         fireball]
+                         burning_hands, magic_missile, inflict_wounds, entangle, cure_wounds, healing_word, shield,
+                         aganazzars_sorcher, scorching_ray,
+                         fireball, lightningBolt, haste]
         #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
         self.SpellBook = dict()
         for x in Spell_classes:
