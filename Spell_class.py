@@ -103,7 +103,7 @@ class spell:
                 self.player.spell_slot_counter[cast_level-1] -= 1   #one SpellSlot used
                 return True
         #check if player has cast this round
-        elif self.player.cast == 0:
+        elif self.player.has_cast_left == False:
             self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but has already cast a spell')
             quit()
         #check is player has action/bonus action left
@@ -143,7 +143,7 @@ class spell:
             else:
                 self.player.bonus_action = 0       #Bonus Action used
                 if self.is_cantrip == False:
-                    self.player.cast = 0
+                    self.player.has_cast_left = False
                 return True
             
         #Action Spell
@@ -156,7 +156,7 @@ class spell:
                     self.player.bonus_action = 0
                     self.player.quickened_spell = 0
                     if self.is_cantrip == False:
-                        self.player.cast = 0
+                        self.player.has_cast_left = False
                     return True
                 #No Bonus Action left
                 else:
@@ -170,7 +170,7 @@ class spell:
                 else:
                     self.player.action = 0  #action used
                     if self.is_cantrip == False:
-                        self.player.cast = 0
+                        self.player.has_cast_left = False
                     return True
 
 #-------------Meta Magic------------------
@@ -203,7 +203,7 @@ class spell:
                 else:
                     self.player.action = 1
                 if self.is_cantrip == False:
-                    self.player.cast = 1
+                    self.player.has_cast_left = True
                 #This kind of spells must handle their twin cast in the cast function
                 self.cast(targets, cast_level, twinned=True)
             else:
@@ -214,7 +214,7 @@ class spell:
                     else:
                         self.player.action = 1
                     if self.is_cantrip == False:
-                        self.player.cast = 1
+                        self.player.has_cast_left = True
                     self.cast(x, cast_level)
 
     def quickened_cast(self, targets, cast_level=False):
@@ -991,8 +991,8 @@ class spiritual_weapon(spell):
 
         #If a player cast this spell for the first time, the choice will be aded to the AI
         #The Score function will still check if the player is allowed to use it
-        
-        player.AI.Choices.append(player.AI.spiritualWeaponChoice)
+        if player.AI.spiritualWeaponChoice not in player.AI.Choices:
+            player.AI.Choices.append(player.AI.spiritualWeaponChoice)
 
         #Attack Once as BA
         if player.bonus_action == 1:

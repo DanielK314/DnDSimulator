@@ -1,11 +1,23 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 100
+        "repetitions": 1000
     },
     "Entities": [
         {
+            "name": "Test Hero",
+            "team": 0
+        },
+        {
+            "name": "Test Villain",
+            "team": 1
+        },
+        {
             "name": "Barbarian Lv5",
+            "team": 0
+        },
+        {
+            "name": "Cleric Lv8",
             "team": 0
         },
         {
@@ -17,11 +29,15 @@
             "team": 0
         },
         {
-            "name": "Wizard Lv5",
+            "name": "Warlock Lv5",
             "team": 0
         },
         {
-            "name": "Warlock Lv5",
+            "name": "Bard Lv5",
+            "team": 0
+        },
+        {
+            "name": "Druid Lv 5",
             "team": 0
         },
         {
@@ -29,7 +45,15 @@
             "team": 0
         },
         {
-            "name": "Bard Lv5",
+            "name": "Sorcerer lv8",
+            "team": 0
+        },
+        {
+            "name": "Test",
+            "team": 0
+        },
+        {
+            "name": "Wizard Lv5",
             "team": 0
         },
         {
@@ -41,6 +65,42 @@
             "team": 1
         },
         {
+            "name": "Goblin",
+            "team": 1
+        },
+        {
+            "name": "Ogre",
+            "team": 1
+        },
+        {
+            "name": "Pirate 3",
+            "team": 1
+        },
+        {
+            "name": "Pirate",
+            "team": 1
+        },
+        {
+            "name": "Thoran",
+            "team": 1
+        },
+        {
+            "name": "Young Dragon",
+            "team": 1
+        },
+        {
+            "name": "Fire Elemental",
+            "team": 1
+        },
+        {
+            "name": "Giant Eagle",
+            "team": 1
+        },
+        {
+            "name": "Guard",
+            "team": 1
+        },
+        {
             "name": "Pirate 2",
             "team": 1
         },
@@ -49,19 +109,7 @@
             "team": 1
         },
         {
-            "name": "Test Villain",
-            "team": 1
-        },
-        {
-            "name": "Pirate",
-            "team": 1
-        },
-        {
-            "name": "Pirate 3",
-            "team": 1
-        },
-        {
-            "name": "Goblin",
+            "name": "Vamire Spawn",
             "team": 1
         }
     ]

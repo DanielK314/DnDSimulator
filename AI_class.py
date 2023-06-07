@@ -73,7 +73,7 @@ class AI:
                     ActionToDo.execute(fight) #Do the best Choice
                 #First Round Action and Attacks
                 #Secound Round Bonus Action
-                #Check is still smth to do, else return
+                #Check if still smth to do, else return
                 if sum(ChoiceScores) == 0:
                     rules = [player.bonus_action == 1 and player.action == 1,
                         player.attack_counter > 0,
@@ -400,7 +400,7 @@ class AI:
             return False
         elif spell.is_reaction_spell:
             return False   #reaction Spell in own turn makes no sense
-        elif spell.is_cantrip == False and player.cast == 0:
+        elif spell.is_cantrip == False and player.has_cast_left == False:
             return False
 
 
@@ -408,7 +408,7 @@ class AI:
         if spell.is_bonus_action_spell and player.bonus_action == 1:
             if spell.is_cantrip:
                 return 1         #have BA, is cantrip -> cast 
-            elif player.cast == 1:
+            elif player.has_cast_left:
                 return 1        #have BA, is spell, have caste left? -> cast
             else:
                 return False    #cant cast, have already casted
@@ -416,14 +416,14 @@ class AI:
             if player.action == 1:
                 if spell.is_cantrip:
                     return 1 #have action and is cantrip? -> cast
-                elif player.cast == 1:
+                elif player.has_cast_left:
                     return 1 #have action and cast left? -> cast
                 else:
                     return False
             elif player.bonus_action == 1 and player.knows_quickened_spell and player.sorcery_points >= 2:
                 if spell.is_cantrip:
                     return 2  #Cast only with Quickened Spell
-                elif player.cast ==1:
+                elif player.has_cast_left:
                     return 2  #have cast left?
                 else:
                     return False
@@ -437,7 +437,7 @@ class AI:
         player = self.player
         QuickScore = 100
         QuickScore = QuickScore*(1.5 - 0.5*(player.CHP/player.HP)) #encourage quickend cast if youre low, if CHP -> 0, Score -> 150
-        if player.cast == 1: QuickScore = QuickScore*1.4    #encourage if you havend cast yet
+        if player.has_cast_left: QuickScore = QuickScore*1.4    #encourage if you havend cast yet
         if player.sorcery_points < player.sorcery_points_base/2: QuickScore = QuickScore*0.9 #disencourage for low SP
         elif player.sorcery_points < player.sorcery_points_base/3: QuickScore = QuickScore*0.8
         elif player.sorcery_points < player.sorcery_points_base/5: QuickScore = QuickScore*0.7
