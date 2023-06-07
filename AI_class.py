@@ -59,9 +59,9 @@ class AI:
             if player.bonus_action == 1:
                 if player.CHP/player.HP < 0.3: player.use_second_wind()
 
-        #Interseption
-        if player.knows_interseption:
-            self.allies[int(random()*len(self.allies))].interseption_amount = 5.5 + player.proficiency
+        #Interception
+        if player.knows_interception:
+            self.allies[int(random()*len(self.allies))].interception_amount = 5.5 + player.proficiency
 
         #------------Not in WildShape
         if player.wild_shape_HP == 0:

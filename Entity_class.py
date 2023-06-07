@@ -189,11 +189,11 @@ class entity:                                          #A NPC or PC
         if 'GreatWeaponFighting' in self.other_abilities:
             self.knows_great_weapon_fighting = True
         else: self.knows_great_weapon_fighting = False
-        #Interseption
+        #Interception
         if 'Interception' in self.other_abilities:
-            self.knows_interseption = True
-        else: self.knows_interseption = False
-        self.interseption_amount = 0 #is true if a interseptor is close, see end_of_turn
+            self.knows_interception = True
+        else: self.knows_interception = False
+        self.interception_amount = 0 #is true if a interceptor is close, see end_of_turn
 
         #UncannyDodge
         if 'UncannyDodge' in self.other_abilities:
@@ -536,7 +536,7 @@ class entity:                                          #A NPC or PC
 
         #---------Armor of Agathys 
         if AgathysDmg.abs_amount() > 0 and was_ranged == False:
-            self.DM.say(attacker.name + ' is harmed by the Armor of Agathys')
+            self.DM.say(attacker.name + ' is harmed by the Armor of Agathys', end='')
             attacker.changeCHP(AgathysDmg, self, was_ranged=False)
 
         #---------Heal
@@ -1208,10 +1208,11 @@ class entity:                                          #A NPC or PC
         #add rage dmg
             if self.raged == True and is_ranged == False: #Rage dmg only on melee
                 Dmg.add(self.rage_dmg, self.damage_type)
-        #Interseption
-            if target.interseption_amount > 0:
-                self.DM.say('Attack was intersepted: -' + str(self.interseption_amount))
-                Dmg.substract(target.interseption_amount)
+        #Interception
+            if target.interception_amount > 0:
+                self.DM.say(' Attack was intercepted: -' + str(target.interception_amount))
+                Dmg.substract(target.interception_amount)
+                target.interception_amount = 0 #only once
         else:
             Dmg = dmg(amount=0)   #0 dmg
             self.DM.say(str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus) + ' miss', end= '')
@@ -1626,8 +1627,8 @@ class entity:                                          #A NPC or PC
             if self.turned_undead_round_counter >= 10:
                 self.end_turned_undead()
 
-        if self.interseption_amount != 0:
-            self.interseption_amount = 0 #no longer in interseption
+        if self.interception_amount != 0:
+            self.interception_amount = 0 #no longer in interception
         
         self.chill_touched = False
 
@@ -1717,8 +1718,8 @@ class entity:                                          #A NPC or PC
         #TurnUnded
         self.is_a_turned_undead = False
         self.turned_undead_round_counter = 0
-        #Interseption
-        self.interseption_amount = 0
+        #Interception
+        self.interception_amount = 0
 
         self.empowered_spell = False
         self.quickened_spell = False

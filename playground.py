@@ -26,9 +26,11 @@ fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 Character.DM.rounds_number = 2
 Enemy.heal_given = 100
 Enemy.dmg_dealed = 20
-print(Character.SpellBook['Fireball'].score(fight))
-print(Character)
 
+Dmg = dmg(4, 'fire')
+Dmg.add(5, 'force')
+Dmg.substract(3)
+print(Dmg.calculate_for(Character))
 
 
 

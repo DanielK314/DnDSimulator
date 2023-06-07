@@ -56,8 +56,10 @@ class dmg:
                     DMGTotal += self.dmg_amount_list[i]
                 else:
                     DMGTotal += self.dmg_amount_list[i]
-            DMGTotal -= self.DMGSubstract
-            return DMGTotal
+            if self.DMGSubstract > DMGTotal: return 0
+            else:
+                DMGTotal -= self.DMGSubstract
+                return DMGTotal
         
     def damage_type(self):
         #Return type of first
@@ -69,6 +71,8 @@ class dmg:
             if self.dmg_amount_list[i] != 0:
                 string += str(round(self.dmg_amount_list[i],2))
                 string += ' ' + self.dmg_type_list[i] + ' '
+        if self.DMGSubstract > 0:
+            string += ' - ' + str(round(self.DMGSubstract,2))  #substracted
         return string
 
     def print(self):
