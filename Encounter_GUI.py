@@ -545,10 +545,11 @@ class EntityPage_cl(Frame):
     def build_spell_book(self):
         self.SpellBookTopFrame = Frame(self.SpellBook)
         Label(self.SpellBookTopFrame, text='Spellbook').grid(row=0,column=1, padx=10)
-        ttk.Button(self.SpellBookTopFrame, text='Back', bootstyle ='outline', command= self.close_spell_book).grid(row=0, column=0)
+        ttk.Button(self.SpellBookTopFrame, text='Back', bootstyle ='outline', command= self.close_spell_book).grid(row=0, column=0, padx = 3)
         self.SpellBookTopFrame.grid(row=0, column=0, pady=5)
 
-        Spellframes = [ttk.Labelframe(self.SpellBook, text = 'Level ' + str(i)) for i in range(0,10)]
+        SpellColumnFrames = [Frame(self.SpellBook) for i in range(0,3)]
+        Spellframes = [ttk.Labelframe(SpellColumnFrames[int(i/2)], text = 'Level ' + str(i)) for i in range(0,5)]
 
         self.SpellBookListFrame = Frame(self.SpellBook)
         self.SpellList = [IntVar() for i in self.master.All_Spells]
@@ -564,8 +565,11 @@ class EntityPage_cl(Frame):
         for i in range(0, len(self.SpellList)):
             self.SpellButton[i].grid(row=1 + i, column=0, sticky='w', pady=5, padx = 5)
         #Arrange all the Spell Level Frames 
-        for i in range(0, 5):
-            Spellframes[i].grid(row=i+1, column = 0, sticky='ew', pady=3) #ew ensures that they all have the same width
+
+        for i, x in enumerate(Spellframes):
+            x.grid(row=i, column=0, sticky='ew', pady=3) #ew ensures that they all have the same width
+        for i, x in enumerate(SpellColumnFrames):
+            x.grid(row=1, column=i, sticky= 'nw', padx = 3)
         self.SpellBookListFrame.grid(row=1, column=0, pady=10, sticky='w')
 
     def open_spell_book(self):
