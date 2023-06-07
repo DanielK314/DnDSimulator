@@ -118,19 +118,19 @@ class entity:                                          #A NPC or PC
         #If this updates, the All_Spells in the GUI will load this
         #Keep this in Order of the Spell Level, so that it also fits for the GUI
         self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
-                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds'
+                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds',
                            'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
                            'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals',
                            'Blight']
         #Add here all Spell classes that are impemented
-        Spell_classes = [firebolt, chill_touch, eldritch_blast,
+        self.Spell_classes = [firebolt, chill_touch, eldritch_blast,
                          burning_hands, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds,
                          aganazzars_sorcher, scorching_ray, shatter, spiritual_weapon,
                          fireball, lightningBolt, haste, conjure_animals,
                          blight]
         #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
         self.SpellBook = dict()
-        for x in Spell_classes:
+        for x in self.Spell_classes:
             spell_to_lern = x(self)  #Initiate Spell
             if spell_to_lern.is_known: #If Spell is known, append to SpellBook
                 self.SpellBook[spell_to_lern.spell_name] = spell_to_lern

@@ -553,9 +553,10 @@ class EntityPage_cl(Frame):
         self.SpellBookListFrame = Frame(self.SpellBook)
         self.SpellList = [IntVar() for i in self.master.All_Spells]
         self.SpellButton = []
-        for i in range(0,len(self.SpellList)):
-            level = self.master.Archive_Heros[0].SpellBook[self.master.All_Spells[i]].spell_level #Find the Level of the Spell
-            button = ttk.Checkbutton(Spellframes[level], bootstyle= 'warning', text = self.master.All_Spells[i], variable=self.SpellList[i], onvalue=1, offvalue=0)
+        for i, x in enumerate(self.master.Archive_Heros[0].Spell_classes):
+            test_spell = x(self.master.Archive_Heros[0]) #initiate spell class for level test
+            level = test_spell.spell_level #Find the Level of the Spell
+            button = ttk.Checkbutton(Spellframes[level], bootstyle= 'warning', text = test_spell.spell_name, variable=self.SpellList[i], onvalue=1, offvalue=0)
             self.SpellButton.append(button)
         #This ensures, that if a spell is clicked, the Spell list Display on the Main page updates, it is not the dict of the Page
         for i in range(0, len(self.SpellList)):

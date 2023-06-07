@@ -5,45 +5,12 @@
     },
     "Entities": [
         {
-            "name": "Barbarian Lv5",
-            "team": 0
-        },
-        {
-<<<<<<< HEAD
-            "name": "Druid Lv5",
-            "team": 0
-        },
-        {
-            "name": "Displayer Beast",
-            "team": 1
-        },
-        {
-            "name": "Flameskull",
-            "team": 1
-=======
-            "name": "Bard Lv5",
-            "team": 0
-        },
-        {
             "name": "Paladin Lv5",
             "team": 0
         },
         {
-            "name": "Warlock Lv5",
-            "team": 0
-        },
-        {
-            "name": "Wizard Lv5",
-            "team": 0
-        },
-        {
-            "name": "Young Dragon",
-            "team": 1
-        },
-        {
             "name": "Pirate 2",
             "team": 1
->>>>>>> 4810607fd9ccae5d520fdc5d10771d341a0048a9
         }
     ]
 }
