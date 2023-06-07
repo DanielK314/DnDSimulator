@@ -147,9 +147,10 @@ class entity:                                          #A NPC or PC
                            'Blight']
         #Add here all Spell classes that are impemented
         Spell_classes = [firebolt, chill_touch, eldritch_blast,
-                         burning_hands, magic_missile, inflict_wounds, entangle, cure_wounds, healing_word, shield,
-                         aganazzars_sorcher, scorching_ray,
-                         fireball, lightningBolt, haste]
+                         burning_hands, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds,
+                         aganazzars_sorcher, scorching_ray, shatter, spiritual_weapon,
+                         fireball, lightningBolt, haste, conjure_animals,
+                         blight]
         #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
         self.SpellBook = dict()
         for x in Spell_classes:

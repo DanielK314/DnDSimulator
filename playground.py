@@ -26,9 +26,13 @@ if 'ChillTouch' in Character.SpellBook:
 #Character3.make_normal_attack_on(Enemy2, fight)
 #Character2.make_normal_attack_on(Enemy, fight)
 Character.CHP = 1
-Enemy.make_normal_attack_on(Character, fight)
 
-#Character.SpellBook['Haste'].twin_cast([Enemy, Enemy2], 5)
+Enemy.type = 'undead'
+Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)
+# Character.action = 1
+# Character.attack(Enemy, is_ranged=True, other_dmg=200, tohit=100)
+# Character.end_of_turn()
+# Character.AI.choose_new_hex(fight)
 
 # Character.SpellBook['ChillTouch'].twin_cast([Enemy,Enemy2])
 # Enemy.changeCHP(dmg(-3, 'heal'), Character, was_ranged=False)

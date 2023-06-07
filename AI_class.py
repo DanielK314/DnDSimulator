@@ -468,7 +468,7 @@ class AI:
             if Checkvalue == 1: #Check, Spell is castable
                 Choices.append(spell.cast)
                 #Check if Twin cast is an option
-            if all(Checkvalue == 1, spell.is_twin_castable, player.knows_twinned_spell, player.sorcery_points > spell.spell_level, player.sorcery_points > 1):
+            if all([Checkvalue == 1, spell.is_twin_castable, player.knows_twinned_spell, player.sorcery_points > spell.spell_level, player.sorcery_points > 1]):
                 Choices.append(spell.twin_cast)
             elif Checkvalue == 2: #Spell is only castable via quickened spell
                 Choices.append(spell.quickened_cast)

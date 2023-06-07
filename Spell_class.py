@@ -404,7 +404,6 @@ class aoe_dmg_spell(spell):
         if type(targets) != list: targets = [targets]
         super().cast(targets, cast_level, twinned) #self.cast_level now set
 
-
         #Damage and empowered Spell
         damage = self.spell_dmg()
         if self.player.empowered_spell:
@@ -413,11 +412,15 @@ class aoe_dmg_spell(spell):
             self.DM.say('Empowered: ', end='')
 
         for target in targets:
-            #Every target makes save, there is no twinned option
-            save = target.make_save(self.spell_save_type,DC = self.player.spell_dc)
-            if save >= self.player.spell_dc:
-                self.apply_dmg(target, damage=damage/2)
-            else: self.apply_dmg(target, damage=damage)
+            #Every target makes save
+            self.make_save_for(target, damage=damage)
+
+    def make_save_for(self, target, damage):
+        #This function is called for every target to make the save and apply the dmg
+        save = target.make_save(self.spell_save_type,DC = self.player.spell_dc)
+        if save >= self.player.spell_dc:
+            self.apply_dmg(target, damage=damage/2)
+        else: self.apply_dmg(target, damage=damage)
 
     def apply_dmg(self, target, damage):
         #This finally applies the dmg dealed
@@ -570,6 +573,27 @@ class magic_missile(spell):
             if target_counter == len(targets):    #if all targets are hit once, restart 
                 target_counter = 0
 
+class guiding_bolt(attack_spell):
+    def __init__(self, player):
+        dmg_type = 'radiant'
+        self.spell_name = 'GuidingBolt'
+        super().__init__(player, dmg_type)
+        self.spell_text = 'guifing bolt'
+        self.spell_level = 1
+        self.is_twin_castable = True
+        self.is_range_spell = True
+
+    def cast(self, target, cast_level=False, twinned=False):
+        dmg_dealed = super().cast(target, cast_level, twinned)
+
+        #On hit:
+        if dmg_dealed > 0:
+            LinkToken = GuidingBoltedToken(target.TM) #Target gets guiding bolted token
+            GuidingBoltToken(self.TM, [LinkToken]) #Timer Dock Token for player
+   
+    def spell_dmg(self):
+        return 11 + 5.5*self.cast_level #3d10 + 1d10/level > 1
+
 class entangle(save_spell):
     def __init__(self, player):
         spell_save_type = 0 #str
@@ -635,6 +659,67 @@ class healing_word(spell):
         self.DM.say(self.player.name + ' speaks to ' + target.name, end='')
         target.changeCHP(dmg(-heal, 'heal'), self.player, True)
 
+class hex(spell):
+    def __init__(self, player):
+        self.spell_name = 'Hex'
+        super().__init__(player)
+        self.spell_text = 'hex'
+        self.spell_level = 1
+        self.is_twin_castable = False
+        self.is_range_spell = True
+        self.is_concentration_spell = True
+    
+    def cast(self, target, cast_level=False, twinned=False):
+        if type(target) == list: target = target[0]
+        super().cast(target, cast_level, twinned)
+        HexToken = HexedToken(target.TM, subtype='hex') #hex the Tagret
+        self.player.CurrentHexToken = HexingToken(self.TM, HexToken) #Concentration on the caster
+        #Assign that Token as the Current HEx Token of the Player
+
+    def change_hex(self, target):
+        rules = [self.player.can_choose_new_hex,
+                self.is_known,
+                target.state == 1,
+                self.player.bonus_action == 1]
+        errors = [self.player.name + ' tried to change a bound hex',
+                self.player.name + ' tried to change a hex without knowing it',
+                self.player.name + ' tried to change to a not conscious target',
+                self.player.name + ' tried to change a hex without having a bonus action']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.DM.say(self.player.name + ' changes the hex to ' + target.name)
+        self.player.bonus_action = 0 #takes a BA
+        self.player.can_choose_new_hex = False
+        NewHexToken = HexedToken(target.TM, subtype='hex') #hex the Tagret
+        self.player.CurrentHexToken.addLink(NewHexToken) #Add the new Hex Token
+
+class armor_of_agathys(spell):
+    def __init__(self, player):
+        self.spell_name = 'ArmorOfAgathys'
+        super().__init__(player)
+        self.spell_text = 'armor of agathys'
+        self.spell_level = 1
+    
+    def cast(self, target, cast_level=False, twinned=False):
+        super().cast(target, cast_level, twinned)
+        player = self.player
+        player.has_armor_of_agathys = True
+        TempHP = 5*self.cast_level
+        player.agathys_dmg = TempHP
+        player.addTHP(TempHP) #add THP to self
+
+class false_life(spell):
+    def __init__(self, player):
+        self.spell_name = 'FalseLife'
+        super().__init__(player)
+        self.spell_text = 'false life'
+        self.spell_level = 1
+    
+    def cast(self, target, cast_level=False, twinned=False):
+        super().cast(target, cast_level, twinned)
+        TempHP = 1.5 + 5*self.cast_level
+        self.player.addTHP(TempHP) #Add the THP
+
 class shield(spell):
     def __init__(self, player):
         self.spell_name = 'Shield'
@@ -693,6 +778,65 @@ class aganazzars_sorcher(aoe_dmg_spell):
         damage = 13.5 + 4.5*(self.cast_level-2)   #upcast dmg 3d6 + 1d6 per level over 2
         return damage
 
+class shatter(aoe_dmg_spell):
+    def __init__(self, player):
+        spell_save_type = 2 #Con
+        self.spell_name = 'Shatter'
+        super().__init__(player, spell_save_type, dmg_type='thunder')
+        self.spell_text = 'shatter'
+        self.spell_level = 2
+        self.is_range_spell = True
+
+    def spell_dmg(self):
+        #Return the spell dmg
+        damage = 13.5 + 4.5*(self.cast_level-2)   #upcast dmg 3d6 + 1d6 per level over 2
+        return damage
+
+class spiritual_weapon(spell):
+    def __init__(self, player):
+        self.spell_name = 'SpiritualWeapon'
+        super().__init__(player)
+        self.spell_text = 'spiritual weapon'
+        self.spell_level = 1
+    
+    def cast(self, target, cast_level=False, twinned=False):
+        super().cast(target, cast_level, twinned)
+        #remember, if use cast level, use self.cast_level not cast_level
+        player = self.player
+        player.has_spiritual_weapon = True
+        player.SpiritualWeaponDmg = player.spell_mod + 4.5*(self.cast_level -1) 
+        player.SpiritualWeaponCounter = 0 #10 Rounds of Weapon
+
+        #If a player cast this spell for the first time, the choice will be aded to the AI
+        #The Score function will still check if the player is allowed to use it
+        
+        player.AI.Choices.append(player.AI.spiritualWeaponChoice)
+
+        #Attack Once as BA
+        if player.bonus_action == 1:
+            self.spiritual_weapon_attack(target)
+
+    def use_spiritual_weapon(self, target):
+        player = self.player
+        rules = [player.has_spiritual_weapon,
+                player.bonus_action == 1]
+        errors = [player.name + ' tried using the Spiritual Weapon without having one',
+                player.name + ' tried using the Spiritual Weapon without having a bonus action']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.spiritual_weapon_attack(target)
+
+    def spiritual_weapon_attack(self, target):
+        if type(target) == list:
+            target = target[0]
+        player = self.player
+        WeaponTohit = player.spell_mod + player.proficiency #ToHit of weapon
+        WeaponDmg = player.SpiritualWeaponDmg #Set by the Spell 
+        self.DM.say('Spiritual Weapon of ' + player.name + ' attacks: ')
+        #Make a weapon Attack against first target
+        self.player.attack(target, is_ranged=False, other_dmg=WeaponDmg, damage_type='force', tohit=WeaponTohit)
+        self.player.bonus_action = 0 #It uses the BA to attack
+
 #3-Level Spell
 class fireball(aoe_dmg_spell):
     def __init__(self, player):
@@ -745,4 +889,96 @@ class haste(spell):
         ConcentrationToken(self.TM, HasteTokens)
         #Player is now concentrated on 1-2 Haste Tokens
 
+class conjure_animals(spell):
+    def __init__(self, player):
+        self.spell_name = 'ConjureAnimals'
+        super().__init__(player)
+        self.spell_text = 'conjure animals'
+        self.spell_level = 3
+        self.is_concentration_spell = True
 
+    def cast(self, fight, cast_level=False, twinned=False):
+        #Im am using a trick here, ususally only a target is passed, but this spell needs the fight
+        #As a solution the score function of this spell passes the fight as 'targtes' 
+        #The cunjured Animals are initiated as fully functunal entity objects
+        #The Stats are loaded from the Archive
+        #If they reach 0 CHP they will die and not participate in the fight anymore
+        #The do_the_fighting function will then pic them out and delete them from the fight list
+        super().cast(fight, cast_level, twinned)
+
+        Number, AnimalName = self.choose_animal()
+        player = self.player
+        #Initiate a new entity for the Animals and add them to the fight
+        conjuredAnimals = []
+        for i in range(0,Number):
+            animal = entity(AnimalName, player.team, player.DM, archive=True)
+            animal.name = 'Conjured ' + AnimalName + str(i+1)
+            self.DM.say(animal.name + ' appears')
+            animal.summoner = player
+            fight.append(animal)
+
+            conjuredAnimals.append(SummenedToken(animal.TM, 'ca')) #add a SummonedToken to the animal
+        #Add a Summoner Token to the Player
+        SummonerToken(self.TM, conjuredAnimals)
+
+
+
+    def choose_animal(self):
+        level = 10 #will be set to Beast level for test
+        while level > 2:
+            Index = int(random()*len(self.player.BeastForms))
+            AnimalName = self.player.BeastForms[Index]['Name'] #Random Animal
+            level = self.player.BeastForms[Index]['Level'] #Choose a Animal of level 2 or less
+
+        Number = int(2/level)     #8 from CR 1/4, 4 from CR 1/2 ...
+        
+        if self.cast_level < 5:
+            Number = Number
+        elif self.cast_level < 7:
+            Number = Number*2
+        elif self.cast_level < 9: 
+            Number = Number*3
+        else: 
+            Number = Number*4
+        
+        return Number, AnimalName
+
+#4-Level Spell
+
+class blight(aoe_dmg_spell):
+    #has aoe as super class, will be modified for single target
+    def __init__(self, player):
+        spell_save_type = 1 #Dex
+        self.spell_name = 'Blight'
+        super().__init__(player, spell_save_type, dmg_type='necrotic')
+        self.spell_text = 'blight'
+        self.spell_level = 4
+        self.is_range_spell = True
+        self.is_twin_castable = True
+
+    def cast(self, target, cast_level=False, twinned=False):
+        if target == list: target = target[0] #mod for single cast
+        super().cast(target, cast_level, twinned)
+
+    def make_save_for(self, target, damage):
+        #This function is called for every target to make the save and apply the dmg
+        #It is only called once, for one target
+
+        #calculate damage manually to account for plants
+        damage = 18 + 4.5*(self.cast_level)   #upcast dmg 3d6 + 1d6 per level over 2
+        extraAdvantage = 0
+        if target.type == 'plant':
+            extraAdvantage = -1 #disadvantage for plants
+            damage = 32 + 8*self.cast_level #max dmg
+            self.DM.say('is plant: ', end ='')
+        save = target.make_save(self.spell_save_type,DC = self.player.spell_dc, extraAdvantage=extraAdvantage)
+
+        if target.type == 'undead' or target.type == 'construct':
+            self.DM.say('\nIs undead or construct and immune', end='')
+            self.apply_dmg(target, damage=0) #no effect on this types        
+        elif save >= self.player.spell_dc:
+            self.apply_dmg(target, damage=damage/2)        
+        else: self.apply_dmg(target, damage=damage)
+    
+    def spell_dmg(self):
+        return 0 #will not be used anyway for blight
