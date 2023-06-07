@@ -177,9 +177,10 @@ def most_valuable_player(repetition, fighters):
 
 def spell_cast_recap(repetition, fighters, text_result):  #only calls the objects data, simulation must be run beforehand
     for fighter in fighters:
-        for spell_name, spell in fighter.SpellBook:
-            if spell.was_cast > 0:
-                text_result += str(fighter.name) + ' cast ' + spell.spell_text + str(round(spell.was_cast/repetition,3)) + '\n'
+        if len(fighter.SpellBook) > 0:
+            for spell_name, spell in fighter.SpellBook.items():
+                if spell.was_cast > 0:
+                    text_result += str(fighter.name) + ' cast ' + spell.spell_text + str(round(spell.was_cast/repetition,3)) + '\n'
     return text_result
 
 def full_statistical_recap(repetition, fighters):

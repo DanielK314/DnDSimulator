@@ -29,7 +29,9 @@ Character.CHP = 1
 
 Enemy.type = 'undead'
 Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)
-print(Character.Spell_classes)
+for x in Character.Spell_classes:
+    test_spell = x(Character)
+    print(x.score)
 # Character.action = 1
 # Character.attack(Enemy, is_ranged=True, other_dmg=200, tohit=100)
 # Character.end_of_turn()

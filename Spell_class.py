@@ -73,7 +73,7 @@ class spell:
         #It also returns the choosen SpellTargts and the CastLevel
         #If this spell is not soposed to be considered as an option this turn, return 0 score
         #This function should be overwritten in the subclassses
-        self.return_0_score()
+        return self.return_0_score()
 
     def make_spell_check(self, cast_level):
         #This function also sets the action, reaction or bonus action ans spell counter down

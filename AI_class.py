@@ -134,7 +134,7 @@ class AI:
         if self.player.CHP < damage.abs_amount():
             for i in range(9):
                 if self.player.spell_slot_counter[i] > 0:
-                    self.player.SpellBook['Shield'].cast(i + 1)   #spell level is i + 1
+                    self.player.SpellBook['Shield'].cast(target=False, cast_level=i+1)   #spell level is i + 1
                     break
 
 #---------Support

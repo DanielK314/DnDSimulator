@@ -5,12 +5,44 @@
     },
     "Entities": [
         {
+            "name": "Bard Lv5",
+            "team": 0
+        },
+        {
             "name": "Paladin Lv5",
             "team": 0
         },
         {
+            "name": "Test",
+            "team": 0
+        },
+        {
+            "name": "Wizard Lv5",
+            "team": 0
+        },
+        {
+            "name": "Displayer Beast",
+            "team": 1
+        },
+        {
+            "name": "Flameskull",
+            "team": 1
+        },
+        {
             "name": "Pirate 2",
             "team": 1
+        },
+        {
+            "name": "Pirate Captain",
+            "team": 1
+        },
+        {
+            "name": "Vamire Spawn",
+            "team": 1
+        },
+        {
+            "name": "Warlock Lv5",
+            "team": 0
         }
     ]
 }
