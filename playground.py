@@ -23,7 +23,8 @@ fight = [Character, Character2, Character3, Enemy, Enemy2, Enemy3]
 if 'ChillTouch' in Character.SpellBook:
     print('Yes')
 
-Character.SpellBook['ScorchingRay'].cast([Enemy, Character2])
+Character.SpellBook['Fireball'].cast([Enemy, Enemy2])
 
+Character2.make_normal_attack_on(Enemy, fight)
 # Character.SpellBook['ChillTouch'].twin_cast([Enemy,Enemy2])
 # Enemy.changeCHP(dmg(-3, 'heal'), Character, was_ranged=False)

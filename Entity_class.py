@@ -146,7 +146,10 @@ class entity:                                          #A NPC or PC
                            'Fireball', 'Haste', 'ConjureAnimals',
                            'Blight']
         #Add here all Spell classes that are impemented
-        Spell_classes = [firebolt, inflict_wounds, chill_touch, scorching_ray]
+        Spell_classes = [firebolt, chill_touch, eldritch_blast,
+                         burning_hands, inflict_wounds, entangle,
+                         scorching_ray, eldritch_blast,
+                         fireball]
         #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
         self.SpellBook = dict()
         for x in Spell_classes:
