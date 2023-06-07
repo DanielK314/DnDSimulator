@@ -59,9 +59,9 @@ class AI:
             if player.bonus_action == 1:
                 if player.CHP/player.HP < 0.3: player.use_second_wind()
 
-        #Interseption
-        if player.knows_interseption:
-            self.allies[int(random()*len(self.allies))].interseption_amount = 5.5 + player.proficiency
+        #Interception
+        if player.knows_interception:
+            self.allies[int(random()*len(self.allies))].interception_amount = 5.5 + player.proficiency
 
         #------------Not in WildShape
         if player.wild_shape_HP == 0:
@@ -73,7 +73,7 @@ class AI:
                     ActionToDo.execute(fight) #Do the best Choice
                 #First Round Action and Attacks
                 #Secound Round Bonus Action
-                #Check is still smth to do, else return
+                #Check if still smth to do, else return
                 if sum(ChoiceScores) == 0:
                     rules = [player.bonus_action == 1 and player.action == 1,
                         player.attack_counter > 0,
@@ -94,7 +94,7 @@ class AI:
         #is someone dying
             dying_allies_deathcounter = np.array([i.death_counter for i in self.dying_allies])
             if np.max(dying_allies_deathcounter) > 1:
-                if 'CureWounds' in player.SpellBook and sum(player.spell_slot_counter) > 0 and player.bonus_action == 1:
+                if 'CureWounds' in player.SpellBook and sum(player.spell_slot_counter) > 0 and player.bonus_action == 1 and player.raged == False:
                     player.wild_reshape()
                     target = self.dying_allies[np.argmax(dying_allies_deathcounter)]
                     for i in range(0,9):
@@ -131,7 +131,7 @@ class AI:
 
     def want_to_cast_shield(self, attacker, damage):
         #This function is called in the attack function as a reaction, if Shild spell is known
-        if self.player.CHP < damage.abs_amount():
+        if all([self.player.CHP < damage.abs_amount(), self.player.raged == False, self.player.wild_shape_HP == 0]):
             for i in range(9):
                 if self.player.spell_slot_counter[i] > 0:
                     self.player.SpellBook['Shield'].cast(target=False, cast_level=i+1)   #spell level is i + 1
@@ -317,7 +317,6 @@ class AI:
         elif dmg_type in target.damage_resistances:
             Score -= TargetDPS*2*(random()*RandomWeight + 1)
 
-
         #Spells
         if player.restrained:
             for x in player.TM.TokenList:
@@ -393,13 +392,15 @@ class AI:
             if good_slots == 0:
                 return False
         
+        if player.raged:
+            return False
         if player.wild_shape_HP > 0:
             return False
         elif spell.is_concentration_spell and player.is_concentrating:
             return False
         elif spell.is_reaction_spell:
             return False   #reaction Spell in own turn makes no sense
-        elif spell.is_cantrip == False and player.cast == 0:
+        elif spell.is_cantrip == False and player.has_cast_left == False:
             return False
 
 
@@ -407,7 +408,7 @@ class AI:
         if spell.is_bonus_action_spell and player.bonus_action == 1:
             if spell.is_cantrip:
                 return 1         #have BA, is cantrip -> cast 
-            elif player.cast == 1:
+            elif player.has_cast_left:
                 return 1        #have BA, is spell, have caste left? -> cast
             else:
                 return False    #cant cast, have already casted
@@ -415,14 +416,14 @@ class AI:
             if player.action == 1:
                 if spell.is_cantrip:
                     return 1 #have action and is cantrip? -> cast
-                elif player.cast == 1:
+                elif player.has_cast_left:
                     return 1 #have action and cast left? -> cast
                 else:
                     return False
             elif player.bonus_action == 1 and player.knows_quickened_spell and player.sorcery_points >= 2:
                 if spell.is_cantrip:
                     return 2  #Cast only with Quickened Spell
-                elif player.cast ==1:
+                elif player.has_cast_left:
                     return 2  #have cast left?
                 else:
                     return False
@@ -436,7 +437,7 @@ class AI:
         player = self.player
         QuickScore = 100
         QuickScore = QuickScore*(1.5 - 0.5*(player.CHP/player.HP)) #encourage quickend cast if youre low, if CHP -> 0, Score -> 150
-        if player.cast == 1: QuickScore = QuickScore*1.4    #encourage if you havend cast yet
+        if player.has_cast_left: QuickScore = QuickScore*1.4    #encourage if you havend cast yet
         if player.sorcery_points < player.sorcery_points_base/2: QuickScore = QuickScore*0.9 #disencourage for low SP
         elif player.sorcery_points < player.sorcery_points_base/3: QuickScore = QuickScore*0.8
         elif player.sorcery_points < player.sorcery_points_base/5: QuickScore = QuickScore*0.7

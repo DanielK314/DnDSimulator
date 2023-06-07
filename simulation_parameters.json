@@ -5,27 +5,19 @@
     },
     "Entities": [
         {
-            "name": "Bard Lv5",
-            "team": 0
-        },
-        {
-            "name": "Paladin Lv5",
-            "team": 0
-        },
-        {
-            "name": "Test",
-            "team": 0
-        },
-        {
-            "name": "Wizard Lv5",
-            "team": 0
-        },
-        {
             "name": "Displayer Beast",
             "team": 1
         },
         {
-            "name": "Flameskull",
+            "name": "Goblin",
+            "team": 1
+        },
+        {
+            "name": "Ogre",
+            "team": 1
+        },
+        {
+            "name": "Guard",
             "team": 1
         },
         {
@@ -33,15 +25,27 @@
             "team": 1
         },
         {
+            "name": "Pirate 3",
+            "team": 1
+        },
+        {
+            "name": "Pirate",
+            "team": 1
+        },
+        {
             "name": "Pirate Captain",
             "team": 1
         },
         {
-            "name": "Vamire Spawn",
-            "team": 1
+            "name": "Wizard Lv5",
+            "team": 0
         },
         {
             "name": "Warlock Lv5",
+            "team": 0
+        },
+        {
+            "name": "Paladin Lv5",
             "team": 0
         }
     ]

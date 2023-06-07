@@ -180,7 +180,7 @@ def spell_cast_recap(repetition, fighters, text_result):  #only calls the object
         if len(fighter.SpellBook) > 0:
             for spell_name, spell in fighter.SpellBook.items():
                 if spell.was_cast > 0:
-                    text_result += str(fighter.name) + ' cast ' + spell.spell_text + str(round(spell.was_cast/repetition,3)) + '\n'
+                    text_result += str(fighter.name) + ' cast ' + spell.spell_text + ': ' + str(round(spell.was_cast/repetition,3)) + '\n'
     return text_result
 
 def full_statistical_recap(repetition, fighters):

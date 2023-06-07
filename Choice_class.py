@@ -126,10 +126,12 @@ class do_inspire(choice):
     
     def score(self, fight):
         Score = 0
+        if self.player.inspiration_counter == 0: return 0
         if self.player.knows_inspiration == False: return 0
         if self.player.bonus_action != 1: return 0
         if random() > 0.5: Score = self.player.level*2
-        if self.player.inspiration_counter < 1: Score = Score/2
+        if self.player.knows_cutting_words and self.player.inspiration_counter == 1:
+            Score = Score/2 #keep last inspiration
         return Score
     
     def execute(self, fight):
@@ -214,7 +216,7 @@ class do_spiritual_weapon(choice):
         target = player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=player.SpiritualWeaponDmg, other_dmg_type='force')
         if target != False:
             player.SpellBook['SpiritualWeapon'].use_spiritual_weapon(target)
-        else: player.bonus_action = 0 
+        else: player.bonus_action = 0
 
 class do_turn_undead(choice):
     def __init__(self, player):
@@ -225,7 +227,7 @@ class do_turn_undead(choice):
         if self.player.channel_divinity_counter < 1: return 0
         if self.player.action == 0: return 0
 
-        Score = sum([x.dps() for x in fight if x.type == 'undead'])
+        Score = sum([x.dps() for x in fight if x.type == 'undead' and x.state == 1])
         if 'undead' in [x.type for x in fight if x.team == self.player.team]:
             #dont use if teammates undead
             Score = 0
@@ -277,6 +279,7 @@ class do_monster_ability(choice):
         player = self.player
         if player.action == 0: return 0
         Score = 0
+
         if player.dragons_breath_is_charged:
             Score += (20 + int(player.level*3.1))*3   #damn strong ability, at least 2-3 Targets
         if player.spider_web_is_charged:
@@ -310,7 +313,11 @@ class do_monster_ability(choice):
         player = self.player
         enemies_left = [x for x in fight if x.team != player.team and x.state == 1]
         #Random Target
-        player.use_spider_web(enemies_left[int(random()*len(enemies_left))])
+        if len(enemies_left) > 0:
+            player.use_spider_web(enemies_left[int(random()*len(enemies_left))])
+        else:
+            #No enemies left
+            player.action = 0 #use acrion, nothing left to attack
 
 class do_heal(choice):
     def __init__(self, player):
