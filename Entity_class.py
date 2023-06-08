@@ -312,7 +312,7 @@ class entity:                                          #A NPC or PC
         self.knows_great_weapon_master = False
         if 'GreatWeaponMaster' in self.other_abilities:
             self.knows_great_weapon_master = True
-
+        self.has_additional_great_weapon_attack = False
 
     #Meta Magic
         self.sorcery_points_base = int(data['Sorcery_Points'])
@@ -1171,6 +1171,7 @@ class entity:                                          #A NPC or PC
 
         Modifier = 0 # Will go add to the attack to hit
         ACBonus = 0
+        AdditionalDmg = 0 #This is damage that will not be multiplied
 
         if self.knows_great_weapon_master:
             rules = [other_dmg == False, #No spells or other stuff
@@ -1179,8 +1180,13 @@ class entity:                                          #A NPC or PC
                 #Do you want to use great_weapon_master
                 if self.AI.want_to_use_great_weapon_master(target):
                     Modifier -=5  #-5 to attack but +10 to dmg
-                    Dmg.add(10, self.damage_type)
+                    AdditionalDmg += 10
                     self.DM.say('great weapon master, ', end='')
+                
+                if is_crit and self.bonus_action == 1: 
+                    #Just made a crit meele attack, take BA for another attack
+                    self.bonus_action == 0
+                    self.attack_counter += 1
 
         if target.is_combat_inspired and target.inspired > 0:
             if d20 + self.tohit > target.AC:
@@ -1203,7 +1209,7 @@ class entity:                                          #A NPC or PC
 
         if d20 + tohit + Modifier >= target.AC + ACBonus or is_crit:       #Does it hit
             if is_crit:
-                self.DM.say('Critical Hit!, ',end='')
+                self.DM.say('Critical Hit!, ',end='')                    
             self.DM.say('hit: ' + str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus), end= '')
 
         #Smite
@@ -1214,7 +1220,7 @@ class entity:                                          #A NPC or PC
             self.check_combat_inspiration(Dmg, other_dmg)
         #Hex
             self.check_hex(Dmg, target)
-        #GreatWeapon
+        #GreatWeaponFighting
             self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg)
         #poison Bite
             if self.knows_poison_bite and self.poison_bites == 1:
@@ -1227,6 +1233,8 @@ class entity:                                          #A NPC or PC
                 Dmg.add(poisonDMG, 'poison')
         #Critical
             if is_crit: Dmg.multiply(1.8)
+        #Additional damage
+            if AdditionalDmg != 0: Dmg.add(AdditionalDmg, self.damage_type)
         #add rage dmg
             if self.raged == True and is_ranged == False: #Rage dmg only on melee
                 Dmg.add(self.rage_dmg, self.damage_type)
@@ -1578,7 +1586,6 @@ class entity:                                          #A NPC or PC
         summon = entity(Name, self.team, self.DM, archive=True)
         return summon
 
-
 #---------------Round Handling------------
     def start_of_turn(self):
         #Attention, is called in the do the fighting function
@@ -1679,6 +1686,7 @@ class entity:                                          #A NPC or PC
         self.action_surge_counter = self.action_surges
         self.action_surge_used = False
         self.has_used_second_wind = False
+        self.has_additional_great_weapon_attack = False
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False

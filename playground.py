@@ -27,8 +27,11 @@ fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 Character.knows_great_weapon_master = True
 Character.has_range_attack = False
 Character.position = 0
-Character.make_normal_attack_on(Enemy, fight)
-
+Character.knows_inspiration = False
+Character.SpellBook = []
+Character.dmg = 20
+Character.tohit = 10
+Character.AI.do_your_turn(fight)
 
 # Enemy.type = 'undead'
 # Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)

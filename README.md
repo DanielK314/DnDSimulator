@@ -56,7 +56,7 @@ Most of this explains itself. Simply insert the AC, HP, proficiency and level of
 ## Attacks
 You can add the damage, the to hit and the number of attacks the character does with one action. The damage is supposed to be the mean value that attack does. The dmg type is assumed to be the type selectable in the DMG section. If you add a offhand damage that is not 0, the character is assumed to have a offhand attack for the bonus action
 
-# Range Attacks
+Range Attacks:
 If you enable this the charakter has a range attack and will use the range attack for all normal attacks. Keep this in mind for abilities like smite or great weapon master
 
 
