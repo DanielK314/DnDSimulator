@@ -437,6 +437,8 @@ class AI:
         else:
             return False
 
+#---------Spells
+
     def choose_quickened_cast(self):
         #This function is called once per trun to determine if player wants to use quickned cast this round
         player = self.player

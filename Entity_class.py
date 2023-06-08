@@ -201,10 +201,9 @@ class entity:                                          #A NPC or PC
         else:
             self.knows_uncanny_dodge = False
         #Cunning Action
+        self.knows_cunning_action = False
         if 'CunningAction' in self.other_abilities:
             self.knows_cunning_action = True
-        else:
-            self.knows_cunning_action = False
         #Wails from the Grave
         self.wailsfromthegrave = 0
         self.wailsfromthegrave_counter = self.proficiency
@@ -313,6 +312,12 @@ class entity:                                          #A NPC or PC
         if 'GreatWeaponMaster' in self.other_abilities:
             self.knows_great_weapon_master = True
         self.has_additional_great_weapon_attack = False
+        self.knows_polearm_master = False
+        if 'PolearmMaster' in self.other_abilities:
+            self.knows_polearm_master = True
+            if self.offhand_dmg < 5:
+                modifier = max(self.base_modifier[1], self.base_modifier[2]) #Dex or Str
+                self.offhand_dmg = 2.5 + modifier #1d4 + attack mod
 
     #Meta Magic
         self.sorcery_points_base = int(data['Sorcery_Points'])
@@ -998,6 +1003,7 @@ class entity:                                          #A NPC or PC
             self.bonus_action = 0
             self.attack(target, is_ranged, other_dmg=self.offhand_dmg, is_offhand=True)
         else:
+            self.check_polearm_master(self,target, is_ranged) #Check if target is a polearm master
             self.action = 0 #if at least one attack, action = 0
             self.is_attacking = True #uses action to attack
             self.attack_counter -= 1 #Lower the attack counter 
@@ -1086,6 +1092,16 @@ class entity:                                          #A NPC or PC
             self.DM.say('\n', end='')
         #The roll and advantage is returned, advantage is still important for sneak attack
         return d20 , advantage_disadvantage
+
+    def check_polearm_master(self, target, is_ranged):
+        #This function is called in the make normal attack function
+        #At this point it is already clear it is no offhand attack and no opp. attack
+        if target.knows_polearm_master:
+            rules = [is_ranged == False,  #No range attacks
+                     target.last_attacker != self, #if attacked before, you didnt just enter their range
+                     target.reaction == 1]  #has reaction left
+            if all(rules):
+                target.AI.do_opportunity_attack(self)
 
     def check_smite(self, Dmg, is_ranged):
         if is_ranged == False and self.knows_smite:  #smite only on melee
