@@ -38,7 +38,7 @@
     "Speed": 30,
     "Range_Attack": 0,
     "DruidCR": 0.0,
-    "OffHand": 0.0,
+    "OffHand": 1.0,
     "Type": "normal",
     "Inspiration": "0",
     "DestroyUndeadCR": 0.0,

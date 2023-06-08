@@ -36,7 +36,7 @@
     "Sorcery_Points": 0,
     "Position": "front",
     "Speed": 30,
-    "Range_Attack": 1,
+    "Range_Attack": 0,
     "DruidCR": 0.0,
     "OffHand": 0.0,
     "Type": "normal",

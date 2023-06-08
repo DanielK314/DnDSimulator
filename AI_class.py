@@ -67,6 +67,10 @@ class AI:
         if player.wild_shape_HP == 0:
         #--------Evaluate Choices
             while (player.action == 1 or player.bonus_action == 1) and player.state == 1:
+                EnemiesConscious = [x for x in fight if x.state == 1 and x.team != player.team]
+                if len(EnemiesConscious) == 0:
+                    player.DM.say('All enemies defeated')
+                    return #nothing left to do                
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
                 ActionToDo = self.Choices[np.argmax(ChoiceScores)]
                 if np.max(ChoiceScores) > 0:

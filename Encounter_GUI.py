@@ -34,6 +34,7 @@ class Controller(Frame):
         'Smite', 'AuraOfProtection', 'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
         'WildShape', 'CombatWildShape', 'Inspiration', 'CuttingWords', 'CombatInspiration',
         'AgonizingBlast','TurnUndead',
+        'GreatWeaponMaster', 'PolearmMaster',
         'DragonsBreath', 'SpiderWeb', 'PoisonBite']
 
         self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct']
@@ -586,8 +587,10 @@ class EntityPage_cl(Frame):
 
         self.AbilitiesFrame = Frame(self.AbilityPage)
         self.Abilities1Frame = Frame(self.AbilitiesFrame)
-        Break1 = 5
+        Break1 = 4
         self.Abilities2Frame = Frame(self.AbilitiesFrame)
+        Break2 = 8
+        self.Abilities3Frame = Frame(self.AbilitiesFrame)
         #Label Frames for the Abilities
         Class = {0:{'name':'Fighter', 'Number':3},
                 1:{'name':'Fighting Style', 'Number':3},
@@ -599,12 +602,15 @@ class EntityPage_cl(Frame):
                 7:{'name':'Bard', 'Number':3},
                 8:{'name':'Warlock', 'Number':1},
                 9:{'name':'Cleric', 'Number':1},
-                10:{'name':'Monster', 'Number':3}}
+                10:{'name':'Feats', 'Number':2},
+                11:{'name':'Monster', 'Number':3}}
         Class_Frames = []
         ChoosenFrame = self.Abilities1Frame
         for i in range(0, len(Class)):
             if i == Break1:
                 ChoosenFrame = self.Abilities2Frame
+            if i == Break2:
+                ChoosenFrame = self.Abilities3Frame
             Class_Frames.append(ttk.Labelframe(ChoosenFrame, text= Class[i]['name']))
 
         self.AbilitiesList = [IntVar() for i in self.master.All_Abilities]
@@ -720,6 +726,7 @@ class EntityPage_cl(Frame):
             CRow += 1
         self.Abilities1Frame.grid(row=0, column=0, sticky='nw')
         self.Abilities2Frame.grid(row=0, column=1, sticky='nw')
+        self.Abilities3Frame.grid(row=0, column=2, sticky='nw')
         self.AbilitiesFrame.grid(row=1, column=0, sticky='nw')
 
     def open_ability_page(self):

@@ -315,9 +315,9 @@ class entity:                                          #A NPC or PC
         self.knows_polearm_master = False
         if 'PolearmMaster' in self.other_abilities:
             self.knows_polearm_master = True
-            if self.offhand_dmg < 5:
-                modifier = max(self.base_modifier[1], self.base_modifier[2]) #Dex or Str
-                self.offhand_dmg = 2.5 + modifier #1d4 + attack mod
+            poleArmDMG = 2.5 + max(self.base_modifier[0], self.base_modifier[1]) #Dex or Str
+            if self.offhand_dmg < poleArmDMG:
+                self.offhand_dmg = poleArmDMG #1d4 + attack mod
 
     #Meta Magic
         self.sorcery_points_base = int(data['Sorcery_Points'])
@@ -1003,7 +1003,7 @@ class entity:                                          #A NPC or PC
             self.bonus_action = 0
             self.attack(target, is_ranged, other_dmg=self.offhand_dmg, is_offhand=True)
         else:
-            self.check_polearm_master(self,target, is_ranged) #Check if target is a polearm master
+            self.check_polearm_master(target, is_ranged) #Check if target is a polearm master
             self.action = 0 #if at least one attack, action = 0
             self.is_attacking = True #uses action to attack
             self.attack_counter -= 1 #Lower the attack counter 
@@ -1101,6 +1101,7 @@ class entity:                                          #A NPC or PC
                      target.last_attacker != self, #if attacked before, you didnt just enter their range
                      target.reaction == 1]  #has reaction left
             if all(rules):
+                self.DM.say(self.name + ' has entered the polearm range of ' + target.name)
                 target.AI.do_opportunity_attack(self)
 
     def check_smite(self, Dmg, is_ranged):
@@ -1163,6 +1164,7 @@ class entity:                                          #A NPC or PC
 
         #check if other to hit is passsed, like for a spell
         if tohit == False: tohit = self.tohit
+        if self.state != 1: return 0   #maybe already dead because of attack of opp
 
         self.DM.say(self.name + " -> " + target.name + ', ', end='')
 

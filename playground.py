@@ -23,7 +23,9 @@ fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 # DM.say('')
 # Enemy.make_normal_attack_on(Character, fight)
 
-
+print(entity('PoleMaster', 0, DM).offhand_dmg)
+print(Character.offhand_dmg)
+print(Character.knows_polearm_master)
 Character.knows_great_weapon_master = True
 Character.has_range_attack = False
 Character.position = 0
