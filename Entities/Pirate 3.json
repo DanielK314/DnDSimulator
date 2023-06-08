@@ -13,7 +13,7 @@
     "Wis": 10,
     "Cha": 12,
     "Saves_Proficiency": "Dex ",
-    "Hero_or_Villain": 1,
+    "Hero_or_Villain": 0,
     "Damage_Type": "slashing",
     "Damage_Resistance": "none",
     "Damage_Immunity": "none",

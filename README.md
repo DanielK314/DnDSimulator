@@ -53,6 +53,13 @@ This is a overview of all the stats and abilities that are currently supported b
 
 Most of this explains itself. Simply insert the AC, HP, proficiency and level of your character. The Hero and Villain can be set to 0 for hero and 1 for villain. Character type is relevant for undead and the clecrics destroy undead. You can then add the stats and if they have save prof.
 
+## Attacks
+You can add the damage, the to hit and the number of attacks the character does with one action. The damage is supposed to be the mean value that attack does. The dmg type is assumed to be the type selectable in the DMG section. If you add a offhand damage that is not 0, the character is assumed to have a offhand attack for the bonus action
+
+# Range Attacks
+If you enable this the charakter has a range attack and will use the range attack for all normal attacks. Keep this in mind for abilities like smite or great weapon master
+
+
 ## Spells
 <img src="/Documentation/Spell1.png" width=40% height=40%>
 

@@ -118,7 +118,7 @@ class AI:
                     if player.spell_slot_counter[6-i] > 0: #try all spell slots, starting at 6
                         player.use_combat_wild_shape_heal(spell_level=6-i+1) #spelllevel is 1+i
 
-#---------Reaction
+#---------Reaction and choices
     def do_opportunity_attack(self,target):
         #this function is called when the player can do an attack of opportunity
         if target.knows_cunning_action and target.bonus_action == 1:
@@ -136,6 +136,11 @@ class AI:
                 if self.player.spell_slot_counter[i] > 0:
                     self.player.SpellBook['Shield'].cast(target=False, cast_level=i+1)   #spell level is i + 1
                     break
+
+    def want_to_use_great_weapon_master(self, target):
+        #Is called from the attack function if you can use the great weapon feat
+        #take -5 to attack and +10 to dmg
+        return True
 
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet

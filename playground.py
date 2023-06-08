@@ -23,15 +23,11 @@ fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 # DM.say('')
 # Enemy.make_normal_attack_on(Character, fight)
 
-Character.DM.rounds_number = 2
-Enemy.heal_given = 100
-Enemy.dmg_dealed = 20
 
-Dmg = dmg(4, 'fire')
-Dmg.add(5, 'force')
-Dmg.substract(3)
-print(Dmg.calculate_for(Character))
-
+Character.knows_great_weapon_master = True
+Character.has_range_attack = False
+Character.position = 0
+Character.make_normal_attack_on(Enemy, fight)
 
 
 # Enemy.type = 'undead'
