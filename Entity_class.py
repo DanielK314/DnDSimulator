@@ -1196,7 +1196,7 @@ class entity:                                          #A NPC or PC
                      is_ranged == False, is_offhand == False]
             if all(rules): #No spells or range attacks
                 #Do you want to use great_weapon_master
-                if self.AI.want_to_use_great_weapon_master(target):
+                if self.AI.want_to_use_great_weapon_master(target, advantage_disadvantage):
                     Modifier -=5  #-5 to attack but +10 to dmg
                     AdditionalDmg += 10
                     self.DM.say('great weapon master, ', end='')

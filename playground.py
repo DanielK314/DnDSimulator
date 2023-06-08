@@ -23,17 +23,10 @@ fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 # DM.say('')
 # Enemy.make_normal_attack_on(Character, fight)
 
-print(entity('PoleMaster', 0, DM).offhand_dmg)
-print(Character.offhand_dmg)
-print(Character.knows_polearm_master)
-Character.knows_great_weapon_master = True
-Character.has_range_attack = False
-Character.position = 0
-Character.knows_inspiration = False
-Character.SpellBook = []
-Character.dmg = 20
-Character.tohit = 10
-Character.AI.do_your_turn(fight)
+Enemy.AC = 15
+Character.tohit = 0
+Character.dmg = 5
+print(Character.AI.want_to_use_great_weapon_master(Enemy, 1))
 
 # Enemy.type = 'undead'
 # Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)
