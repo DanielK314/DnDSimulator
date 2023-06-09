@@ -1,15 +1,15 @@
 {
     "simulation_parameters": {
-        "printing_on": 1,
-        "repetitions": 1
+        "printing_on": 0,
+        "repetitions": 1000
     },
     "Entities": [
         {
-            "name": "PoleMaster",
+            "name": "Paladin",
             "team": 0
         },
         {
-            "name": "Young Dragon",
+            "name": "Fighter",
             "team": 1
         }
     ]

@@ -38,6 +38,7 @@ class do_attack(choice):
             if player.attack_counter != 0: return 0 #didnt attack in action
             dmg = player.offhand_dmg
             attacks = 1
+            if dmg == 0: return 0  #no offhand attack if dmg = 0
         
         if player.knows_reckless_attack:
             dmg = dmg*1.2 #improved chance to hit
