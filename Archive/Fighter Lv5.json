@@ -1,10 +1,10 @@
 {
-    "AC": 19,
+    "AC": 18,
     "HP": 44,
     "Proficiency": 3,
-    "To_Hit": 7.0,
+    "To_Hit": 8.0,
     "Attacks": 2.0,
-    "DMG": 9.5,
+    "DMG": 11.5,
     "Level": 5.0,
     "Str": 18,
     "Dex": 9,
