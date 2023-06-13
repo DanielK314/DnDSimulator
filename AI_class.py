@@ -67,6 +67,10 @@ class AI:
         if player.wild_shape_HP == 0:
         #--------Evaluate Choices
             while (player.action == 1 or player.bonus_action == 1) and player.state == 1:
+                EnemiesConscious = [x for x in fight if x.state == 1 and x.team != player.team]
+                if len(EnemiesConscious) == 0:
+                    player.DM.say('All enemies defeated')
+                    return #nothing left to do                
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
                 ActionToDo = self.Choices[np.argmax(ChoiceScores)]
                 if np.max(ChoiceScores) > 0:
@@ -118,7 +122,7 @@ class AI:
                     if player.spell_slot_counter[6-i] > 0: #try all spell slots, starting at 6
                         player.use_combat_wild_shape_heal(spell_level=6-i+1) #spelllevel is 1+i
 
-#---------Reaction
+#---------Reaction and choices
     def do_opportunity_attack(self,target):
         #this function is called when the player can do an attack of opportunity
         if target.knows_cunning_action and target.bonus_action == 1:
@@ -136,6 +140,27 @@ class AI:
                 if self.player.spell_slot_counter[i] > 0:
                     self.player.SpellBook['Shield'].cast(target=False, cast_level=i+1)   #spell level is i + 1
                     break
+
+    def want_to_use_great_weapon_master(self, target, advantage_disadvantage):
+        #Is called from the attack function if you can use the great weapon feat
+        #take -5 to attack and +10 to dmg
+        #advantage_disadvanteage > 0 - advantage, < 0 disadv.
+
+        hitPropability = (20 - target.AC + self.player.tohit)/20
+        hitPropabilityGWM = (20 - target.AC + self.player.tohit - 5)/20
+
+        def hitPropabilityAdvantage(hitProp, advantage):
+            if advantage > 0: #has to get it once out of two
+                return 1 - (1-hitProp)**2
+            if advantage < 0:  #disadvantage, has to succ twice
+                return hitProp**2
+            else: return hitProp
+
+        #Calcualte the expectation value for the dmg
+        dmgNoGWM = self.player.dmg*hitPropabilityAdvantage(hitPropability, advantage_disadvantage)
+        dmgWithGWM = (self.player.dmg + 10)*hitPropabilityAdvantage(hitPropabilityGWM, advantage_disadvantage)
+        if dmgWithGWM >= dmgNoGWM : return True
+        else: return False
 
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet
@@ -431,6 +456,8 @@ class AI:
                 return False
         else:
             return False
+
+#---------Spells
 
     def choose_quickened_cast(self):
         #This function is called once per trun to determine if player wants to use quickned cast this round

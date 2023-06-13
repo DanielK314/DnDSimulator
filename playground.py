@@ -23,16 +23,10 @@ fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 # DM.say('')
 # Enemy.make_normal_attack_on(Character, fight)
 
-Character.DM.rounds_number = 2
-Enemy.heal_given = 100
-Enemy.dmg_dealed = 20
-
-Dmg = dmg(4, 'fire')
-Dmg.add(5, 'force')
-Dmg.substract(3)
-print(Dmg.calculate_for(Character))
-
-
+Enemy.AC = 15
+Character.tohit = 0
+Character.dmg = 5
+print(Character.AI.want_to_use_great_weapon_master(Enemy, 1))
 
 # Enemy.type = 'undead'
 # Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)

@@ -1,43 +1,39 @@
 {
     "simulation_parameters": {
-        "printing_on": 1,
-        "repetitions": 100
+        "printing_on": 0,
+        "repetitions": 1000
     },
     "Entities": [
         {
-            "name": "Displayer Beast",
-            "team": 1
+            "name": "Barbarian Lv5",
+            "team": 0
         },
         {
-            "name": "Goblin",
-            "team": 1
+            "name": "Cleric Lv8",
+            "team": 0
         },
         {
-            "name": "Ogre",
-            "team": 1
+            "name": "Druid Lv5",
+            "team": 0
         },
         {
-            "name": "Guard",
-            "team": 1
+            "name": "New Character",
+            "team": 0
         },
         {
-            "name": "Pirate 2",
-            "team": 1
+            "name": "Paladin",
+            "team": 0
         },
         {
             "name": "Pirate 3",
-            "team": 1
+            "team": 0
         },
         {
             "name": "Pirate",
-            "team": 1
+            "team": 0
         },
         {
-            "name": "Pirate Captain",
-            "team": 1
-        },
-        {
-            "name": "Wizard Lv5",
+            "name": "Rogue Lv5",
             "team": 0
         },
         {
@@ -45,8 +41,104 @@
             "team": 0
         },
         {
+            "name": "Wizard",
+            "team": 0
+        },
+        {
+            "name": "Sorcerer lv8",
+            "team": 0
+        },
+        {
+            "name": "Wizard Lv5",
+            "team": 0
+        },
+        {
+            "name": "PoleMaster",
+            "team": 0
+        },
+        {
+            "name": "Pirate 4",
+            "team": 0
+        },
+        {
             "name": "Paladin Lv5",
             "team": 0
+        },
+        {
+            "name": "Pirate 2",
+            "team": 0
+        },
+        {
+            "name": "Druid",
+            "team": 0
+        },
+        {
+            "name": "Bard Lv5",
+            "team": 0
+        },
+        {
+            "name": "Druid Lv 5",
+            "team": 0
+        },
+        {
+            "name": "Displayer Beast",
+            "team": 1
+        },
+        {
+            "name": "Evil Pirate 3",
+            "team": 1
+        },
+        {
+            "name": "Evil Pirate",
+            "team": 1
+        },
+        {
+            "name": "Fire Elemental",
+            "team": 1
+        },
+        {
+            "name": "Giant Eagle",
+            "team": 1
+        },
+        {
+            "name": "Ogre",
+            "team": 1
+        },
+        {
+            "name": "Thoran",
+            "team": 1
+        },
+        {
+            "name": "Young Dragon",
+            "team": 1
+        },
+        {
+            "name": "Evil Pirate 2",
+            "team": 1
+        },
+        {
+            "name": "Evil Pirate 4",
+            "team": 1
+        },
+        {
+            "name": "Fighter",
+            "team": 1
+        },
+        {
+            "name": "Flameskull",
+            "team": 1
+        },
+        {
+            "name": "Goblin",
+            "team": 1
+        },
+        {
+            "name": "Pirate Captain",
+            "team": 1
+        },
+        {
+            "name": "Vamire Spawn",
+            "team": 1
         }
     ]
 }

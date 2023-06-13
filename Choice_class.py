@@ -20,24 +20,25 @@ class do_attack(choice):
         player = self.player
         Score = 0
         #No attack possible return 0
-        if player.action == 0: return 0
-        elif player.attack_counter < 1: return 0
-        elif self.is_offhand and player.attack_counter != 0: return 0
-
-        if self.is_offhand:
-            dmg = player.offhand_dmg
-            attacks = 1
-        else:
+        #Action Attack:
+        if self.is_offhand == False:
+            if player.action == 0: return 0
+            elif player.attack_counter < 1: return 0
             dmg = player.dmg
             attacks = player.attacks
-
-        if self.is_offhand == False:
             if (player.knows_rage and player.bonus_action == 1) or player.raged == 1:
                 dmg += player.rage_dmg
             if player.knows_frenzy:
                 attacks += 1
             if player.is_hasted:
                 attacks += 1
+
+        #Offhand Attack
+        else:
+            if player.attack_counter != 0: return 0 #didnt attack in action
+            dmg = player.offhand_dmg
+            attacks = 1
+            if dmg == 0: return 0  #no offhand attack if dmg = 0
         
         if player.knows_reckless_attack:
             dmg = dmg*1.2 #improved chance to hit
@@ -59,6 +60,11 @@ class do_attack(choice):
             Score += player.sneak_attack_dmg
         if player.wailsfromthegrave_counter > 0:
             Score += player.sneak_attack_dmg/2
+        if player.knows_great_weapon_master and self.is_offhand == False:
+            Score += 5  #+10 dmg, but no great hit prop
+        if player.knows_archery: Score += dmg*0.1 #better hit chance
+        if player.knows_great_weapon_fighting: dmg += dmg*0.1 #more dmg
+        if player.knows_improved_critical: dmg += dmg*0.1 #better crit
         if player.knows_smite:
             for i in range(0,5):
                 if player.spell_slot_counter[4-i] > 0:

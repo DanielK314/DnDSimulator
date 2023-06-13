@@ -9,7 +9,6 @@ def reset(fight):
         x.long_rest()
 
 def ConcentrationTest1(Character, Enemy):
-    Character.SpellBook['Haste'].is_known = True
     Character.spell_slot_counter[2] = 1
     Character.SpellBook['Haste'].cast([Character])
     if Character.is_concentrating == False: 
@@ -27,7 +26,6 @@ def ConcentrationTest1(Character, Enemy):
             return True
 
 def ConcentrationTestEntangle(Character, Enemy):
-    Character.SpellBook['Entangle'].is_known = True
     Character.spell_slot_counter[0] = 1
     Character.spell_dc = 100
     Character.SpellBook['Entangle'].cast([Enemy])
@@ -44,7 +42,6 @@ def ConcentrationTestEntangle(Character, Enemy):
             return True
 
 def HasteRoundTest(Character):
-    Character.SpellBook['Haste'].is_known = True
     Character.spell_slot_counter[2] = 1
     Character.SpellBook['Haste'].cast([Character])
     if Character.is_concentrating == False: 
@@ -68,7 +65,6 @@ def HasteRoundTest(Character):
             return True
 
 def HexTest(Character, Enemy):
-    Character.SpellBook['Hex'].is_known = True
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['Hex'].cast([Enemy])
     if Character.is_concentrating == False: 
@@ -85,7 +81,6 @@ def HexTest(Character, Enemy):
                 return True
 
 def HexConTest(Character, Enemy):
-    Character.SpellBook['Hex'].is_known = True
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['Hex'].cast([Enemy])
     if Character.is_concentrating == False: 
@@ -109,7 +104,6 @@ def HexConTest(Character, Enemy):
         print('Hex Break Concentration Test')
 
 def HexSwitchTest(Character, Enemy1, Enemy2):
-    Character.SpellBook['Hex'].is_known = True
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['Hex'].cast([Enemy1])
     Enemy1.unconscious()
@@ -128,7 +122,6 @@ def HexSwitchTest(Character, Enemy1, Enemy2):
 
 def conjureAnimalsTest(Character):
     TestFight = [Character]
-    Character.SpellBook['ConjureAnimals'].is_known = True
     Character.spell_slot_counter[2] = 1
     Character.SpellBook['ConjureAnimals'].cast(TestFight)
     Character.CHP = 200
@@ -164,7 +157,6 @@ def conjureAnimalsTest(Character):
     print('Conjure Animals Test')
 
 def guidingBoltTest(Character, Enemy):
-    Character.SpellBook['GuidingBolt'].is_known = True
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['GuidingBolt'].cast(Enemy)
     if len(Character.TM.TokenList) == 0:
@@ -189,7 +181,7 @@ def guidingBoltTest(Character, Enemy):
 
 if __name__ == '__main__':
     DM = DungeonMaster()
-    DM.enable_print()
+#    DM.enable_print()
     Character = entity('Ape', 0, DM, archive=True)
     Character.orignial_name = 'Hero'
     Character2 = entity('Ape', 0, DM, archive=True)
@@ -200,6 +192,13 @@ if __name__ == '__main__':
     Enemy3 = entity('Ape', 1, DM, archive=True)
 
     fight = [Character, Character2, Character3, Enemy, Enemy2, Enemy3]
+
+    #Character lerns all spells 
+    Character.SpellBook = dict()
+    for x in Character.Spell_classes:
+        spell_to_lern = x(Character)  #Initiate Spell
+        spell_to_lern.is_known = True #Spell is known
+        Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
     #Concentration Test
     reset(fight)

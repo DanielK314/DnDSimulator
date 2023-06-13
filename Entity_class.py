@@ -201,10 +201,9 @@ class entity:                                          #A NPC or PC
         else:
             self.knows_uncanny_dodge = False
         #Cunning Action
+        self.knows_cunning_action = False
         if 'CunningAction' in self.other_abilities:
             self.knows_cunning_action = True
-        else:
-            self.knows_cunning_action = False
         #Wails from the Grave
         self.wailsfromthegrave = 0
         self.wailsfromthegrave_counter = self.proficiency
@@ -307,6 +306,18 @@ class entity:                                          #A NPC or PC
         if 'AgonizingBlast' in self.other_abilities:
             self.knows_agonizing_blast = True
 
+    #Feats
+        #Great Weapon Master
+        self.knows_great_weapon_master = False
+        if 'GreatWeaponMaster' in self.other_abilities:
+            self.knows_great_weapon_master = True
+        self.has_additional_great_weapon_attack = False
+        self.knows_polearm_master = False
+        if 'PolearmMaster' in self.other_abilities:
+            self.knows_polearm_master = True
+            poleArmDMG = 2.5 + max(self.base_modifier[0], self.base_modifier[1]) #Dex or Str
+            if self.offhand_dmg < poleArmDMG:
+                self.offhand_dmg = poleArmDMG #1d4 + attack mod
 
     #Meta Magic
         self.sorcery_points_base = int(data['Sorcery_Points'])
@@ -383,7 +394,6 @@ class entity:                                          #A NPC or PC
         self.reaction = 1
         self.has_cast_left = True #if a spell is cast, hast_cast_left = False
         self.is_concentrating = False
-        self.uses_offhand = False
 
         self.restrained = 0             #will be ckeckt wenn attack/ed 
         self.prone = 0
@@ -991,9 +1001,9 @@ class entity:                                          #A NPC or PC
         if is_off_hand:
             #Make Offhand Attack
             self.bonus_action = 0
-            self.uses_offhand = True #will be disabled by attack funtion
-            self.attack(target, is_ranged, other_dmg=self.offhand_dmg)
+            self.attack(target, is_ranged, other_dmg=self.offhand_dmg, is_offhand=True)
         else:
+            self.check_polearm_master(target, is_ranged) #Check if target is a polearm master
             self.action = 0 #if at least one attack, action = 0
             self.is_attacking = True #uses action to attack
             self.attack_counter -= 1 #Lower the attack counter 
@@ -1008,7 +1018,9 @@ class entity:                                          #A NPC or PC
             else: return True
         else: return True
 
-    def make_attack_roll(self, target, is_ranged, is_opportunity_attack):
+    def check_attack_advantage(self, target, is_ranged, is_opportunity_attack):
+        #This function returns if an attack is advantage or disadvantage
+        #No stats or tokens should be changed here, it is just a check
         #calculate all effects that might influence Disad or Advantage
         advantage_disadvantage = 0
         if target.state == 0:
@@ -1057,8 +1069,17 @@ class entity:                                          #A NPC or PC
             #This is set by the guidingBolted Token triggered bevore
             self.DM.say('guiding bolt, ', end='')
             advantage_disadvantage += 1
-            target.is_guiding_bolted = False #reset being boltet
+            #Being guiding boltet is reset at the make_attack_roll function
+            #It should not happen here, as I want to use this function also for AI stuff
+            #It should therefor not change any status
+        return advantage_disadvantage
 
+    def make_attack_roll(self, target, is_ranged, is_opportunity_attack):
+        #calculate all effects that might influence Disad or Advantage
+        advantage_disadvantage = self.check_attack_advantage(target, is_ranged, is_opportunity_attack)
+        if target.is_guiding_bolted:
+            target.is_guiding_bolted = False #reset being boltet
+            
         #Roll the Die to hit
         if advantage_disadvantage > 0:
             d20 = self.rollD20(advantage_disadvantage=1)
@@ -1069,7 +1090,19 @@ class entity:                                          #A NPC or PC
         else:
             d20 = self.rollD20(advantage_disadvantage=0)
             self.DM.say('\n', end='')
+        #The roll and advantage is returned, advantage is still important for sneak attack
         return d20 , advantage_disadvantage
+
+    def check_polearm_master(self, target, is_ranged):
+        #This function is called in the make normal attack function
+        #At this point it is already clear it is no offhand attack and no opp. attack
+        if target.knows_polearm_master:
+            rules = [is_ranged == False,  #No range attacks
+                     target.last_attacker != self, #if attacked before, you didnt just enter their range
+                     target.reaction == 1]  #has reaction left
+            if all(rules):
+                self.DM.say(self.name + ' has entered the polearm range of ' + target.name)
+                target.AI.do_opportunity_attack(self)
 
     def check_smite(self, Dmg, is_ranged):
         if is_ranged == False and self.knows_smite:  #smite only on melee
@@ -1118,7 +1151,7 @@ class entity:                                          #A NPC or PC
             self.DM.say('\n' + self.name + ' uses great weapon fighting', end='')
             Dmg.multiply(1.15) #no 1,2 in dmg roll, better dmg on attack
 
-    def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False):
+    def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False, is_offhand = False):
     #this is the attack funktion of a player attacking a target with a normak attack
     #if another type of dmg is passed, it will be used, otherwise the player.dmg_type is used
     #if no dmg is passed, the normal entitiy dmg is used
@@ -1131,20 +1164,17 @@ class entity:                                          #A NPC or PC
 
         #check if other to hit is passsed, like for a spell
         if tohit == False: tohit = self.tohit
+        if self.state != 1: return 0   #maybe already dead because of attack of opp
 
         self.DM.say(self.name + " -> " + target.name + ', ', end='')
 
-        if is_ranged:
-            self.DM.say('ranged, ', end='')
-        else:
-            self.DM.say('melee, ', end='')
-        
-        if self.uses_offhand:
-            self.DM.say('off hand, ', end='')
-            self.uses_offhand == False
+        if is_ranged: self.DM.say('ranged, ', end='')
+        else: self.DM.say('melee, ', end='')
+        if is_offhand: self.DM.say('off hand, ', end='')
 
         target.TM.isAttacked()     #Triggers All Tokens, that trigger if target is attacked
 
+        #Advantage still important for sneak attack
         d20, advantage_disadvantage = self.make_attack_roll(target, is_ranged, is_opportunity_attack)
                 
         if d20 == 20 or (self.knows_improved_critical and d20 == 19):
@@ -1159,6 +1189,22 @@ class entity:                                          #A NPC or PC
 
         Modifier = 0 # Will go add to the attack to hit
         ACBonus = 0
+        AdditionalDmg = 0 #This is damage that will not be multiplied
+
+        if self.knows_great_weapon_master:
+            rules = [other_dmg == False, #No spells or other stuff
+                     is_ranged == False, is_offhand == False]
+            if all(rules): #No spells or range attacks
+                #Do you want to use great_weapon_master
+                if self.AI.want_to_use_great_weapon_master(target, advantage_disadvantage):
+                    Modifier -=5  #-5 to attack but +10 to dmg
+                    AdditionalDmg += 10
+                    self.DM.say('great weapon master, ', end='')
+                
+                if is_crit and self.bonus_action == 1: 
+                    #Just made a crit meele attack, take BA for another attack
+                    self.bonus_action == 0
+                    self.attack_counter += 1
 
         if target.is_combat_inspired and target.inspired > 0:
             if d20 + self.tohit > target.AC:
@@ -1181,7 +1227,7 @@ class entity:                                          #A NPC or PC
 
         if d20 + tohit + Modifier >= target.AC + ACBonus or is_crit:       #Does it hit
             if is_crit:
-                self.DM.say('Critical Hit!, ',end='')
+                self.DM.say('Critical Hit!, ',end='')                    
             self.DM.say('hit: ' + str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus), end= '')
 
         #Smite
@@ -1192,7 +1238,7 @@ class entity:                                          #A NPC or PC
             self.check_combat_inspiration(Dmg, other_dmg)
         #Hex
             self.check_hex(Dmg, target)
-        #GreatWeapon
+        #GreatWeaponFighting
             self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg)
         #poison Bite
             if self.knows_poison_bite and self.poison_bites == 1:
@@ -1205,6 +1251,8 @@ class entity:                                          #A NPC or PC
                 Dmg.add(poisonDMG, 'poison')
         #Critical
             if is_crit: Dmg.multiply(1.8)
+        #Additional damage
+            if AdditionalDmg != 0: Dmg.add(AdditionalDmg, self.damage_type)
         #add rage dmg
             if self.raged == True and is_ranged == False: #Rage dmg only on melee
                 Dmg.add(self.rage_dmg, self.damage_type)
@@ -1556,7 +1604,6 @@ class entity:                                          #A NPC or PC
         summon = entity(Name, self.team, self.DM, archive=True)
         return summon
 
-
 #---------------Round Handling------------
     def start_of_turn(self):
         #Attention, is called in the do the fighting function
@@ -1599,7 +1646,6 @@ class entity:                                          #A NPC or PC
         self.sneak_attack_counter = 1
         self.no_attack_of_opportunity_yet = True
         self.action_surge_used = False
-        self.uses_offhand = False
         self.is_attacking = False
         self.has_wolf_mark = False #reset totem of wolf mark
 
@@ -1658,6 +1704,7 @@ class entity:                                          #A NPC or PC
         self.action_surge_counter = self.action_surges
         self.action_surge_used = False
         self.has_used_second_wind = False
+        self.has_additional_great_weapon_attack = False
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False
