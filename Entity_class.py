@@ -334,6 +334,25 @@ class entity:                                          #A NPC or PC
         if 'TwinnedSpell' in self.other_abilities:
             self.knows_twinned_spell = True
 
+    # Ki Points
+        self.ki_points_base = int(data['Ki_Points'])
+        self.ki_points = self.ki_points_base
+        self.knows_deflect_missiles = False
+        if 'DeflectMissiles' in self.other.abilities:
+            self.knows_deflect_missiles = True
+        self.knows_flurry_of_blows = False
+        if 'FlurryOfBlows' in self.other.abilities:
+            self.knows_flurry_of_blows = True
+        self.knows_patient_defense = False
+        if 'PatientDefense' in self.other.abilities:
+            self.knows_patient_defense = True
+        self.knows_step_of_the_wind = False
+        if 'StepOfTheWind' in self.other.abilities:
+            self.knows_step_of_the_wind = True
+        self.knows_stunning_strike = False
+        if 'StunningStrike' in self.other.abilities:
+            self.knows_stunning_strike = True
+
     #Monster Abilites
         self.knows_dragons_breath = False
         if 'DragonsBreath' in self.other_abilities:
