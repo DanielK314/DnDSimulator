@@ -30,7 +30,7 @@
     "Spell_Slot_8": 0,
     "Spell_Slot_9": 0,
     "Spell_List": "FireBolt HealingWord Shatter Haste ",
-    "Other_Abilities": "Inspiration CuttingWords CombatInspiration GreatWeaponMaster PolearmMaster",
+    "Other_Abilities": "Inspiration CuttingWords CombatInspiration ",
     "Sneak_Attack_Dmg": 0.0,
     "Lay_on_Hands_Pool": 0,
     "Sorcery_Points": 0,
@@ -40,9 +40,15 @@
     "DruidCR": 0.0,
     "OffHand": 0.0,
     "Type": "normal",
-    "Inspiration": "4",
+    "Inspiration": 4,
     "DestroyUndeadCR": 0.0,
     "ChannelDivinity": 0,
     "ActionSurges": 0,
-    "RageDmg": 0.0
+    "RageDmg": 0.0,
+    "AOERechargeDmg": 0.0,
+    "AOERechargeDC": 0,
+    "AOESaveType": 0,
+    "AOERechargeArea": 0,
+    "AOERechargePropability": 0.0,
+    "AOERechargeType": "fire"
 }

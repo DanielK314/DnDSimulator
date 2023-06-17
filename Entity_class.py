@@ -268,6 +268,8 @@ class entity:                                          #A NPC or PC
         if 'Inspiration' in self.other_abilities:
             self.knows_inspiration = True
             self.inspiration_die = int(data['Inspiration'])
+            if self.inspiration_die not in [0,2,3,4,5,6]:
+                self.inspiration_die = 0
         else:
             self.knows_inspiration = False
             self.inspiration_die = 0
@@ -351,6 +353,26 @@ class entity:                                          #A NPC or PC
             self.poison_bite_dmg = 8 + self.level*3
             self.poison_bite_dc = int(11.1 + self.level/3)
         
+        self.knows_recharge_aoe = False
+        if 'RechargeAOE' in self.other_abilities:
+            self.knows_recharge_aoe = True
+
+        try: self.aoe_recharge_dmg = data['AOERechargeDmg']
+        except: self.aoe_recharge_dmg = 0
+        try: self.aoe_recharge_dc = int(data['AOERechargeDC'])
+        except: self.aoe_recharge_dc = 0
+        try: self.aoe_save_type = int(data['AOESaveType']) #0 - Str, 1 - Dex, ...
+        except: self.aoe_save_type = 0
+        try: self.aoe_recharge_area = int(data['AOERechargeArea'])
+        except: self.aoe_recharge_area = 0
+        try:
+            self.aoe_recharge_propability = float(data['AOERechargePropability'])
+            if self.aoe_recharge_propability > 1: self.aoe_recharge_propability = 1
+            if self.aoe_recharge_propability < 0: self.aoe_recharge_propability = 0
+        except: self.aoe_recharge_propability = 0
+        try: self.aoe_recharge_type = data['AOERechargeType']
+        except: self.aoe_recharge_type = 'fire'
+
 
     #Wild Shape
 
@@ -409,6 +431,7 @@ class entity:                                          #A NPC or PC
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False
+        self.recharge_aoe_is_charged = False
 
     #AI
         self.AI = AI(self)
@@ -1618,6 +1641,10 @@ class entity:                                          #A NPC or PC
             if random() > 2/3:
                 self.dragons_breath_is_charged = True
 
+        if self.knows_recharge_aoe: #Charge aoe
+            if random() < self.aoe_recharge_propability:
+                self.recharge_aoe_is_charged = True
+
         if self.knows_spider_web: #charge Spider Web
             if random() > 2/3:
                 self.spider_web_is_charged = True
@@ -1708,6 +1735,7 @@ class entity:                                          #A NPC or PC
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False
+        self.recharge_aoe_is_charged = False
         self.poison_bites = 1 #restore Poison bite 
 
         self.wild_shape_HP = 0
@@ -1790,6 +1818,25 @@ class entity:                                          #A NPC or PC
             self.action = 0
         else: 
             print('Dragon breath could not be used')
+            quit()
+
+    def use_recharge_aoe(self, targets):
+        #only works if charged at begining of turn
+        if self.knows_recharge_aoe and self.recharge_aoe_is_charged and self.action == 1:
+            if type(targets) != list: #maybe only one Element was passed
+                targets = [targets]  #make it a list then
+            self.DM.say(self.name + ' uses its recharge AOE')
+            self.recharge_aoe_is_charged = False
+            for target in targets:
+                target.last_attacker = self    #target remembers last attacker
+                save = target.make_save(self.aoe_save_type, DC = self.aoe_recharge_dc)   #let them make saves
+                Dmg = dmg(self.aoe_recharge_dmg, self.aoe_recharge_type)
+                if save >= self.aoe_recharge_dc:
+                    Dmg.multiply(1/2)
+                target.changeCHP(Dmg, self, True)
+            self.action = 0
+        else: 
+            print('Recharge AOE could not be used')
             quit()
 
     def use_spider_web(self, target):

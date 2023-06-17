@@ -98,6 +98,9 @@ Add to GUI
 3.3 Add new stat to fetch_Entity_stats
 3.4 Add to fetch_GUI_stats
 3.5 Add to update_page
+3.6 Add to fetch_default_stats (if it was a entry ability)
+
+OR: Add to All_Other_Ability_Entries in Controller class
 
 New Chreature Type:
 1. Add to Controller __init__ as all types
