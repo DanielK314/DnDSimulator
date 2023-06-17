@@ -49,5 +49,6 @@
     "AOERechargeDC": "0",
     "AOESaveType": "0",
     "AOERechargeArea": "0",
-    "AOERechargePropability": "0"
+    "AOERechargePropability": "0",
+    "AOERechargeType": "fire"
 }

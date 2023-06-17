@@ -305,7 +305,7 @@ class HomePage_cl(Frame):
             self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger solid')
 
 class OtherAbilityEntry(Frame):
-    def __init__(self, root, text, abilityName, className, attributeName ,isFloatStat = False):
+    def __init__(self, root, text, abilityName, className, attributeName, isFloatStat = False):
         self.isFloatStat = isFloatStat
         self.abilityName = abilityName
         self.attributeName = attributeName
@@ -324,6 +324,30 @@ class OtherAbilityEntry(Frame):
     def update(self, NewText):
         self.Entry.delete(0, 'end')
         self.Entry.insert(0, str(NewText))
+
+class OtherAbilityCombobox(Frame):
+    def __init__(self, root, entityPage, text, abilityName, dict):
+        self.text = text
+        self.abilityName = abilityName
+        self.dict = dict
+        self.entityPage = entityPage
+        Frame.__init__(self, root)
+        self.Label = Label(self, text=text).grid(row=0, column=1, sticky="w")
+        Labels = [label for label in dict]  #all labels for the box
+        self.Entry = ttk.Combobox(self, values = Labels, state='readonly', height=6, width=6)
+        self.Entry.grid(row=0, column=0, sticky='e')
+    
+    def get(self):
+        state = self.Entry.get()
+        for label in self.dict:
+            if state == label: return self.dict[label]
+    
+    def update(self):
+        update = self.entityPage.stats[self.abilityName] #get the current stat from entity page
+        for label in self.dict:
+            if self.dict[label] == update:
+                self.Entry.set(label)
+                break
 
 class EntityPage_cl(Frame):
     def __init__(self, root):
@@ -697,34 +721,32 @@ class EntityPage_cl(Frame):
                     entry.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
                     row += 1
             if Class[i]['name'] == 'Bard':
-                self.InspirationFrame = Frame(frame)
-                Label(self.InspirationFrame, text='Inspiration Die').grid(row=0, column=1, sticky='w')
-                Dies = ['0','d4', 'd6', 'd8', 'd10', 'd12']
-                self.InspirationEntry = ttk.Combobox(self.InspirationFrame, values = Dies, state='readonly', height=6, width=3) #Type Entry
-                if self.stats['Inspiration'] == 2: self.InspirationEntry.set('d4')
-                elif self.stats['Inspiration'] == 3: self.InspirationEntry.set('d6')
-                elif self.stats['Inspiration'] == 4: self.InspirationEntry.set('d8')
-                elif self.stats['Inspiration'] == 5: self.InspirationEntry.set('d10')
-                elif self.stats['Inspiration'] == 6: self.InspirationEntry.set('d12')
-                else: self.InspirationEntry.set('0')
-                self.InspirationEntry.grid(row=0, column=0, sticky='e')
-                self.InspirationFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                InspirationDict = {
+                    '0': 0,
+                    'd4': 2,
+                    'd6': 3,
+                    'd8': 4,
+                    'd10': 5,
+                    'd12': 6
+                }
+                self.InspirationEntry = OtherAbilityCombobox(frame, self, text='Inspiration Die', abilityName='Inspiration', dict = InspirationDict)
+                self.InspirationEntry.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
                 row += 1
             if Class[i]['name'] == 'Monster':
-                self.AOEFrame = Frame(frame)
-                Label(self.AOEFrame, text='Recharge AOE Save').grid(row=0, column=1, sticky='w')
-                Types = ['Str','Dex', 'Con', 'Int', 'Wis', 'Cha']
-                self.AOEEntry = ttk.Combobox(self.AOEFrame, values = Types, state='readonly', height=6, width=4) #Type Entry
-                if self.stats['AOESaveType'] == 0: self.AOEEntry.set('Str')
-                elif self.stats['AOESaveType'] == 1: self.AOEEntry.set('Dex')
-                elif self.stats['AOESaveType'] == 2: self.AOEEntry.set('Con')
-                elif self.stats['AOESaveType'] == 3: self.AOEEntry.set('Int')
-                elif self.stats['AOESaveType'] == 4: self.AOEEntry.set('Wis')
-                elif self.stats['AOESaveType'] == 5: self.AOEEntry.set('Cha')
-                else: self.AOEEntry.set('0')
-                self.AOEEntry.grid(row=0, column=0, sticky='e')
-                self.AOEEntry.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
+                self.AOEDict = {
+                    'Str' : 0,
+                    'Dex' : 1,
+                    'Con' : 2,
+                    'Int' : 3,
+                    'Wis' : 4,
+                    'Cha' : 5
+                }
+                self.AOESaveEntry = OtherAbilityCombobox(frame, self, text='Recharge AOE Save', abilityName='AOESaveType', dict= self.AOEDict)
+                self.AOESaveEntry.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                AOE_dmg_types = {x:x for x in self.master.DMG_Types}
+                self.RechagreType = OtherAbilityCombobox(frame, self, 'AOE Dmg Type', 'AOERechargeType', AOE_dmg_types)
+                self.RechagreType.grid(row=row+1, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 2
 
         CRow = 0
         for i in range(0,len(Class_Frames)):
@@ -824,8 +846,9 @@ class EntityPage_cl(Frame):
         self.stats['Other_Abilities'] = Player.other_abilities
         for entry in self.All_Other_Ability_Entries:
             self.stats[entry.abilityName] = getattr(Player, entry.attributeName)
-        self.stats['Inspiration'] = Player.inspiration_die
-        self.stats['AOESaveType'] = Player.aoe_save_type
+        self.stats['Inspiration'] = int(Player.inspiration_die)
+        self.stats['AOESaveType'] = int(Player.aoe_save_type)
+        self.stats['AOERechargeType'] = Player.aoe_recharge_type
 
 
         self.stats['Position'] = Player.position_txt
@@ -924,22 +947,10 @@ class EntityPage_cl(Frame):
         for entry in self.All_Other_Ability_Entries:
             self.stats[entry.abilityName] = entry.get()
         #Inspiration
-        inspiration = self.InspirationEntry.get()
-        if inspiration == 'd4': self.stats['Inspiration'] = '2'
-        elif inspiration == 'd6': self.stats['Inspiration'] = '3'
-        elif inspiration == 'd8': self.stats['Inspiration'] = '4'
-        elif inspiration == 'd10': self.stats['Inspiration'] = '5'
-        elif inspiration == 'd12': self.stats['Inspiration'] = '6'
-        else: self.stats['Inspiration'] = '0'
+        self.stats['Inspiration'] = self.InspirationEntry.get()
         #AOE Type
-        aoe_type = self.AOEEntry.get()
-        if aoe_type == 'Str': self.stats['AOESaveType'] = '0'
-        elif aoe_type == 'Dex': self.stats['AOESaveType'] = '1'
-        elif aoe_type == 'Con': self.stats['AOESaveType'] = '2'
-        elif aoe_type == 'Int': self.stats['AOESaveType'] = '3'
-        elif aoe_type == 'Wis': self.stats['AOESaveType'] = '4'
-        elif aoe_type == 'Cha': self.stats['AOESaveType'] = '5'
-        else: self.stats['AOESaveType'] = '0'
+        self.stats['AOESaveType'] = self.AOESaveEntry.get()
+        self.stats['AOERechargeType'] = self.RechagreType.get()
 
     def load_default_stats(self):
         #This is called when the #new character button is pressed, restore default stats 
@@ -1038,20 +1049,9 @@ class EntityPage_cl(Frame):
                 self.AbilitiesList[i].set(0)
         for entry in self.All_Other_Ability_Entries:
             entry.update(self.stats[entry.abilityName])
-        if self.stats['Inspiration'] == 2: self.InspirationEntry.set('d4')
-        elif self.stats['Inspiration'] == 3: self.InspirationEntry.set('d6')
-        elif self.stats['Inspiration'] == 4: self.InspirationEntry.set('d8')
-        elif self.stats['Inspiration'] == 5: self.InspirationEntry.set('d10')
-        elif self.stats['Inspiration'] == 6: self.InspirationEntry.set('d12')
-        else: self.InspirationEntry.set('0')
-        #AOE Type
-        if self.stats['AOESaveType'] == 0: self.AOEEntry.set('Str')
-        elif self.stats['AOESaveType'] == 1: self.AOEEntry.set('Dex')
-        elif self.stats['AOESaveType'] == 2: self.AOEEntry.set('Con')
-        elif self.stats['AOESaveType'] == 3: self.AOEEntry.set('Int')
-        elif self.stats['AOESaveType'] == 4: self.AOEEntry.set('Wis')
-        elif self.stats['AOESaveType'] == 5: self.AOEEntry.set('Cha')
-
+        self.InspirationEntry.update()
+        self.AOESaveEntry.update()
+        self.RechagreType.update()
 
 
         #update the Modifier Labels

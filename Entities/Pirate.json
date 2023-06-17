@@ -30,7 +30,7 @@
     "Spell_Slot_8": 0,
     "Spell_Slot_9": 0,
     "Spell_List": "none",
-    "Other_Abilities": "RechargeAOE ",
+    "Other_Abilities": "Smite Inspiration RechargeAOE ",
     "Sneak_Attack_Dmg": 1.5,
     "Lay_on_Hands_Pool": 1,
     "Sorcery_Points": 1,
@@ -40,14 +40,15 @@
     "DruidCR": 0.0,
     "OffHand": 0.0,
     "Type": "normal",
-    "Inspiration": "0",
+    "Inspiration": 0,
     "DestroyUndeadCR": 1.5,
     "ChannelDivinity": 1,
     "ActionSurges": 1,
     "RageDmg": 0.0,
     "AOERechargeDmg": 10.5,
     "AOERechargeDC": 12,
-    "AOESaveType": "0",
+    "AOESaveType": 4,
     "AOERechargeArea": 100,
-    "AOERechargePropability": 0.95
+    "AOERechargePropability": 0.95,
+    "AOERechargeType": "poison"
 }
