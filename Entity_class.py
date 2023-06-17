@@ -1642,7 +1642,7 @@ class entity:                                          #A NPC or PC
                 self.dragons_breath_is_charged = True
 
         if self.knows_recharge_aoe: #Charge aoe
-            if random() >= self.aoe_recharge_propability:
+            if random() < self.aoe_recharge_propability:
                 self.recharge_aoe_is_charged = True
 
         if self.knows_spider_web: #charge Spider Web
@@ -1820,7 +1820,7 @@ class entity:                                          #A NPC or PC
             print('Dragon breath could not be used')
             quit()
 
-    def use_recharge_aoe(self, targets, DMG_Type = 'fire'):
+    def use_recharge_aoe(self, targets):
         #only works if charged at begining of turn
         if self.knows_recharge_aoe and self.recharge_aoe_is_charged and self.action == 1:
             if type(targets) != list: #maybe only one Element was passed
@@ -1829,8 +1829,8 @@ class entity:                                          #A NPC or PC
             self.recharge_aoe_is_charged = False
             for target in targets:
                 target.last_attacker = self    #target remembers last attacker
-                save = target.make_save(self.aoe_save_type, self.aoe_recharge_dc)   #let them make saves
-                Dmg = dmg(self.aoe_recharge_dmg, DMG_Type)
+                save = target.make_save(self.aoe_save_type, DC = self.aoe_recharge_dc)   #let them make saves
+                Dmg = dmg(self.aoe_recharge_dmg, self.aoe_recharge_type)
                 if save >= self.aoe_recharge_dc:
                     Dmg.multiply(1/2)
                 target.changeCHP(Dmg, self, True)
