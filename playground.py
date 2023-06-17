@@ -3,6 +3,18 @@ from Dm_class import *
 from Dmg_class import *
 from Token_class import *
 from Spell_class import *
+import json
+
+testdict = {0:{'name':'zero'},
+            1:{'name':'zero1'},
+            2:{'name':'zero2'},
+            3:{'name':'zero3'}
+            }
+for x in testdict:
+    if testdict[x]['name'] == 'zero3':
+        print(x)
+
+
 
 DM = DungeonMaster()
 DM.enable_print()

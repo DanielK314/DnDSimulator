@@ -351,6 +351,23 @@ class entity:                                          #A NPC or PC
             self.poison_bite_dmg = 8 + self.level*3
             self.poison_bite_dc = int(11.1 + self.level/3)
         
+        self.knows_recharge_aoe = False
+        if 'RechargeAOE' in self.other_abilities:
+            self.knows_recharge_aoe = True
+
+        try: self.aoe_recharge_dmg = data['AOERechargeDmg']
+        except: self.aoe_recharge_dmg = 0
+        try: self.aoe_recharge_dc = int(data['AOERechargeDC'])
+        except: self.aoe_recharge_dc = 0
+        try: self.aoe_save_type = int(data['AOESaveType']) #0 - Str, 1 - Dex, ...
+        except: self.aoe_save_type = 0
+        try: self.aoe_recharge_area = int(data['AOERechargeArea'])
+        except: self.aoe_recharge_area = 0
+        try:
+            self.aoe_recharge_propability = float(data['AOERechargePropability'])
+            if self.aoe_recharge_propability > 1: self.aoe_recharge_propability = 1
+            if self.aoe_recharge_propability < 0: self.aoe_recharge_propability = 0
+        except: self.aoe_recharge_propability = 0
 
     #Wild Shape
 
