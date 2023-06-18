@@ -1,27 +1,15 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 100
+        "repetitions": 3
     },
     "Entities": [
         {
-            "name": "Bard Lv5",
+            "name": "Warlock Lv5",
             "team": 0
         },
         {
-            "name": "Paladin Lv5",
-            "team": 0
-        },
-        {
-            "name": "Vamire Spawn",
-            "team": 1
-        },
-        {
-            "name": "Guard",
-            "team": 1
-        },
-        {
-            "name": "Goblin",
+            "name": "Young Dragon",
             "team": 1
         }
     ]

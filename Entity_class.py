@@ -376,6 +376,9 @@ class entity:                                          #A NPC or PC
         try: self.start_of_turn_heal = int(data['StartOfTurnHeal'])
         except: self.start_of_turn_heal = 0  #heals this amount at start of turn
 
+        try: self.legendary_resistances = int(data['LegendaryResistances'])
+        except: self.legendary_resistances = 0
+        self.legendary_resistances_counter = self.legendary_resistances
 
     #Wild Shape
 
@@ -695,22 +698,31 @@ class entity:                                          #A NPC or PC
             self.DM.say('in protection aura, ', end='')
         if Advantage < 0:
             d20_roll = self.rollD20(advantage_disadvantage=-1)
-            self.DM.say('in disadvantage doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
+            self.DM.say('in disadvantage doing a ' + save_text[which_save] + ' save: ', end='')
         elif Advantage > 0:
             d20_roll = self.rollD20(advantage_disadvantage=1)
-            self.DM.say('in advantage doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
+            self.DM.say('in advantage doing a ' + save_text[which_save] + ' save: ', end='')
         else:
             d20_roll = self.rollD20(advantage_disadvantage=0)
-            self.DM.say('doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
+            self.DM.say('doing a ' + save_text[which_save] + ' save: ', end='')
 
-        result = d20_roll + self.modifier[which_save] + AuraBonus #calc modifier
+        modifier = self.modifier[which_save]
         if save_text[which_save] in self.saves_prof: #Save Proficiency
-            result += self.proficiency
-        self.DM.say(' + ' + str(int(result - d20_roll)), end='')
-        if DC != False: self.DM.say(' / ' + str(DC), end=' ')
-        else: self.DM.say('', end='')
+            modifier += self.proficiency
+        result = d20_roll + modifier + AuraBonus #calc modifier
 
-        return result
+        #Legendary Resistances
+        if result < DC and self.legendary_resistances_counter > 0:
+            self.legendary_resistances_counter -= 1
+            self.DM.say(self.name + ' uses a legendary resistance: ' + str(self.legendary_resistances_counter) + '/' + str(self.legendary_resistances), end= ' ')
+            return 10000  #make sure to pass save
+        else:
+            #Just display text 
+            roll_text = str(int(d20_roll)) + ' + ' + str(int(modifier))
+            if AuraBonus != 0: roll_text += ' + ' + str(int(AuraBonus))
+            if DC != False: roll_text += ' / ' + str(DC)
+            self.DM.say(roll_text, end=' ')
+            return result
 
     def make_death_save(self):
         d20_roll = int(random()*20 + 1)
@@ -750,6 +762,7 @@ class entity:                                          #A NPC or PC
             if damage/2 > 10: saveDC = damage/2
             save_res = self.make_save(2, DC=saveDC)
             if save_res >= saveDC:   #concentration is con save
+                self.DM.say('') #Just to break line
                 return 
             else:
                 self.DM.say('')
@@ -1754,6 +1767,7 @@ class entity:                                          #A NPC or PC
         self.spider_web_is_charged = False
         self.recharge_aoe_is_charged = False
         self.poison_bites = 1 #restore Poison bite 
+        self.legendary_resistances_counter = self.legendary_resistances #regain leg. res.
 
         self.wild_shape_HP = 0
         self.wild_shape_uses = 2
@@ -1825,7 +1839,7 @@ class entity:                                          #A NPC or PC
             self.DM.say(self.name + ' is breathing fire')
             self.dragons_breath_is_charged = False
             for target in targets:
-                DragonBreathDC = 12 + self.Con + int((self.level - 10)/3)  #Calculate the Dragons Breath DC 
+                DragonBreathDC = 12 + self.modifier[2] + int((self.level - 10)/3)  #Calculate the Dragons Breath DC 
                 target.last_attacker = self    #target remembers last attacker
                 save = target.make_save(1, DC=DragonBreathDC)           #let them make saves
                 Dmg = dmg(20 + int(self.level*3.1), DMG_Type)

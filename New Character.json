@@ -51,5 +51,6 @@
     "AOERechargeArea": "0",
     "AOERechargePropability": "0",
     "AOERechargeType": "fire",
-    "StartOfTurnHeal": 0
+    "StartOfTurnHeal": 0,
+    "LegendaryResistances": 0
 }
