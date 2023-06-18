@@ -48,6 +48,8 @@ class Controller(Frame):
             'DruidCR':{'Text': 'Wild Shape CR', 'ClassName': 'Druid', 'AttributeName': 'DruidCR', 'IsFLoatStat': True},
             'ChannelDivinity':{'Text': 'Channel Divinity', 'ClassName': 'Cleric', 'AttributeName': 'channel_divinity_counter', 'IsFLoatStat': False},
             'DestroyUndeadCR':{'Text': 'Destroy Undead CR', 'ClassName': 'Cleric', 'AttributeName': 'destroy_undead_CR', 'IsFLoatStat': True},
+            'StartOfTurnHeal':{'Text': 'Heal at start of Turn', 'ClassName': 'Monster', 'AttributeName': 'start_of_turn_heal', 'IsFLoatStat': False},
+            'LegendaryResistances':{'Text': 'Legendary Resistances', 'ClassName': 'Monster', 'AttributeName': 'legendary_resistances', 'IsFLoatStat': False},
             'AOERechargeDmg':{'Text': 'Recharge AOE Dmg', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dmg', 'IsFLoatStat': True},
             'AOERechargeDC':{'Text': 'Recharge AOE DC', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dc', 'IsFLoatStat': False},
             'AOERechargeArea':{'Text': 'Recharge AOE Area', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_area', 'IsFLoatStat': False},

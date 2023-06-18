@@ -373,6 +373,12 @@ class entity:                                          #A NPC or PC
         try: self.aoe_recharge_type = data['AOERechargeType']
         except: self.aoe_recharge_type = 'fire'
 
+        try: self.start_of_turn_heal = int(data['StartOfTurnHeal'])
+        except: self.start_of_turn_heal = 0  #heals this amount at start of turn
+
+        try: self.legendary_resistances = int(data['LegendaryResistances'])
+        except: self.legendary_resistances = 0
+        self.legendary_resistances_counter = self.legendary_resistances
 
     #Wild Shape
 
@@ -581,11 +587,11 @@ class entity:                                          #A NPC or PC
                 self.DM.say(self.name + ' is chill touched and cant be healed.')
             elif abs(self.HP - self.CHP) >= abs(damage):
                 self.CHP -= damage    
-                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)))
             else:                     #if more heal then HP, only fill HP up
                 damage = -1*(self.HP - self.CHP)
                 self.CHP -= damage
-                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)))
 
         self.check_new_state(was_ranged)
 
@@ -598,7 +604,7 @@ class entity:                                          #A NPC or PC
             
             #reshape after critical damage
             self.wild_shape_drop()  #function that resets the players stats
-            self.DM.say(str(self.name) + ' wild shape breaks')
+            self.DM.say(str(self.name) + ' wild shape breaks', end='')
             #Remember, this function is called in ChangeCHP, so resistances and stuff has already been handled
             #For this reason a 'true' dmg type is passed here
             Dmg = dmg(overhang_damage, 'true')
@@ -692,22 +698,31 @@ class entity:                                          #A NPC or PC
             self.DM.say('in protection aura, ', end='')
         if Advantage < 0:
             d20_roll = self.rollD20(advantage_disadvantage=-1)
-            self.DM.say('in disadvantage doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
+            self.DM.say('in disadvantage doing a ' + save_text[which_save] + ' save: ', end='')
         elif Advantage > 0:
             d20_roll = self.rollD20(advantage_disadvantage=1)
-            self.DM.say('in advantage doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
+            self.DM.say('in advantage doing a ' + save_text[which_save] + ' save: ', end='')
         else:
             d20_roll = self.rollD20(advantage_disadvantage=0)
-            self.DM.say('doing a ' + save_text[which_save] + ' save: ' + str(d20_roll), end='')
+            self.DM.say('doing a ' + save_text[which_save] + ' save: ', end='')
 
-        result = d20_roll + self.modifier[which_save] + AuraBonus #calc modifier
+        modifier = self.modifier[which_save]
         if save_text[which_save] in self.saves_prof: #Save Proficiency
-            result += self.proficiency
-        self.DM.say(' + ' + str(int(result - d20_roll)), end='')
-        if DC != False: self.DM.say(' / ' + str(DC), end=' ')
-        else: self.DM.say('', end='')
+            modifier += self.proficiency
+        result = d20_roll + modifier + AuraBonus #calc modifier
 
-        return result
+        #Legendary Resistances
+        if result < DC and self.legendary_resistances_counter > 0:
+            self.legendary_resistances_counter -= 1
+            self.DM.say(self.name + ' uses a legendary resistance: ' + str(self.legendary_resistances_counter) + '/' + str(self.legendary_resistances), end= ' ')
+            return 10000  #make sure to pass save
+        else:
+            #Just display text 
+            roll_text = str(int(d20_roll)) + ' + ' + str(int(modifier))
+            if AuraBonus != 0: roll_text += ' + ' + str(int(AuraBonus))
+            if DC != False: roll_text += ' / ' + str(DC)
+            self.DM.say(roll_text, end=' ')
+            return result
 
     def make_death_save(self):
         d20_roll = int(random()*20 + 1)
@@ -747,6 +762,7 @@ class entity:                                          #A NPC or PC
             if damage/2 > 10: saveDC = damage/2
             save_res = self.make_save(2, DC=saveDC)
             if save_res >= saveDC:   #concentration is con save
+                self.DM.say('') #Just to break line
                 return 
             else:
                 self.DM.say('')
@@ -1281,7 +1297,7 @@ class entity:                                          #A NPC or PC
                 Dmg.add(self.rage_dmg, self.damage_type)
         #Interception
             if target.interception_amount > 0:
-                self.DM.say(' Attack was intercepted: -' + str(target.interception_amount))
+                self.DM.say(' Attack was intercepted: -' + str(target.interception_amount), end=' ')
                 Dmg.substract(target.interception_amount)
                 target.interception_amount = 0 #only once
         else:
@@ -1610,6 +1626,17 @@ class entity:                                          #A NPC or PC
         self.action = 0
         self.channel_divinity_counter -= 1 #used a channel divinity
 
+    def use_start_of_turn_heal(self):
+        if self.start_of_turn_heal <= 0:
+            print(self.name + ' tried to use start of turn heal without having it')
+            quit()
+        elif self.state != 1:
+            return  #not consious
+        else:
+            self.DM.say(self.name + ' uses regeneration', end='')
+            heal = dmg(-self.start_of_turn_heal, type='heal')
+            self.changeCHP(heal, self, was_ranged=False)
+
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
         #This function is called if a player is attacked and damaged in changeCHP
@@ -1657,7 +1684,10 @@ class entity:                                          #A NPC or PC
             self.action = 0
             self.attack_counter = 0
             self.bonus_action = 0
-    
+        
+        if self.start_of_turn_heal != 0:
+            self.use_start_of_turn_heal()
+
     def action_surge(self):
         self.attack_counter = self.attacks #You can do your attacks again
         self.action = 1      #You get one additional action
@@ -1737,6 +1767,7 @@ class entity:                                          #A NPC or PC
         self.spider_web_is_charged = False
         self.recharge_aoe_is_charged = False
         self.poison_bites = 1 #restore Poison bite 
+        self.legendary_resistances_counter = self.legendary_resistances #regain leg. res.
 
         self.wild_shape_HP = 0
         self.wild_shape_uses = 2
@@ -1808,7 +1839,7 @@ class entity:                                          #A NPC or PC
             self.DM.say(self.name + ' is breathing fire')
             self.dragons_breath_is_charged = False
             for target in targets:
-                DragonBreathDC = 12 + self.Con + int((self.level - 10)/3)  #Calculate the Dragons Breath DC 
+                DragonBreathDC = 12 + self.modifier[2] + int((self.level - 10)/3)  #Calculate the Dragons Breath DC 
                 target.last_attacker = self    #target remembers last attacker
                 save = target.make_save(1, DC=DragonBreathDC)           #let them make saves
                 Dmg = dmg(20 + int(self.level*3.1), DMG_Type)

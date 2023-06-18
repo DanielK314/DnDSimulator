@@ -56,6 +56,9 @@ class dmg:
                     DMGTotal += self.dmg_amount_list[i]
                 else:
                     DMGTotal += self.dmg_amount_list[i]
+            if DMGTotal < 0: return DMGTotal  #It is heal, so return, do not substract from heal
+
+            #If dmg was substracted from this amount, do it now, if < 0, do not heal
             if self.DMGSubstract > DMGTotal: return 0
             else:
                 DMGTotal -= self.DMGSubstract

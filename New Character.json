@@ -50,5 +50,7 @@
     "AOESaveType": 0,
     "AOERechargeArea": "0",
     "AOERechargePropability": "0",
-    "AOERechargeType": "fire"
+    "AOERechargeType": "fire",
+    "StartOfTurnHeal": 0,
+    "LegendaryResistances": 0
 }

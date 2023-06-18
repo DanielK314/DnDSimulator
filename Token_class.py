@@ -226,6 +226,8 @@ class HastedToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
         self.hasATimer = True
+        self.resolveWhenDead = True
+        self.resolveWhenUnconcious = True
         self.timer = 10 #10 Rounds 
     
     def resolve(self):
@@ -236,7 +238,7 @@ class HastedToken(LinkToken):
         return super().resolve()
 
 class LostHaseToken(Token):
-    #Give this Token to a player that just lost hase
+    #Give this Token to a player that just lost haste
     def __init__(self, TM):
         super().__init__(TM)
         self.resolveAtTurnStart = True

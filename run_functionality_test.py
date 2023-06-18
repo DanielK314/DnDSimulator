@@ -64,6 +64,21 @@ def HasteRoundTest(Character):
             print('Haste Round Test')
             return True
 
+def HasteUnconsciousTest(Character, Character2):
+    Character.spell_slot_counter[2] = 1
+    Character.SpellBook['Haste'].cast([Character2])
+    if Character.is_concentrating == False: 
+        print('Not Concentrated after cast')
+        quit()
+    else:
+        Character2.unconscious()
+        if Character.is_concentrating:
+            print('Still con after target unconscious')
+            quit()
+        else:
+            print('Haste Unconscious Test')
+            return True
+
 def HexTest(Character, Enemy):
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['Hex'].cast([Enemy])
@@ -207,6 +222,8 @@ if __name__ == '__main__':
     ConcentrationTestEntangle(Character, Enemy)
     reset(fight)
     HasteRoundTest(Character)
+    reset(fight)
+    HasteUnconsciousTest(Character, Character2)
     reset(fight)
     HexTest(Character, Enemy)
     reset(fight)

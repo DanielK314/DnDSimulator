@@ -1,27 +1,15 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 2
+        "repetitions": 3
     },
     "Entities": [
         {
-            "name": "Barbarian Lv5",
+            "name": "Warlock Lv5",
             "team": 0
         },
         {
-            "name": "Bard Lv5",
-            "team": 0
-        },
-        {
-            "name": "Druid Lv5",
-            "team": 0
-        },
-        {
-            "name": "Paladin Lv5",
-            "team": 0
-        },
-        {
-            "name": "Blue Dragon",
+            "name": "Young Dragon",
             "team": 1
         }
     ]

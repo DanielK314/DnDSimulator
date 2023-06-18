@@ -72,6 +72,8 @@ class AI:
                     player.DM.say('All enemies defeated')
                     return #nothing left to do                
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
+#                print(ChoiceScores)
+#                print(self.Choices)
                 ActionToDo = self.Choices[np.argmax(ChoiceScores)]
                 if np.max(ChoiceScores) > 0:
                     ActionToDo.execute(fight) #Do the best Choice
