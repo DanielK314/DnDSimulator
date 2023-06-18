@@ -373,6 +373,9 @@ class entity:                                          #A NPC or PC
         try: self.aoe_recharge_type = data['AOERechargeType']
         except: self.aoe_recharge_type = 'fire'
 
+        try: self.start_of_turn_heal = int(data['StartOfTurnHeal'])
+        except: self.start_of_turn_heal = 0  #heals this amount at start of turn
+
 
     #Wild Shape
 
@@ -581,11 +584,11 @@ class entity:                                          #A NPC or PC
                 self.DM.say(self.name + ' is chill touched and cant be healed.')
             elif abs(self.HP - self.CHP) >= abs(damage):
                 self.CHP -= damage    
-                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)))
             else:                     #if more heal then HP, only fill HP up
                 damage = -1*(self.HP - self.CHP)
                 self.CHP -= damage
-                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage))
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)))
 
         self.check_new_state(was_ranged)
 
@@ -598,7 +601,7 @@ class entity:                                          #A NPC or PC
             
             #reshape after critical damage
             self.wild_shape_drop()  #function that resets the players stats
-            self.DM.say(str(self.name) + ' wild shape breaks')
+            self.DM.say(str(self.name) + ' wild shape breaks', end='')
             #Remember, this function is called in ChangeCHP, so resistances and stuff has already been handled
             #For this reason a 'true' dmg type is passed here
             Dmg = dmg(overhang_damage, 'true')
@@ -1281,7 +1284,7 @@ class entity:                                          #A NPC or PC
                 Dmg.add(self.rage_dmg, self.damage_type)
         #Interception
             if target.interception_amount > 0:
-                self.DM.say(' Attack was intercepted: -' + str(target.interception_amount))
+                self.DM.say(' Attack was intercepted: -' + str(target.interception_amount), end=' ')
                 Dmg.substract(target.interception_amount)
                 target.interception_amount = 0 #only once
         else:
@@ -1610,6 +1613,17 @@ class entity:                                          #A NPC or PC
         self.action = 0
         self.channel_divinity_counter -= 1 #used a channel divinity
 
+    def use_start_of_turn_heal(self):
+        if self.start_of_turn_heal <= 0:
+            print(self.name + ' tried to use start of turn heal without having it')
+            quit()
+        elif self.state != 1:
+            return  #not consious
+        else:
+            self.DM.say(self.name + ' uses regeneration', end='')
+            heal = dmg(-self.start_of_turn_heal, type='heal')
+            self.changeCHP(heal, self, was_ranged=False)
+
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
         #This function is called if a player is attacked and damaged in changeCHP
@@ -1657,7 +1671,10 @@ class entity:                                          #A NPC or PC
             self.action = 0
             self.attack_counter = 0
             self.bonus_action = 0
-    
+        
+        if self.start_of_turn_heal != 0:
+            self.use_start_of_turn_heal()
+
     def action_surge(self):
         self.attack_counter = self.attacks #You can do your attacks again
         self.action = 1      #You get one additional action
