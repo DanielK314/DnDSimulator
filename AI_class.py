@@ -133,7 +133,7 @@ class AI:
         else:
             if self.player.has_range_attack: is_ranged = True
             else: is_ranged = False
-            self.player.attack(target, is_ranged, is_opportunity_attack = True)
+            self.player.attack(target, is_ranged, is_opportunity_attack = True, is_spell=False)
 
     def want_to_cast_shield(self, attacker, damage):
         #This function is called in the attack function as a reaction, if Shild spell is known

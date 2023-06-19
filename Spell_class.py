@@ -353,7 +353,7 @@ class attack_spell(spell):
         attack_counter = self.number_of_attacks
         dmg_dealed = 0
         while attack_counter > 0:
-            dmg_dealed += self.player.attack(targets[target_counter], is_ranged=self.is_range_spell, other_dmg=dmg, damage_type=self.dmg_type, tohit=tohit)
+            dmg_dealed += self.player.attack(targets[target_counter], is_ranged=self.is_range_spell, other_dmg=dmg, damage_type=self.dmg_type, tohit=tohit, is_spell=True)
             attack_counter -= 1
             target_counter += 1
             if target_counter == len(targets):
@@ -557,6 +557,7 @@ class chill_touch(attack_spell):
     def score(self, fight, twinned_cast=False):
         Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
         Score += SpellTargets[0].heal_given/8 #for the anti heal effect
+        Score += SpellTargets[0].start_of_turn_heal #if the target gets heat at start of turn
         return Score, SpellTargets, CastLevel
 
 class eldritch_blast(attack_spell):
@@ -1017,7 +1018,7 @@ class spiritual_weapon(spell):
         WeaponDmg = player.SpiritualWeaponDmg #Set by the Spell 
         self.DM.say('Spiritual Weapon of ' + player.name + ' attacks: ')
         #Make a weapon Attack against first target
-        self.player.attack(target, is_ranged=False, other_dmg=WeaponDmg, damage_type='force', tohit=WeaponTohit)
+        self.player.attack(target, is_ranged=False, other_dmg=WeaponDmg, damage_type='force', tohit=WeaponTohit, is_spell=True)
         self.player.bonus_action = 0 #It uses the BA to attack
 
     def spell_dmg(self):

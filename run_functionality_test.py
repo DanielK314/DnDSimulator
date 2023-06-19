@@ -192,8 +192,6 @@ def guidingBoltTest(Character, Enemy):
     print('Guiding Bolt Test')
 
 
-
-
 if __name__ == '__main__':
     DM = DungeonMaster()
 #    DM.enable_print()

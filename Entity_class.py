@@ -1040,7 +1040,7 @@ class entity:                                          #A NPC or PC
         if is_off_hand:
             #Make Offhand Attack
             self.bonus_action = 0
-            self.attack(target, is_ranged, other_dmg=self.offhand_dmg, is_offhand=True)
+            self.attack(target, is_ranged, other_dmg=self.offhand_dmg, is_offhand=True, is_spell=False)
         else:
             self.check_polearm_master(target, is_ranged) #Check if target is a polearm master
             self.action = 0 #if at least one attack, action = 0
@@ -1143,8 +1143,8 @@ class entity:                                          #A NPC or PC
                 self.DM.say(self.name + ' has entered the polearm range of ' + target.name)
                 target.AI.do_opportunity_attack(self)
 
-    def check_smite(self, Dmg, is_ranged):
-        if is_ranged == False and self.knows_smite:  #smite only on melee
+    def check_smite(self, Dmg, is_ranged, is_spell):
+        if is_ranged == False and self.knows_smite and is_spell == False:  #smite only on melee
             for i in range(0, len(self.smite_initiated)):
                 if self.smite_initiated[i]:             #smite initiated?
                     if self.spell_slot_counter[i] > 0:
@@ -1154,9 +1154,13 @@ class entity:                                          #A NPC or PC
                         self.smite_initiated[i] = 0
                         self.DM.say('\n' + self.name + ' uses ' + str(i + 1) + '. lv Smite: +' + str(smitedmg), end='')
 
-    def check_sneak_attack(self, Dmg, advantage_disadvantage):
+    def check_sneak_attack(self, Dmg, advantage_disadvantage, is_spell):
         if self.sneak_attack_dmg > 0:    #Sneak Attack 
-            if self.sneak_attack_counter == 1 and advantage_disadvantage >= 0: #not in disadv.
+            rules = [self.sneak_attack_counter == 1, 
+                     advantage_disadvantage >= 0, #not in disadv.
+                     is_spell == False
+                     ]
+            if all(rules):
                 Dmg.add(self.sneak_attack_dmg, self.damage_type)
                 self.DM.say('\n' + self.name + " Sneak Attack: +" + str(self.sneak_attack_dmg), end='')
                 if self.wailsfromthegrave == 1 and self.wailsfromthegrave_counter > 0:  #if sneak attack hits and wails from the grave is active
@@ -1181,16 +1185,16 @@ class entity:                                          #A NPC or PC
                     self.DM.say('\n' + target.name + ' was cursed with a hex: ', end='')
                     return
 
-    def check_great_weapon_fighting(self, Dmg, is_ranged, other_dmg):
+    def check_great_weapon_fighting(self, Dmg, is_ranged, other_dmg, is_spell):
         rules = [self.knows_great_weapon_fighting,
                 self.offhand_dmg == 0,  #no offhand
                 is_ranged == False,     #no range
-                other_dmg == False]   #no spells or stuff
+                is_spell == False]   #no spells or stuff
         if all(rules):
             self.DM.say('\n' + self.name + ' uses great weapon fighting', end='')
             Dmg.multiply(1.15) #no 1,2 in dmg roll, better dmg on attack
 
-    def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False, is_offhand = False):
+    def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False, is_offhand = False, is_spell = False):
     #this is the attack funktion of a player attacking a target with a normak attack
     #if another type of dmg is passed, it will be used, otherwise the player.dmg_type is used
     #if no dmg is passed, the normal entitiy dmg is used
@@ -1231,7 +1235,7 @@ class entity:                                          #A NPC or PC
         AdditionalDmg = 0 #This is damage that will not be multiplied
 
         if self.knows_great_weapon_master:
-            rules = [other_dmg == False, #No spells or other stuff
+            rules = [is_spell == False, #No spells or other stuff
                      is_ranged == False, is_offhand == False]
             if all(rules): #No spells or range attacks
                 #Do you want to use great_weapon_master
@@ -1260,7 +1264,7 @@ class entity:                                          #A NPC or PC
                 target.inspiration_counter -= 1 #One Use
                 target.reaction = 0 #uses reaction
         
-        if self.knows_archery and is_ranged:
+        if self.knows_archery and is_ranged and is_spell == False:
             self.DM.say(self.name + ' uses Archery, ', end='')
             Modifier += 2 #Archery
 
@@ -1270,17 +1274,17 @@ class entity:                                          #A NPC or PC
             self.DM.say('hit: ' + str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus), end= '')
 
         #Smite
-            self.check_smite(Dmg, is_ranged)
+            self.check_smite(Dmg, is_ranged, is_spell)
         #Snackattack
-            self.check_sneak_attack(Dmg, advantage_disadvantage)
+            self.check_sneak_attack(Dmg, advantage_disadvantage, is_spell)
         #Combat Inspiration 
             self.check_combat_inspiration(Dmg, other_dmg)
         #Hex
             self.check_hex(Dmg, target)
         #GreatWeaponFighting
-            self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg)
+            self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg, is_spell)
         #poison Bite
-            if self.knows_poison_bite and self.poison_bites == 1:
+            if self.knows_poison_bite and self.poison_bites == 1 and is_spell == False:
                 self.poison_bites = 0 #only once per turn
                 poisonDMG = self.poison_bite_dmg
                 poisonDC = self.poison_bite_dc
