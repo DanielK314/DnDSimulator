@@ -191,10 +191,48 @@ def guidingBoltTest(Character, Enemy):
         quit()
     print('Guiding Bolt Test')
 
+def PrimalCompanionTest(Character, Enemy):
+    Character.knows_primal_companion = True
+    Character.used_primal_companion = False
+    Enemy.action = 0
+    Enemy.reaction = 0 #should not attack
+    fight = [Character, Enemy]
+    Character.AI.do_your_turn(fight)
+    if Character.used_primal_companion == False:
+        print('No prim companion used')
+        quit()
+    if len(fight) != 3:
+        print('Number fight off')
+        quit()
+    Character.death()
+    if fight[2].state != -1:
+        print('Companion didnt vanish')
+        quit()
+
+    Enemy.long_rest()
+    fight = [Character, Enemy]
+    Character.AI.do_your_turn(fight)
+    Character.action = 1
+    if len(fight) != 2:
+        print('Player shouldnt be able to summon companion')
+        quit()
+
+    fight = [Character, Enemy]
+    Character.long_rest()
+    Enemy.long_rest()    
+    Character.AI.do_your_turn(fight)
+    fight[2].death()
+    if len(Character.TM.TokenList) != 0:
+        print('Not all token resolved')
+        quit()
+    
+    print('Primal Companion')
+    return True
+
 
 if __name__ == '__main__':
     DM = DungeonMaster()
-#    DM.enable_print()
+    DM.enable_print()
     Character = entity('Ape', 0, DM, archive=True)
     Character.orignial_name = 'Hero'
     Character2 = entity('Ape', 0, DM, archive=True)
@@ -230,3 +268,5 @@ if __name__ == '__main__':
     HexSwitchTest(Character, Enemy, Enemy2)
     reset(fight)
     conjureAnimalsTest(Character)
+    reset(fight)
+    PrimalCompanionTest(Character, Enemy)

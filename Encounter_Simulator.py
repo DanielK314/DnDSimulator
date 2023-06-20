@@ -38,7 +38,7 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
                 player.AI.do_your_turn(fight)
 
         #if player is dead, make death save
-        if player.state == 0 and player.team == 0 and player.NPC == 0:
+        if player.state == 0 and player.team == 0:
             player.make_death_save()
 
         #End of the Turn

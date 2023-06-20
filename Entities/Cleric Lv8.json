@@ -40,9 +40,17 @@
     "DruidCR": 0.0,
     "OffHand": 0.0,
     "Type": "normal",
-    "Inspiration": "0",
+    "Inspiration": 0,
     "DestroyUndeadCR": 1.0,
     "ChannelDivinity": 2,
     "ActionSurges": 0,
-    "RageDmg": 0.0
+    "RageDmg": 0.0,
+    "AOERechargeDmg": 0.0,
+    "AOERechargeDC": 0,
+    "AOESaveType": 0,
+    "AOERechargeArea": 0,
+    "AOERechargePropability": 0.0,
+    "AOERechargeType": "fire",
+    "StartOfTurnHeal": 0,
+    "LegendaryResistances": 0
 }

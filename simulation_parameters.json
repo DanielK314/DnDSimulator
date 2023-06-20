@@ -5,20 +5,16 @@
     },
     "Entities": [
         {
-            "name": "Vampire",
+            "name": "Ranger",
+            "team": 0
+        },
+        {
+            "name": "Druid Lv5",
+            "team": 0
+        },
+        {
+            "name": "Fire Elemental",
             "team": 1
-        },
-        {
-            "name": "Cleric Lv8",
-            "team": 0
-        },
-        {
-            "name": "Druid Lv 5",
-            "team": 0
-        },
-        {
-            "name": "Paladin Lv5",
-            "team": 0
         }
     ]
 }

@@ -10,7 +10,7 @@ import json
 import os
 import sys
 
-class entity:                                          #A NPC or PC
+class entity:                                          #A Character
     def __init__(self, name, team, DM, archive = False):                  #Atk - Attack [+x to Hit, mean dmg]
 
         if getattr(sys, 'frozen', False):
@@ -33,7 +33,6 @@ class entity:                                          #A NPC or PC
         self.name = str(name)
         self.orignial_name = str(name)        #restore name after zB WildShape
         self.team = team                                      #which Team they fight for
-        self.NPC = 0                        #NPCs like Skeletons
         self.type = str(data['Type'])
         self.base_type = self.type
 
@@ -44,7 +43,6 @@ class entity:                                          #A NPC or PC
         self.proficiency = int(data['Proficiency'])
         self.tohit = int(data['To_Hit'])
         self.base_tohit = int(data['To_Hit'])
-
 
         self.base_attacks = int(data['Attacks'])    #attacks of original form                           #number auf Attacks
         self.attacks = self.base_attacks  #at end_of_turn attack_counter reset to self.attack
@@ -302,11 +300,18 @@ class entity:                                          #A NPC or PC
         #DestroyUndead
         self.destroy_undead_CR = float(data['DestroyUndeadCR'])
 
-
         #Agonizing Blast
         self.knows_agonizing_blast = False
         if 'AgonizingBlast' in self.other_abilities:
             self.knows_agonizing_blast = True
+
+        #Primal Companion
+        self.knows_primal_companion = False
+        self.used_primal_companion = False  #only use once per fight
+        if 'PrimalCompanion' in self.other_abilities:
+            self.knows_primal_companion = True
+        self.primal_companion = False 
+
 
     #Feats
         #Great Weapon Master
@@ -1641,6 +1646,43 @@ class entity:                                          #A NPC or PC
             heal = dmg(-self.start_of_turn_heal, type='heal')
             self.changeCHP(heal, self, was_ranged=False)
 
+    def summon_primal_companion(self, fight):
+        rules = [
+            self.knows_primal_companion, #has the Ability
+            self.used_primal_companion == False #has not used this fight
+        ]
+        errors = [
+            self.name + ' tried to summon primal companion but has none',
+            self.name + ' trief to summon primal companion but used it before'
+        ]
+        ifstatements(rules, errors, self.DM).check()
+        companion = self.summon_entity('Primal Companion', archive=True)
+        companion.team = self.team  #your team
+        #AC
+        companion.AC = 13 + self.proficiency
+        companion.shape_AC = companion.AC
+        companion.base_AC = companion.AC
+        #Stats
+        companion.HP = 5 + 5*self.level
+        companion.CHP = companion.HP
+        companion.proficiency = self.proficiency
+        #Attack
+        companion.tohit = self.spell_mod + self.proficiency
+        companion.base_tohit = companion.tohit
+        companion.dmg = 6.5 + self.proficiency
+        companion.base_dmg = companion.dmg
+        #actions
+        companion.AI.Choices = []  #It can only act if player uses BA
+        companion.summoner = self  #the player is this companions summoner
+
+        fight.append(companion) #Add companion to the fight
+        self.primal_companion = companion
+
+        self.AI.Choices.append(self.AI.primalCompanionChoice) #activate this choice, to attaack with companion 
+        PrimalBeastMasterToken(self.TM, PrimalCompanionToken(companion.TM, subtype='prc')) #The Token will resolve if one of them dies
+        self.DM.say(self.name + ' summons its primal companion')
+        self.used_primal_companion = True #used it once 
+
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
         #This function is called if a player is attacked and damaged in changeCHP
@@ -1766,6 +1808,8 @@ class entity:                                          #A NPC or PC
         self.action_surge_used = False
         self.has_used_second_wind = False
         self.has_additional_great_weapon_attack = False
+        self.used_primal_companion = False
+        self.primal_companion = False
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False

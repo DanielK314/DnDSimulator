@@ -338,6 +338,30 @@ class do_monster_ability(choice):
             #No enemies left
             player.action = 0 #use acrion, nothing left to attack
 
+class attack_with_primal_companion(choice):
+    def __init__(self, player):
+        super().__init__(player)
+
+    def score(self, fight):
+        if self.player.primal_companion == False: return 0
+        companion = self.player.primal_companion
+        if companion.state != 1: return 0 
+        if self.player.bonus_action == 0: return 0
+        return (companion.dmg + companion.value())/2
+    
+    def execute(self, fight):
+        companion = self.player.primal_companion
+        rules = [
+            companion.attack_counter > 0, 
+            companion.state == 1,
+            self.player.bonus_action == 1,
+            companion != False
+        ]
+        if all(rules):
+            target = companion.AI.choose_att_target(fight) #make companion choose a target
+            companion.make_normal_attack_on(target, fight) #make companion make an attack
+            self.player.bonus_action = 0
+
 class do_heal(choice):
     def __init__(self, player):
         super().__init__(player)

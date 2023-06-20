@@ -13,6 +13,7 @@ if __name__ == '__main__':
 #ca - conjured Animals
 #aop - is in aura of protection
 #gb - guiding Bolt
+#prc - primal compantion
 
 #All Token of a Entity are handled by its TM Token Manager
 #It has a list with all Token
@@ -193,7 +194,7 @@ class DockToken(Token):
         Token.origin = self
 
     def resolve(self):
-        #If you resolve Dock Tag, resolve all links to this concentration
+        #If you resolve Dock Token, resolve all links to this Token
         while len(self.links) > 0:
             self.links[0].resolve()#resolve all
         super().resolve()
@@ -345,3 +346,26 @@ class ProtectionAuraToken(LinkToken):
         self.auraBonus = auraBonus #Wisdom Mod of origin player
         if self.auraBonus < 1: self.auraBonus = 1
 
+class PrimalBeastMasterToken(DockToken):
+    def __init__(self, TM, links):
+        #This is a Dock Token, it will resolve all links if resolved
+        #It resolves if the link is resolved
+        super().__init__(TM, links)
+        self.resolveWhenDead = True
+    
+    def resolve(self):
+        return super().resolve()
+
+class PrimalCompanionToken(LinkToken):
+    def __init__(self, TM, subtype):
+        super().__init__(TM, subtype)
+        self.resolveWhenDead = True
+        self.TM.player.is_summoned = True
+    
+    def resolve(self):
+        summon = self.TM.player
+        summon.DM.say(' ' + summon.name + ' vanishes ', end='')
+        summon.CHP = 0
+        summon.state = -1
+
+        return super().resolve()

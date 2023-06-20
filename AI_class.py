@@ -38,6 +38,7 @@ class AI:
 
         #Conditional Choices        
         self.spiritualWeaponChoice = ch.do_spiritual_weapon(player) #This will be later added to the Choices list, if a Character casts spiritual weapon
+        self.primalCompanionChoice = ch.attack_with_primal_companion(player) #This Choice is added if a primal companion is summoned
 
     def do_your_turn(self,fight):
         player = self.player
@@ -47,6 +48,11 @@ class AI:
         #stand up if prone
         if player.prone == 1 and player.restrained == 0:
             player.stand_up()
+        
+        #Summon Primal Companion if you have
+        if player.knows_primal_companion:
+            if player.used_primal_companion == False:
+                player.summon_primal_companion(fight)
 
         #Choosing Aura of Protection Targets:
         if player.knows_aura_of_protection: player.use_aura_of_protection(self.allies)
@@ -70,7 +76,12 @@ class AI:
                 EnemiesConscious = [x for x in fight if x.state == 1 and x.team != player.team]
                 if len(EnemiesConscious) == 0:
                     player.DM.say('All enemies defeated')
-                    return #nothing left to do                
+                    return #nothing left to do
+                
+                #!!!!!!!!!!!!!XXXXXXXXXX Quick n dirty, pls fix
+                if len(self.Choices) == 0: return
+                #!!!!!!!!!
+
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
 #                print(ChoiceScores)
 #                print(self.Choices)
