@@ -1,7 +1,7 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 2
+        "repetitions": 1
     },
     "Entities": [
         {
@@ -9,11 +9,19 @@
             "team": 0
         },
         {
-            "name": "Druid Lv5",
-            "team": 0
+            "name": "Goblin",
+            "team": 1
         },
         {
-            "name": "Fire Elemental",
+            "name": "Guard",
+            "team": 1
+        },
+        {
+            "name": "Guard 2",
+            "team": 1
+        },
+        {
+            "name": "Ogre",
             "team": 1
         }
     ]

@@ -229,6 +229,22 @@ def PrimalCompanionTest(Character, Enemy):
     print('Primal Companion')
     return True
 
+def DodgeTest(Character, Enemy):
+    Character.use_dodge()
+    if Character.is_dodged == False:
+        print('not dodged')
+        quit()
+    if Character.action != 0:
+        print('no action used')
+        quit()
+    if Enemy.check_attack_advantage(Character, False, False) != -1:
+        print('no Disadv')
+        quit()
+    Character.start_of_turn()
+    if Character.is_dodged:
+        print('still dodged')
+        quit()
+    print('Dodge Test')
 
 if __name__ == '__main__':
     DM = DungeonMaster()
@@ -270,3 +286,5 @@ if __name__ == '__main__':
     conjureAnimalsTest(Character)
     reset(fight)
     PrimalCompanionTest(Character, Enemy)
+    reset(fight)
+    DodgeTest(Character, Enemy)

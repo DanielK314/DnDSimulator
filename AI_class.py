@@ -23,7 +23,8 @@ class AI:
             ch.do_attack(player),
             ch.do_offhand_attack(player),
             ch.do_monster_ability(player),
-            ch.do_heal(player)
+            ch.do_heal(player),
+            ch.do_dodge(player)
         ]
         if len(self.player.SpellBook) > 0:
             self.Choices.append(ch.do_spellcasting(player))#if any Spell is known, add this choice option
@@ -39,6 +40,7 @@ class AI:
         #Conditional Choices        
         self.spiritualWeaponChoice = ch.do_spiritual_weapon(player) #This will be later added to the Choices list, if a Character casts spiritual weapon
         self.primalCompanionChoice = ch.attack_with_primal_companion(player) #This Choice is added if a primal companion is summoned
+        self.dodgeChoice = ch.do_dodge(player)
 
     def do_your_turn(self,fight):
         player = self.player
@@ -78,10 +80,6 @@ class AI:
                     player.DM.say('All enemies defeated')
                     return #nothing left to do
                 
-                #!!!!!!!!!!!!!XXXXXXXXXX Quick n dirty, pls fix
-                if len(self.Choices) == 0: return
-                #!!!!!!!!!
-
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
 #                print(ChoiceScores)
 #                print(self.Choices)
@@ -372,6 +370,7 @@ class AI:
         if target.has_armor_of_agathys: Score -= PlayerDPS/3*(random()*RandomWeight + 1)
         if target.restrained or target.prone or target.blinded:
             Score += TargetDPS/4*(random()*RandomWeight + 1)
+        if target.is_dodged: Score -= dmg/5*(random()*RandomWeight + 1)
 
         #Wild shape, it is less useful to attack wildshape forms
         if target.wild_shape_HP > 0 and target.knows_combat_wild_shape == False:

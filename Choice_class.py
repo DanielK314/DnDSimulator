@@ -126,6 +126,17 @@ class do_offhand_attack(do_attack):
             else:
                 player.make_normal_attack_on(target, fight, is_off_hand=True)  #attack that target
 
+class do_dodge(choice):
+    def __init__(self, player):
+        super().__init__(player)
+    
+    def score(self, fight):
+        if self.player.action == 0: return 0
+        else: return 1  #For now
+    
+    def execute(self, fight):
+        self.player.use_dodge()
+
 class do_inspire(choice):
     def __init__(self, player):
         super().__init__(player)
@@ -345,17 +356,20 @@ class attack_with_primal_companion(choice):
     def score(self, fight):
         if self.player.primal_companion == False: return 0
         companion = self.player.primal_companion
-        if companion.state != 1: return 0 
+        if companion.state != 1: return 0
         if self.player.bonus_action == 0: return 0
+        if self.player.primal_companion.action == 0: return 0
+        if self.player.primal_companion.attack_counter <= 0: return 0
         return (companion.dmg + companion.value())/2
     
     def execute(self, fight):
         companion = self.player.primal_companion
         rules = [
-            companion.attack_counter > 0, 
+            companion != False,
+            companion.attack_counter > 0,
+            companion.action == 1,
             companion.state == 1,
-            self.player.bonus_action == 1,
-            companion != False
+            self.player.bonus_action == 1
         ]
         if all(rules):
             target = companion.AI.choose_att_target(fight) #make companion choose a target

@@ -431,6 +431,7 @@ class entity:                                          #A Character
         self.restrained = 0             #will be ckeckt wenn attack/ed 
         self.prone = 0
         self.blinded = 0   
+        self.is_dodged = False    #is handled by the DodgedToken
 
         self.last_attacker = 0
         self.dmg_dealed = 0
@@ -983,6 +984,15 @@ class entity:                                          #A Character
             self.position = 0
             self.action = 0 #took the action
 
+    def use_dodge(self):
+        if self.action == 0:
+            print(self.name + ' tried to dodge without action')
+            quit()
+        self.DM.say(self.name + ' uses its turn to dodge')
+        self.action = 0 #uses an action to do
+        DodgeToken(self.TM) #give self a dodge token
+        #The dodge token sets and resolves self.is_dodge = True
+
 #-------------------Attack Handling----------------------
     def make_attack_check(self, target, fight, is_off_hand):
         if self.action == 0 and self.is_attacking == False and is_off_hand == False:
@@ -1086,6 +1096,9 @@ class entity:                                          #A Character
         if self.restrained == 1:
             advantage_disadvantage -= 1
             self.DM.say(self.name + ' restrained, ',end='')
+        if target.is_dodged:
+            advantage_disadvantage -= 1
+            self.DM.say(target.name + ' dodged, ', end='')
         if target.blinded == 1:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' blinded, ',end='')
@@ -1653,7 +1666,7 @@ class entity:                                          #A Character
         ]
         errors = [
             self.name + ' tried to summon primal companion but has none',
-            self.name + ' trief to summon primal companion but used it before'
+            self.name + ' tried to summon primal companion but used it before'
         ]
         ifstatements(rules, errors, self.DM).check()
         companion = self.summon_entity('Primal Companion', archive=True)
@@ -1672,13 +1685,14 @@ class entity:                                          #A Character
         companion.dmg = 6.5 + self.proficiency
         companion.base_dmg = companion.dmg
         #actions
-        companion.AI.Choices = []  #It can only act if player uses BA
+        companion.AI.Choices = [companion.AI.dodgeChoice]  #It can only act if player uses BA, or dodge
         companion.summoner = self  #the player is this companions summoner
 
         fight.append(companion) #Add companion to the fight
         self.primal_companion = companion
 
-        self.AI.Choices.append(self.AI.primalCompanionChoice) #activate this choice, to attaack with companion 
+        if self.AI.primalCompanionChoice not in self.AI.Choices:
+            self.AI.Choices.append(self.AI.primalCompanionChoice) #activate this choice, to attaack with companion 
         PrimalBeastMasterToken(self.TM, PrimalCompanionToken(companion.TM, subtype='prc')) #The Token will resolve if one of them dies
         self.DM.say(self.name + ' summons its primal companion')
         self.used_primal_companion = True #used it once 
@@ -1846,6 +1860,7 @@ class entity:                                          #A Character
         self.restrained = 0             #will be ckeckt wenn attack/ed 
         self.prone = 0
         self.blinded = 0   
+        self.is_dodged = False
 
         self.dash_target = False
         self.has_dashed_this_round = False
@@ -1878,7 +1893,7 @@ class entity:                                          #A Character
         self.empowered_spell = False
         self.quickened_spell = False
     
-#Monster Abilities
+#-------------Monster Abilities-------------
     def use_dragons_breath(self, targets, DMG_Type = 'fire'):
         #only works if charged at begining of turn
         if self.knows_dragons_breath and self.dragons_breath_is_charged and self.action == 1:

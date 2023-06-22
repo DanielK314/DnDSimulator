@@ -77,7 +77,6 @@ class TokenManager():
             if x.subtype == 'hexn':
                 self.player.is_hexing = True
         
-
         #----------Update Player Stats
         if self.player.is_concentrating: #was concentrating before
             if is_concentrating == False: #but not anymore
@@ -229,7 +228,7 @@ class HastedToken(LinkToken):
         self.hasATimer = True
         self.resolveWhenDead = True
         self.resolveWhenUnconcious = True
-        self.timer = 10 #10 Rounds 
+        self.timer = 10 #10 Rounds
     
     def resolve(self):
         self.TM.player.DM.say(self.TM.player.name + ' Haste wares of, ', end='')
@@ -368,4 +367,16 @@ class PrimalCompanionToken(LinkToken):
         summon.CHP = 0
         summon.state = -1
 
+        return super().resolve()
+
+class DodgeToken(Token):
+    def __init__(self, TM):
+        super().__init__(TM)
+        self.resolveAtTurnStart = True
+        self.resolveWhenDead = True
+        self.resolveWhenUnconcious = True
+        self.TM.player.is_dodged = True
+    
+    def resolve(self):
+        self.TM.player.is_dodged = False
         return super().resolve()
