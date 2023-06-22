@@ -1,0 +1,50 @@
+Sun Jun 18 23:07:29 2023    profile_results
+
+         9655601 function calls (9654730 primitive calls) in 4.099 seconds
+
+   Ordered by: cumulative time
+   List reduced from 563 to 40 due to restriction <40>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      5/1    0.000    0.000    4.099    4.099 {built-in method builtins.exec}
+        1    0.000    0.000    4.099    4.099 <string>:1(<module>)
+        1    0.000    0.000    4.099    4.099 /Users/danielkohl/git/DnDSimulator/run_time_benchmark.py:7(run_time_benchmark)
+        1    0.001    0.001    4.090    4.090 /Users/danielkohl/git/DnDSimulator/Encounter_Simulator.py:186(full_statistical_recap)
+        1    0.002    0.002    4.089    4.089 /Users/danielkohl/git/DnDSimulator/Encounter_Simulator.py:97(run_simulation)
+      200    0.039    0.000    4.069    0.020 /Users/danielkohl/git/DnDSimulator/Encounter_Simulator.py:18(do_the_fighting)
+14323/14204    0.065    0.000    3.895    0.000 /Users/danielkohl/git/DnDSimulator/AI_class.py:42(do_your_turn)
+    34638    0.085    0.000    1.952    0.000 /Users/danielkohl/git/DnDSimulator/AI_class.py:269(choose_att_target)
+    26278    0.029    0.000    1.645    0.000 /Users/danielkohl/git/DnDSimulator/AI_class.py:74(<listcomp>)
+     9661    0.014    0.000    1.642    0.000 /Users/danielkohl/git/DnDSimulator/Choice_class.py:81(execute)
+   209218    0.445    0.000    1.444    0.000 /Users/danielkohl/git/DnDSimulator/AI_class.py:302(target_attack_score)
+     9773    0.009    0.000    1.361    0.000 /Users/danielkohl/git/DnDSimulator/Choice_class.py:252(score)
+     9773    0.109    0.000    1.351    0.000 /Users/danielkohl/git/DnDSimulator/AI_class.py:479(choose_spell)
+   394238    0.352    0.000    0.933    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:786(need_dash)
+    17466    0.025    0.000    0.660    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:1003(make_normal_attack_on)
+    52104    0.112    0.000    0.637    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:866(enemies_reachable_sort)
+   218450    0.169    0.000    0.476    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:830(will_provoke_Attack)
+     6925    0.015    0.000    0.421    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:367(score)
+     1250    0.002    0.000    0.380    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:645(score)
+     1250    0.002    0.000    0.375    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:650(<listcomp>)
+   119434    0.028    0.000    0.366    0.000 {built-in method numpy.core._multiarray_umath.implement_array_function}
+   370973    0.362    0.000    0.362    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:808(<listcomp>)
+    17466    0.010    0.000    0.295    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:966(make_attack_check)
+    17815    0.079    0.000    0.289    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:1177(attack)
+   192796    0.188    0.000    0.188    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:836(<listcomp>)
+    71931    0.024    0.000    0.184    0.000 <__array_function__ internals>:177(argmax)
+    52556    0.047    0.000    0.170    0.000 /Users/danielkohl/git/DnDSimulator/Choice_class.py:18(score)
+25795/25354    0.061    0.000    0.154    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:528(changeCHP)
+    71931    0.030    0.000    0.138    0.000 /opt/homebrew/lib/python3.10/site-packages/numpy/core/fromnumeric.py:1153(argmax)
+     3556    0.003    0.000    0.133    0.000 /Users/danielkohl/git/DnDSimulator/Choice_class.py:263(execute)
+    32385    0.010    0.000    0.128    0.000 <__array_function__ internals>:177(amax)
+     1690    0.001    0.000    0.118    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:685(score)
+    32385    0.015    0.000    0.108    0.000 /opt/homebrew/lib/python3.10/site-packages/numpy/core/fromnumeric.py:2703(amax)
+    71931    0.030    0.000    0.107    0.000 /opt/homebrew/lib/python3.10/site-packages/numpy/core/fromnumeric.py:51(_wrapfunc)
+    15113    0.006    0.000    0.105    0.000 <__array_function__ internals>:177(mean)
+   370973    0.102    0.000    0.102    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:809(<listcomp>)
+     1313    0.003    0.000    0.102    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:1257(score)
+     1338    0.001    0.000    0.096    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:557(score)
+    32386    0.028    0.000    0.093    0.000 /opt/homebrew/lib/python3.10/site-packages/numpy/core/fromnumeric.py:69(_wrapreduction)
+    15113    0.017    0.000    0.093    0.000 /opt/homebrew/lib/python3.10/site-packages/numpy/core/fromnumeric.py:3345(mean)
+
+

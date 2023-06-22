@@ -288,12 +288,17 @@ class do_monster_ability(choice):
 
         if player.dragons_breath_is_charged:
             Score += (20 + int(player.level*3.1))*3   #damn strong ability, at least 2-3 Targets
+        if player.recharge_aoe_is_charged:
+            Score += player.aoe_recharge_dmg*2 #might hit 2-3 targts
         if player.spider_web_is_charged:
             Score += player.dmg*player.attacks*1.5   #good Ability, better then simple attack
         return Score
     
     def execute(self, fight):
         player = self.player
+        if player.knows_recharge_aoe and player.action == 1:
+            if player.recharge_aoe_is_charged:
+                self.recharge_aoe(fight)
         #Dragon Breath
         if player.knows_dragons_breath and player.action == 1:
             if player.dragons_breath_is_charged:
@@ -302,6 +307,14 @@ class do_monster_ability(choice):
         if player.knows_spider_web and player.action == 1:
             if player.spider_web_is_charged:
                 self.spider_web(fight)
+
+    def recharge_aoe(self, fight):
+        player = self.player
+        targets = player.AI.area_of_effect_chooser(fight, player.aoe_recharge_area)
+        if len(targets) == len([x for x in fight if x.team != player.team]) and len(targets) > 1:
+            max = int(len(targets)*0.5 + 0.5) #some should be able to get out, even for high area of effect
+            targets = targets[0:-1*max]
+        player.use_recharge_aoe(targets)
 
     def dragons_breath(self, fight):
         player = self.player

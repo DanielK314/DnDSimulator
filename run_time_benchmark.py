@@ -7,8 +7,8 @@ from Dm_class import *
 def run_time_benchmark():
     #initiate the DM and check the printing#
     DM = DungeonMaster()
-#    DM.block_print()
-    DM.enable_print()
+    DM.block_print()
+#    DM.enable_print()
 
     #load the Entities for the fight
     Entities =  {

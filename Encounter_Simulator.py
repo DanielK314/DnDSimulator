@@ -60,6 +60,9 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
             x.state = -1 #Everone who is unconscious in the loser Team is practically Dead now
         if x.is_summoned:  #let summend characters vanish after dead
             fight.remove(x)
+        x.TM.resolveAll()
+        
+
     DM.say('HP left:')
     for i in fighters_unsorted:
         DM.say(str(i.name) + " " + str(i.CHP))

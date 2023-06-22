@@ -1,6 +1,8 @@
+from typing import Any
+from typing_extensions import Literal
 from Entity_class import *
 from Dm_class import *
-from tkinter import Frame, Canvas, IntVar, Label, Entry, StringVar, Listbox, BOTH, VERTICAL, RIGHT, LEFT, ALL, Y, X, HORIZONTAL, BOTTOM
+from tkinter import Frame, Canvas, IntVar, Label, Entry, Misc, StringVar, Listbox, BOTH, VERTICAL, RIGHT, LEFT, ALL, Y, X, HORIZONTAL, BOTTOM
 import ttkbootstrap as ttk
 from tkinter import messagebox
 from functools import partial
@@ -35,7 +37,24 @@ class Controller(Frame):
         'WildShape', 'CombatWildShape', 'Inspiration', 'CuttingWords', 'CombatInspiration',
         'AgonizingBlast','TurnUndead',
         'GreatWeaponMaster', 'PolearmMaster',
-        'DragonsBreath', 'SpiderWeb', 'PoisonBite']
+        'DragonsBreath', 'SpiderWeb', 'PoisonBite', 'RechargeAOE']
+
+        self.All_Other_Ability_Entries = {
+            'ActionSurges':{'Text': 'Action Surges', 'ClassName': 'Fighter', 'AttributeName': 'action_surges', 'IsFLoatStat': False},
+            'Sneak_Attack_Dmg':{'Text': 'Sneak Attack Dmg', 'ClassName': 'Rogue', 'AttributeName': 'sneak_attack_dmg', 'IsFLoatStat': True},
+            'RageDmg':{'Text': 'Rage Dmg', 'ClassName': 'Barbarian', 'AttributeName': 'rage_dmg', 'IsFLoatStat': True},
+            'Lay_on_Hands_Pool':{'Text': 'Lay on Hands Pool', 'ClassName': 'Paladin', 'AttributeName': 'lay_on_hands', 'IsFLoatStat': False},
+            'Sorcery_Points':{'Text': 'Sorcery Points', 'ClassName': 'Sorcerer', 'AttributeName': 'sorcery_points_base', 'IsFLoatStat': False},
+            'DruidCR':{'Text': 'Wild Shape CR', 'ClassName': 'Druid', 'AttributeName': 'DruidCR', 'IsFLoatStat': True},
+            'ChannelDivinity':{'Text': 'Channel Divinity', 'ClassName': 'Cleric', 'AttributeName': 'channel_divinity_counter', 'IsFLoatStat': False},
+            'DestroyUndeadCR':{'Text': 'Destroy Undead CR', 'ClassName': 'Cleric', 'AttributeName': 'destroy_undead_CR', 'IsFLoatStat': True},
+            'StartOfTurnHeal':{'Text': 'Heal at start of Turn', 'ClassName': 'Monster', 'AttributeName': 'start_of_turn_heal', 'IsFLoatStat': False},
+            'LegendaryResistances':{'Text': 'Legendary Resistances', 'ClassName': 'Monster', 'AttributeName': 'legendary_resistances', 'IsFLoatStat': False},
+            'AOERechargeDmg':{'Text': 'Recharge AOE Dmg', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dmg', 'IsFLoatStat': True},
+            'AOERechargeDC':{'Text': 'Recharge AOE DC', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dc', 'IsFLoatStat': False},
+            'AOERechargeArea':{'Text': 'Recharge AOE Area', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_area', 'IsFLoatStat': False},
+            'AOERechargePropability':{'Text': 'AOE Recharge Propability', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_propability', 'IsFLoatStat': True}
+        }
 
         self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct']
 
@@ -287,6 +306,51 @@ class HomePage_cl(Frame):
             self.master.Fighters.append(Player)
             self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger solid')
 
+class OtherAbilityEntry(Frame):
+    def __init__(self, root, text, abilityName, className, attributeName, isFloatStat = False):
+        self.isFloatStat = isFloatStat
+        self.abilityName = abilityName
+        self.attributeName = attributeName
+        self.className = className
+        Frame.__init__(self, root)
+        self.Label = Label(self, text=text).grid(row=0, column=1, sticky="w")
+        self.Entry = Entry(self, bd=2, width = 3)
+        self.Entry.grid(row=0, column=0, sticky="e")
+
+    def get(self):
+        if self.isFloatStat:
+            return float(self.Entry.get())
+        else:
+            return int(self.Entry.get())
+    
+    def update(self, NewText):
+        self.Entry.delete(0, 'end')
+        self.Entry.insert(0, str(NewText))
+
+class OtherAbilityCombobox(Frame):
+    def __init__(self, root, entityPage, text, abilityName, dict):
+        self.text = text
+        self.abilityName = abilityName
+        self.dict = dict
+        self.entityPage = entityPage
+        Frame.__init__(self, root)
+        self.Label = Label(self, text=text).grid(row=0, column=1, sticky="w")
+        Labels = [label for label in dict]  #all labels for the box
+        self.Entry = ttk.Combobox(self, values = Labels, state='readonly', height=6, width=6)
+        self.Entry.grid(row=0, column=0, sticky='e')
+    
+    def get(self):
+        state = self.Entry.get()
+        for label in self.dict:
+            if state == label: return self.dict[label]
+    
+    def update(self):
+        update = self.entityPage.stats[self.abilityName] #get the current stat from entity page
+        for label in self.dict:
+            if self.dict[label] == update:
+                self.Entry.set(label)
+                break
+
 class EntityPage_cl(Frame):
     def __init__(self, root):
         Frame.__init__(self, root)
@@ -296,6 +360,10 @@ class EntityPage_cl(Frame):
         self.Entrybd = 2
         self.Entrywidth= 4
         self.AbilityScoreWidth = 2
+
+        #Other Ability Entries
+        #This will be filled in build_ability_page
+        self.All_Other_Ability_Entries = []
 
         #The System of this page is, that the current stats are saved in the stats dictionary and with the fetch functions new stats can be loaded, the page must then be updated
 
@@ -603,7 +671,7 @@ class EntityPage_cl(Frame):
                 8:{'name':'Warlock', 'Number':1},
                 9:{'name':'Cleric', 'Number':1},
                 10:{'name':'Feats', 'Number':2},
-                11:{'name':'Monster', 'Number':3}}
+                11:{'name':'Monster', 'Number':4}}
         Class_Frames = []
         ChoosenFrame = self.Abilities1Frame
         for i in range(0, len(Class)):
@@ -628,6 +696,17 @@ class EntityPage_cl(Frame):
             if FrameCounter == len(Class):
                 break
             NumberCounter = Class[FrameCounter]['Number']
+        
+        #Build all the Frames for the Other Ability Entries listed in Controller Class
+        Ability_Entry_dict = self.master.All_Other_Ability_Entries
+        for i in Ability_Entry_dict:
+            ClassNumber = -1
+            for x in Class:
+                if Class[x]['name'] == Ability_Entry_dict[i]['ClassName']: ClassNumber = x #Find the class number
+            if ClassNumber != -1:
+                #Initiate Class as specified in Controller class
+                AbilityEntry =  OtherAbilityEntry(Class_Frames[ClassNumber], text=Ability_Entry_dict[i]['Text'], abilityName=i, className=Ability_Entry_dict[i]['ClassName'], attributeName=Ability_Entry_dict[i]['AttributeName'], isFloatStat= Ability_Entry_dict[i]['IsFLoatStat'])
+                self.All_Other_Ability_Entries.append(AbilityEntry)
 
         #This ensures, that if a ability is clicked, the Ability list Display on the Main page updates, it is not the dict of the Page
         for i in range(0, len(self.AbilitiesList)):
@@ -639,86 +718,37 @@ class EntityPage_cl(Frame):
         row = len(self.AbilitiesList) + 1
         for i in range(0,len(Class_Frames)):
             frame = Class_Frames[i]
-            if Class[i]['name'] == 'Fighter':
-                #Action Surge
-                ActionSurgeFrame = Frame(frame)
-                Label(ActionSurgeFrame, text='Action Surges').grid(row=0, column=1, sticky="w")
-                self.ActionSurgeEntry = Entry(ActionSurgeFrame, bd=self.Entrybd, width =3)
-                self.ActionSurgeEntry.grid(row=0, column=0, sticky="e")
-                ActionSurgeFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
-            if Class[i]['name'] == 'Rogue':
-                #SneakAttack
-                SneackAttFrame = Frame(frame)
-                Label(SneackAttFrame, text='Sneak Attack Dmg').grid(row=0, column=1, sticky="w")
-                self.SneakAttackDmgEntry = Entry(SneackAttFrame, bd=self.Entrybd, width =3)
-                self.SneakAttackDmgEntry.grid(row=0, column=0, sticky="e")
-                SneackAttFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
-            if Class[i]['name'] == 'Barbarian':
-                #RageDmg
-                RageDmgFrame = Frame(frame)
-                Label(RageDmgFrame, text='Rage Dmg').grid(row=0, column=1, sticky="w")
-                self.RageDmgEntry = Entry(RageDmgFrame, bd=self.Entrybd, width =3)
-                self.RageDmgEntry.grid(row=0, column=0, sticky="e")
-                RageDmgFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
-            if Class[i]['name'] == 'Paladin':
-                #LayOnHands
-                LayOnHandsFrame = Frame(frame)
-                LayOnHandsFrame.rowconfigure(0, weight=1)
-                frame.rowconfigure(row, weight=1)
-                Label(LayOnHandsFrame, text='Lay on Hands Pool').grid(row=0, column=1, sticky="w")
-                self.LayOnHandsEntry = Entry(LayOnHandsFrame, bd=self.Entrybd, width =self.AbilityScoreWidth)
-                self.LayOnHandsEntry.grid(row=0, column=0, sticky="e")
-                LayOnHandsFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
-            if Class[i]['name'] == 'Sorcerer':
-                #SorceryPoints
-                ScorceryFrame = Frame(frame)
-                Label(ScorceryFrame, text='Sorcery Points').grid(row=0, column=1, sticky="w")
-                self.SorceryPointsEntry = Entry(ScorceryFrame, bd=self.Entrybd, width =self.AbilityScoreWidth)
-                self.SorceryPointsEntry.grid(row=0, column=0, sticky="e")
-                ScorceryFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
-            if Class[i]['name'] == 'Druid':
-                #Wildshape
-                WildShapeFrame = Frame(frame)
-                Label(WildShapeFrame, text='Wild Shape CR').grid(row=0, column=1, sticky="w")
-                self.WildShapeCREntry = Entry(WildShapeFrame, bd=self.Entrybd, width=3)
-                self.WildShapeCREntry.grid(row=0, column=0, sticky="e")
-                WildShapeFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
+            for entry in self.All_Other_Ability_Entries:
+                if entry.className == Class[i]['name']:
+                    entry.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                    row += 1
             if Class[i]['name'] == 'Bard':
-                self.InspirationFrame = Frame(frame)
-                Label(self.InspirationFrame, text='Inspiration Die').grid(row=0, column=1, sticky='w')
-                Dies = ['0','d4', 'd6', 'd8', 'd10', 'd12']
-                self.InspirationEntry = ttk.Combobox(self.InspirationFrame, values = Dies, state='readonly', height=6, width=3) #Type Entry
-                if self.stats['Inspiration'] == 2: self.InspirationEntry.set('d4')
-                elif self.stats['Inspiration'] == 3: self.InspirationEntry.set('d6')
-                elif self.stats['Inspiration'] == 4: self.InspirationEntry.set('d8')
-                elif self.stats['Inspiration'] == 5: self.InspirationEntry.set('d10')
-                elif self.stats['Inspiration'] == 6: self.InspirationEntry.set('d12')
-                else: self.InspirationEntry.set('0')
-                self.InspirationEntry.grid(row=0, column=0, sticky='e')
-                self.InspirationFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                InspirationDict = {
+                    '0': 0,
+                    'd4': 2,
+                    'd6': 3,
+                    'd8': 4,
+                    'd10': 5,
+                    'd12': 6
+                }
+                self.InspirationEntry = OtherAbilityCombobox(frame, self, text='Inspiration Die', abilityName='Inspiration', dict = InspirationDict)
+                self.InspirationEntry.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
                 row += 1
-            if Class[i]['name'] == 'Cleric':
-                #ChannelDevinity
-                ChannelDivinityFrame = Frame(frame)
-                Label(ChannelDivinityFrame, text='Channel Devinity').grid(row=0, column=1, sticky="w")
-                self.ChannelDivinityEntry = Entry(ChannelDivinityFrame, bd=self.Entrybd, width=3)
-                self.ChannelDivinityEntry.grid(row=0, column=0, sticky="e")
-                ChannelDivinityFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
-                #DestroyUndead
-                DestroyUndeadFrame = Frame(frame)
-                Label(DestroyUndeadFrame, text='Destroy Undead CR').grid(row=0, column=1, sticky="w")
-                self.DestroyUndeadEntry = Entry(DestroyUndeadFrame, bd=self.Entrybd, width=3)
-                self.DestroyUndeadEntry.grid(row=0, column=0, sticky="e")
-                DestroyUndeadFrame.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
-                row += 1
-
+            if Class[i]['name'] == 'Monster':
+                self.AOEDict = {
+                    'Str' : 0,
+                    'Dex' : 1,
+                    'Con' : 2,
+                    'Int' : 3,
+                    'Wis' : 4,
+                    'Cha' : 5
+                }
+                self.AOESaveEntry = OtherAbilityCombobox(frame, self, text='Recharge AOE Save', abilityName='AOESaveType', dict= self.AOEDict)
+                self.AOESaveEntry.grid(row=row, columnspan=2, sticky="we", padx=3, pady=3)
+                AOE_dmg_types = {x:x for x in self.master.DMG_Types}
+                self.RechagreType = OtherAbilityCombobox(frame, self, 'AOE Dmg Type', 'AOERechargeType', AOE_dmg_types)
+                self.RechagreType.grid(row=row+1, columnspan=2, sticky="we", padx=3, pady=3)
+                row += 2
 
         CRow = 0
         for i in range(0,len(Class_Frames)):
@@ -816,15 +846,12 @@ class EntityPage_cl(Frame):
         self.stats['OffHand'] = Player.offhand_dmg
 
         self.stats['Other_Abilities'] = Player.other_abilities
-        self.stats['ActionSurges'] = Player.action_surges
-        self.stats['Sneak_Attack_Dmg'] = Player.sneak_attack_dmg
-        self.stats['RageDmg'] = Player.rage_dmg
-        self.stats['Lay_on_Hands_Pool'] = Player.lay_on_hands
-        self.stats['Sorcery_Points'] = Player.sorcery_points
-        self.stats['DruidCR'] = Player.DruidCR
-        self.stats['Inspiration'] = Player.inspiration_die
-        self.stats['ChannelDivinity'] = Player.channel_divinity_counter
-        self.stats['DestroyUndeadCR'] = Player.destroy_undead_CR
+        for entry in self.All_Other_Ability_Entries:
+            self.stats[entry.abilityName] = getattr(Player, entry.attributeName)
+        self.stats['Inspiration'] = int(Player.inspiration_die)
+        self.stats['AOESaveType'] = int(Player.aoe_save_type)
+        self.stats['AOERechargeType'] = Player.aoe_recharge_type
+
 
         self.stats['Position'] = Player.position_txt
         self.stats['Speed'] = Player.speed
@@ -919,22 +946,13 @@ class EntityPage_cl(Frame):
         if AbilitiesText == '':
             AbilitiesText = 'none'
         self.stats['Other_Abilities'] = AbilitiesText
-        self.stats['ActionSurges'] = int(self.ActionSurgeEntry.get())
-        self.stats['Sneak_Attack_Dmg'] = float(self.SneakAttackDmgEntry.get())
-        self.stats['RageDmg'] = float(self.RageDmgEntry.get())
-        self.stats['Lay_on_Hands_Pool'] = int(self.LayOnHandsEntry.get())
-        self.stats['Sorcery_Points'] = int(self.SorceryPointsEntry.get())
-        self.stats['DruidCR'] = float(self.WildShapeCREntry.get())
+        for entry in self.All_Other_Ability_Entries:
+            self.stats[entry.abilityName] = entry.get()
         #Inspiration
-        inspiration = self.InspirationEntry.get()
-        if inspiration == 'd4': self.stats['Inspiration'] = '2'
-        elif inspiration == 'd6': self.stats['Inspiration'] = '3'
-        elif inspiration == 'd8': self.stats['Inspiration'] = '4'
-        elif inspiration == 'd10': self.stats['Inspiration'] = '5'
-        elif inspiration == 'd12': self.stats['Inspiration'] = '6'
-        else: self.stats['Inspiration'] = '0'
-        self.stats['ChannelDivinity'] = int(self.ChannelDivinityEntry.get())
-        self.stats['DestroyUndeadCR'] = float(self.DestroyUndeadEntry.get())
+        self.stats['Inspiration'] = self.InspirationEntry.get()
+        #AOE Type
+        self.stats['AOESaveType'] = self.AOESaveEntry.get()
+        self.stats['AOERechargeType'] = self.RechagreType.get()
 
     def load_default_stats(self):
         #This is called when the #new character button is pressed, restore default stats 
@@ -1031,20 +1049,12 @@ class EntityPage_cl(Frame):
                 self.AbilitiesList[i].set(1)
             else:
                 self.AbilitiesList[i].set(0)
-        self.update_Entry(self.ActionSurgeEntry, self.stats['ActionSurges'])
-        self.update_Entry(self.SneakAttackDmgEntry, self.stats['Sneak_Attack_Dmg'])
-        self.update_Entry(self.RageDmgEntry, self.stats['RageDmg'])
-        self.update_Entry(self.LayOnHandsEntry, self.stats['Lay_on_Hands_Pool'])
-        self.update_Entry(self.SorceryPointsEntry, self.stats['Sorcery_Points'])
-        self.update_Entry(self.WildShapeCREntry, self.stats['DruidCR'])
-        if self.stats['Inspiration'] == 2: self.InspirationEntry.set('d4')
-        elif self.stats['Inspiration'] == 3: self.InspirationEntry.set('d6')
-        elif self.stats['Inspiration'] == 4: self.InspirationEntry.set('d8')
-        elif self.stats['Inspiration'] == 5: self.InspirationEntry.set('d10')
-        elif self.stats['Inspiration'] == 6: self.InspirationEntry.set('d12')
-        else: self.InspirationEntry.set('0')
-        self.update_Entry(self.ChannelDivinityEntry, self.stats['ChannelDivinity'])
-        self.update_Entry(self.DestroyUndeadEntry, self.stats['DestroyUndeadCR'])
+        for entry in self.All_Other_Ability_Entries:
+            entry.update(self.stats[entry.abilityName])
+        self.InspirationEntry.update()
+        self.AOESaveEntry.update()
+        self.RechagreType.update()
+
 
         #update the Modifier Labels
         self.update_all_ability_mod()

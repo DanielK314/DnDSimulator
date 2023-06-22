@@ -785,6 +785,7 @@ class hex(spell):
         super().__init__(player)
         self.spell_text = 'hex'
         self.spell_level = 1
+        self.is_bonus_action_spell = True
         self.is_twin_castable = False
         self.is_range_spell = True
         self.is_concentration_spell = True
