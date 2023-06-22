@@ -673,25 +673,31 @@ class entity:                                          #A Character
 
     def check_advantage(self, which_save, extraAdvantage = 0, notSilent = True):
         saves_adv_dis = [0,0,0,0,0,0] #calculate all factors to saves:
+        text = '' #collect text to say
         if self.restrained == 1:  #disadvantage in dex if restrained
             saves_adv_dis[1] -= 1
-            if notSilent: self.DM.say('restrained, ', end='')
+            text += 'restrained, '
+        if self.is_dodged:
+            saves_adv_dis[1] += 1  #dodge adv on dex save
+            text += 'restrained, '
         if self.raged == 1:   #str ad if raged
             saves_adv_dis[0] += 1
-            if notSilent: self.DM.say('raging, ', end='')
+            text += 'raging, '
         if self.is_hasted:
             saves_adv_dis[1] += 1
-            if notSilent: self.DM.say('hasted, ', end='')
+            text += 'hasted, '
         if self.is_hexed:
             HexType = int(random()*2 + 1) #random hex disad at Str, Dex or Con
             HexText = ['Str ', 'Dex ', 'Con ']
-            if notSilent: self.DM.say('hexed ' + HexText[HexType] + ', ', end='')
+            text += 'hexed ' + HexText[HexType] + ', '
             saves_adv_dis[HexType] -= 1 #one rand disad 
         if extraAdvantage != 0: #an extra, external source of advantage
             if extraAdvantage > 0:
-                if notSilent: self.DM.say('adv, ', end='')
+                text += 'adv, '
             else:
-                if notSilent: self.DM.say('disad, ', end='')
+                text += 'disad, '
+    
+        if notSilent: self.DM.say(text, end='') #only if not silent
         return saves_adv_dis[which_save] + extraAdvantage
 
     def make_save(self, which_save, extraAdvantage = 0, DC = False):          #0-Str, 1-Dex, 2-Con, 3-Int, 4-Wis, 5-Cha
