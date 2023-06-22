@@ -44,7 +44,7 @@ class entity:                                          #A Character
         self.tohit = int(data['To_Hit'])
         self.base_tohit = int(data['To_Hit'])
 
-        self.base_attacks = int(data['Attacks'])    #attacks of original form                           #number auf Attacks
+        self.base_attacks = int(data['Attacks'])    #attacks of original form   #number auf Attacks
         self.attacks = self.base_attacks  #at end_of_turn attack_counter reset to self.attack
         self.dmg = float(data['DMG'])           #dmg per attack
         self.base_dmg = float(data['DMG'])
@@ -311,7 +311,9 @@ class entity:                                          #A Character
         if 'PrimalCompanion' in self.other_abilities:
             self.knows_primal_companion = True
         self.primal_companion = False 
-
+        self.knows_beastial_fury = False
+        if 'BestialFury' in self.other_abilities:
+            self.knows_beastial_fury = True
 
     #Feats
         #Great Weapon Master
@@ -1122,7 +1124,7 @@ class entity:                                          #A Character
             self.DM.say(self.name + ' prone, ',end='')
         if self.knows_assassinate:
             if self.DM.rounds_number == 1 and self.initiative > target.initiative:
-                #Assassins have advantage against player that havnt had a turn
+                #Assassins have advantage against player that have not had a turn
                 advantage_disadvantage += 1
                 self.DM.say(self.name + ' assassinte, ', end='')
         if target.has_wolf_mark and is_ranged == False:
@@ -1690,6 +1692,10 @@ class entity:                                          #A Character
         companion.base_tohit = companion.tohit
         companion.dmg = 6.5 + self.proficiency
         companion.base_dmg = companion.dmg
+        if self.knows_beastial_fury:  #double attacks Beast
+            companion.base_attacks = 2
+            companion.attacks = companion.base_attacks
+            companion.attack_counter = companion.base_attacks
         #actions
         companion.AI.Choices = [companion.AI.dodgeChoice]  #It can only act if player uses BA, or dodge
         companion.summoner = self  #the player is this companions summoner

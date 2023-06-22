@@ -240,6 +240,9 @@ def DodgeTest(Character, Enemy):
     if Enemy.check_attack_advantage(Character, False, False) != -1:
         print('no Disadv')
         quit()
+    if Character.check_advantage(1) != 1:
+        print('No dex adv.')
+        quit()
     Character.start_of_turn()
     if Character.is_dodged:
         print('still dodged')

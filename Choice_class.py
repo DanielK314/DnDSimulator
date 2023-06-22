@@ -360,7 +360,7 @@ class attack_with_primal_companion(choice):
         if self.player.bonus_action == 0: return 0
         if self.player.primal_companion.action == 0: return 0
         if self.player.primal_companion.attack_counter <= 0: return 0
-        return (companion.dmg + companion.value())/2
+        return (companion.dmg + companion.value())/2*companion.attacks
     
     def execute(self, fight):
         companion = self.player.primal_companion
@@ -372,8 +372,12 @@ class attack_with_primal_companion(choice):
             self.player.bonus_action == 1
         ]
         if all(rules):
-            target = companion.AI.choose_att_target(fight) #make companion choose a target
-            companion.make_normal_attack_on(target, fight) #make companion make an attack
+            while companion.attack_counter > 0 and companion.state == 1:  #attack enemies as long as attacks are free and alive (attack of opportunity might change that)
+                target = companion.AI.choose_att_target(fight) #choose a target
+                if target == False: #there might be no target
+                    return
+                else:
+                    companion.make_normal_attack_on(target, fight)  #attack that target
             self.player.bonus_action = 0
 
 class do_heal(choice):
