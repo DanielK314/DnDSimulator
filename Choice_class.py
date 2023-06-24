@@ -220,7 +220,7 @@ class do_spiritual_weapon(choice):
     
     def execute(self, fight):
         player = self.player
-        target = player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=player.SpiritualWeaponDmg, other_dmg_type='force')
+        target = player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=player.SpiritualWeaponDmg, other_dmg_type='force', is_silent=True)
         if target != False:
             player.SpellBook['SpiritualWeapon'].use_spiritual_weapon(target)
         else: player.bonus_action = 0

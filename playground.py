@@ -42,17 +42,9 @@ for x in Character.Spell_classes:
     Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
 
-Character.position = 0
-Enemy.position = 0
-Enemy.speed = 60
-Character.speed = 60
-Character.has_range_attack = False
-Character.knows_primal_companion = True
-fight = [Character, Enemy]
-Character.summon_primal_companion(fight)
-Character.knows_cunning_action = True
-Enemy.knows_cunning_action = True
-print(Character.enemies_reachable_sort(fight))
+Hades = entity('Hades', 1, DM, False)
+Herkules = entity('Herkules', 0, DM, False)
+Hades.AI.do_your_turn([Hades, Herkules])
 
 # n = 100000
 # start_time = time.time()

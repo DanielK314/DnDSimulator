@@ -1,23 +1,15 @@
 {
     "simulation_parameters": {
         "printing_on": 0,
-        "repetitions": 100
+        "repetitions": 1
     },
     "Entities": [
         {
-            "name": "Test",
+            "name": "Herkules",
             "team": 0
         },
         {
-            "name": "Warlock Lv5",
-            "team": 0
-        },
-        {
-            "name": "Ogre",
-            "team": 1
-        },
-        {
-            "name": "Pirate Captain",
+            "name": "Hades",
             "team": 1
         }
     ]

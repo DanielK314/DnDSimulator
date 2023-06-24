@@ -389,7 +389,7 @@ class attack_spell(spell):
         SpellTargets = []
         for i in range(0,self.number_of_attacks):
             #Append as many targets as attack numbers
-            SpellTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type)
+            SpellTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type, is_silent=True)
             if SpellTarget == False: #No target found
                 return self.return_0_score()
             else: SpellTargets.append(SpellTarget)
@@ -398,7 +398,7 @@ class attack_spell(spell):
         if twinned_cast:
             if all([self.is_twin_castable, self.number_of_attacks == 1]):
                 Choices.remove(SpellTargets[0]) #do not double twin cast
-                TwinTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type)
+                TwinTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type, is_silent=True)
                 if TwinTarget == False: return self.return_0_score()  #No Target found
                 SpellTargets.append(TwinTarget)
             else:
@@ -746,7 +746,7 @@ class entangle(save_spell):
         TargetChoices = fight.copy() #to remove from
         SpellTargets = []
         for i in range(0,TargetNumber): #choose 1-2 targets
-            Target = self.player.AI.choose_att_target(TargetChoices, AttackIsRanged=True, other_dmg=0, other_dmg_type='true') # Find target for entangle
+            Target = self.player.AI.choose_att_target(TargetChoices, AttackIsRanged=True, other_dmg=0, other_dmg_type='true', is_silent=True) # Find target for entangle
             if Target == False: return self.return_0_score() #no target
             else:
                 SpellTargets.append(Target)
@@ -830,7 +830,7 @@ class hex(spell):
         self.player.CurrentHexToken.addLink(NewHexToken) #Add the new Hex Token
 
     def score(self, fight, twinned_cast=False):
-        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='necrotic') #Choose best target
+        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='necrotic', is_silent=True) #Choose best target
         if SpellTarget == False: return self.return_0_score()
 
         Score = 0
@@ -889,7 +889,7 @@ class hunters_mark(spell):
         self.player.CurrentHuntersMarkToken.addLink(NewHuntersMarkToken) #Add the new Token
 
     def score(self, fight, twinned_cast=False):
-        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type=self.TM.player.damage_type) #Choose best target
+        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type=self.TM.player.damage_type, is_silent=True) #Choose best target
         if SpellTarget == False: return self.return_0_score()
 
         Score = 0
@@ -1110,7 +1110,7 @@ class spiritual_weapon(spell):
         self.cast_level = CastLevel #That the dmg_score for choose_att works prop
 
         #Choose Target for first attack
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=self.spell_dmg(), other_dmg_type=self.dmg_type)]
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=self.spell_dmg(), other_dmg_type=self.dmg_type, is_silent=True)]
         if SpellTargets[0] == False:
             return self.return_0_score()#no Enemy in reach
 
@@ -1334,13 +1334,13 @@ class blight(aoe_dmg_spell):
         self.addedDmg = 0  #is later added for plants, undead and constructs
         dmg = self.spell_dmg()
         Choices = [x for x in fight if x.team != self.player.team]
-        SpellTargets = [self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)]
+        SpellTargets = [self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type, is_silent=True)]
         if SpellTargets == [False]: #No Target
             return self.return_0_score()
         if twinned_cast:
             #Secound Target for Twin Cast
             Choices.remove(SpellTargets[0]) #Do not double cast
-            twin_target = self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)
+            twin_target = self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type, is_silent=True)
             if twin_target == False:
                 return self.return_0_score()
             SpellTargets.append(twin_target)

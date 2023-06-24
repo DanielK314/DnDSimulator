@@ -289,7 +289,7 @@ class AI:
             Score = Score*np.sqrt(player.AC/(13 + player.level/3.5)) #Encourage player with high AC
         return Score
 
-    def choose_att_target(self, fight, AttackIsRanged = False, other_dmg = False, other_dmg_type = False):
+    def choose_att_target(self, fight, AttackIsRanged = False, other_dmg = False, other_dmg_type = False, is_silent = False):
         player = self.player
         if other_dmg == False:
             dmg = player.dmg
@@ -310,9 +310,10 @@ class AI:
                 return player.dash_target
 
         if len(EnemiesInReach) == 0:
-            player.DM.say('There are no Enemies in reach for ' + player.name + ' to attack')
-            player.move_position() #if no target in range, move a line forward
-            player.attack_counter = 0
+            if is_silent == False:
+                player.DM.say('There are no Enemies in reach for ' + player.name + ' to attack')
+                player.move_position() #if no target in range, move a line forward
+                player.attack_counter = 0
             return False  #return, there is no target
         else:
             target_list = EnemiesInReach
@@ -669,12 +670,12 @@ class AI:
 
     def choose_new_hex(self, fight):
         HexChoices = [x for x in fight if x.team != self.player.team and x.state == 1]
-        HexTarget = self.choose_att_target(HexChoices, AttackIsRanged=True, other_dmg=3.5)
+        HexTarget = self.choose_att_target(HexChoices, AttackIsRanged=True, other_dmg=3.5, is_silent=True)
         if HexTarget != False:
             self.player.SpellBook['Hex'].change_hex(HexTarget)
 
     def choose_new_hunters_mark(self, fight):
         HuntersMarkChoices = [x for x in fight if x.team != self.player.team and x.state == 1]
-        Target = self.choose_att_target(HuntersMarkChoices, AttackIsRanged=True, other_dmg=3.5)
+        Target = self.choose_att_target(HuntersMarkChoices, AttackIsRanged=True, other_dmg=3.5, is_silent=True)
         if Target != False:
             self.player.SpellBook['HuntersMark'].change_hunters_mark(Target)
