@@ -3,6 +3,7 @@ from random import random
 from Entity_class import * #should be disabled before running
 from Token_class import *
 from numpy import argmax
+from Dmg_class import dmg
 
 
 class spell:
@@ -284,6 +285,14 @@ class spell:
                     if HexToken.TM.player == target:
                         DMGScore += 3.5
                         break
+            #Account for Hunters Mark
+            if target.is_hunters_marked and self.player.is_hunters_marking:
+                for Token in self.player.CurrentHuntersMarkToken.links: #This is your HM target
+                    if Token.TM.player == target:
+                        DMGScore += 3.5
+                        break
+
+
         return DMGScore
 
     def return_0_score(self):
@@ -635,8 +644,10 @@ class magic_missile(spell):
         while missile_counter > 0:    #loop for missile cast
             missile_counter -= 1
             Dmg = dmg(damage, 'force')
-            #Check for Hex
-            self.player.check_hex(Dmg, targets[target_counter])
+            #Check for Tokens Trigger
+            self.player.TM.hasHitWithAttack(targets[target_counter], Dmg, is_ranged=True, is_spell=True)
+            targets[target_counter].TM.washitWithAttack(self.player, Dmg, is_ranged=True, is_spell=True)
+
             targets[target_counter].last_attacker = self.player    #target remembers last attacker
             targets[target_counter].changeCHP(Dmg, self.player, True)    #target takes damage
             target_counter += 1
@@ -825,6 +836,57 @@ class hex(spell):
             Score += 3.5 #A warlock would want to cast hex
             attacks = self.player.SpellBook['EldritchBlast'].number_of_attacks
         Score = 3.5*attacks*(random()*3 + 2) #hex holds for some rounds
+        if 'MagicMissile' in self.player.SpellBook:
+            Score += 3.5 #Mag Missile Combi
+
+        CastLevel = self.choose_smallest_slot(1,9)
+        if CastLevel == False: return self.return_0_score()
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTarget, CastLevel 
+
+class hunters_mark(spell):
+    def __init__(self, player):
+        self.spell_name = 'HuntersMark'
+        super().__init__(player)
+        self.spell_text = 'hunters mark'
+        self.spell_level = 1
+        self.is_bonus_action_spell = True
+        self.is_twin_castable = False
+        self.is_range_spell = True
+        self.is_concentration_spell = True
+    
+    def cast(self, target, cast_level=False, twinned=False):
+        if type(target) == list: target = target[0]
+        super().cast(target, cast_level, twinned)
+        HuntersMarkToken = HuntersMarkedToken(target.TM, subtype='hm') #hunters mark the Tagret
+        self.player.CurrentHuntersMarkToken = HuntersMarkingToken(self.TM, HuntersMarkToken) #Concentration on the caster
+        #Assign that Token as the Current Hunters Mark Token of the Player
+
+    def change_hunters_mark(self, target):
+        rules = [self.player.can_choose_new_hunters_mark,
+                self.is_known,
+                target.state == 1,
+                self.player.bonus_action == 1]
+        errors = [self.player.name + ' tried to change a bound hunters mark',
+                self.player.name + ' tried to change a hunters mark without knowing it',
+                self.player.name + ' tried to change to a not conscious target',
+                self.player.name + ' tried to change a hunters mark without having a bonus action']
+        ifstatements(rules, errors, self.DM).check()
+
+        self.DM.say(self.player.name + ' changes the hunters mark to ' + target.name)
+        self.player.bonus_action = 0 #takes a BA
+        self.player.can_choose_new_hunters_mark = False
+        NewHuntersMarkToken = HuntersMarkedToken(target.TM, subtype='hm') #hunters mark the Tagret
+        self.player.CurrentHuntersMarkToken.addLink(NewHuntersMarkToken) #Add the new Token
+
+    def score(self, fight, twinned_cast=False):
+        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type=self.TM.player.dmg_type) #Choose best target
+        if SpellTarget == False: return self.return_0_score()
+
+        Score = 0
+        attacks = self.player.attacks
+        Score = 3.5*attacks*(random()*3 + 2) #hunters mark holds for some rounds
         if 'MagicMissile' in self.player.SpellBook:
             Score += 3.5 #Mag Missile Combi
 

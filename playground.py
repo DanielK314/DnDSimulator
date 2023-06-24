@@ -4,6 +4,7 @@ from Dmg_class import *
 from Token_class import *
 from Spell_class import *
 import json
+import time
 
 testdict = {0:{'name':'zero'},
             1:{'name':'zero1'},
@@ -31,14 +32,63 @@ Enemy4.name = 'Ogre4'
 
 fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 
+Character.SpellBook = dict()
+for x in Character.Spell_classes:
+    spell_to_lern = x(Character)  #Initiate Spell
+    spell_to_lern.is_known = True #Spell is known
+    Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
+
+
+Character.spell_slot_counter[0] = 2
+Character.SpellBook['Hex'].cast([Enemy])
+Character.has_cast_left = True
+Character.SpellBook['MagicMissile'].cast([Enemy])
+
+
+
 # Character.AI.do_your_turn(fight)
 # DM.say('')
 # Enemy.make_normal_attack_on(Character, fight)
 
-Enemy.AC = 15
-Character.tohit = 0
-Character.dmg = 5
-print(Character.AI.want_to_use_great_weapon_master(Enemy, 1))
+# n = 100000
+
+# for i in range(50):
+#     Token(Character.TM) #Add Tokens
+
+# start_time = time.time()
+# for i in range(n):
+#     Character.TM.endOfTurn() #Loop through Tokens
+#     print(i)
+# run1 = (time.time()-start_time)
+
+# start_time = time.time()
+# count = 0
+# for i in range(n):
+#     if Character.has_armor_of_agathys:
+#         print('Hello World')
+#     if Character.knows_assassinate:
+#         print('Hello World')
+#     if Character.knows_action_surge:
+#         print('Hello World')
+#     if Character.knows_archery:
+#         print('Hello World')
+#     if Character.knows_agonizing_blast:
+#         print('Hello World')
+#     if Character.has_armor_of_agathys:
+#         print('Hello World')
+#     if Character.knows_assassinate:
+#         print('Hello World')
+#     if Character.knows_action_surge:
+#         print('Hello World')
+#     if Character.knows_archery:
+#         print('Hello World')
+#     if Character.knows_agonizing_blast:
+#         print('Hello World')
+#     count += 1
+#     print(count)
+# print(run1)
+# print((time.time()-start_time))
+
 
 # Enemy.type = 'undead'
 # Character.SpellBook['Blight'].twin_cast([Enemy, Enemy2], 6)

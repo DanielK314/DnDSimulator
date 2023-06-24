@@ -8,7 +8,7 @@ def reset(fight):
     for x in fight:
         x.long_rest()
 
-def ConcentrationTest1(Character, Enemy):
+def ConcentrationTest1(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[2] = 1
     Character.SpellBook['Haste'].cast([Character])
     if Character.is_concentrating == False: 
@@ -25,23 +25,27 @@ def ConcentrationTest1(Character, Enemy):
             print('Concentration Test 1')
             return True
 
-def ConcentrationTestEntangle(Character, Enemy):
+def ConcentrationTestEntangle(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[0] = 1
     Character.spell_dc = 100
     Character.SpellBook['Entangle'].cast([Enemy])
     if Character.is_concentrating == False: 
         print('Not Concentrated after cast')
         quit()
-    else:
-        Enemy.TM.resolveAll()
-        if Character.is_concentrating == True:
-            print('Still concentrated after break Con')
-            quit()
-        else:
-            print('Concentration Test Entangle')
-            return True
+    if Enemy.restrained == False:
+        print('not restrained')
+        quit()
+    Enemy.TM.resolveAll()
+    if Character.is_concentrating == True:
+        print('Still concentrated after break Con')
+        quit()
+    if Enemy.restrained:
+        print('still restrained from entangle')
+        quit()
+    print('Concentration Test Entangle')
+    return True
 
-def HasteRoundTest(Character):
+def HasteRoundTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[2] = 1
     Character.SpellBook['Haste'].cast([Character])
     if Character.is_concentrating == False: 
@@ -64,7 +68,7 @@ def HasteRoundTest(Character):
             print('Haste Round Test')
             return True
 
-def HasteUnconsciousTest(Character, Character2):
+def HasteUnconsciousTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[2] = 1
     Character.SpellBook['Haste'].cast([Character2])
     if Character.is_concentrating == False: 
@@ -79,7 +83,7 @@ def HasteUnconsciousTest(Character, Character2):
             print('Haste Unconscious Test')
             return True
 
-def HexTest(Character, Enemy):
+def HexTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['Hex'].cast([Enemy])
     if Character.is_concentrating == False: 
@@ -95,7 +99,7 @@ def HexTest(Character, Enemy):
                 print('Hex Test')
                 return True
 
-def HexConTest(Character, Enemy):
+def HexConTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['Hex'].cast([Enemy])
     if Character.is_concentrating == False: 
@@ -118,10 +122,10 @@ def HexConTest(Character, Enemy):
             quit()
         print('Hex Break Concentration Test')
 
-def HexSwitchTest(Character, Enemy1, Enemy2):
+def HexSwitchTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[0] = 1
-    Character.SpellBook['Hex'].cast([Enemy1])
-    Enemy1.unconscious()
+    Character.SpellBook['Hex'].cast([Enemy])
+    Enemy.unconscious()
     Enemy2.CHP = 100
     Character.end_of_turn()
     Character.AI.do_your_turn(fight)
@@ -135,7 +139,27 @@ def HexSwitchTest(Character, Enemy1, Enemy2):
         quit()
     print('Hex switching Test')
 
-def conjureAnimalsTest(Character):
+def HuntersMarkTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
+    Character.spell_slot_counter[0] = 1
+    Character.SpellBook['HuntersMark'].cast([Enemy])
+    if Enemy.is_hunters_marked == False:
+        print('Huntersmark not marked')
+        quit()
+    Enemy.unconscious()
+    Enemy2.CHP = 100
+    Character.end_of_turn()
+    Character.AI.do_your_turn(fight)
+    if Enemy2.is_hunters_marked == False:
+        print('Not changed HM')
+        print(Enemy2.is_hunters_marked)
+        for x in Enemy2.TM.TokenList:
+            print(x.subtype)
+        Enemy2.TM.update()
+        print(Enemy2.is_hunters_marked)
+        quit()
+    print('Hunters Mark Test')
+
+def conjureAnimalsTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     TestFight = [Character]
     Character.spell_slot_counter[2] = 1
     Character.SpellBook['ConjureAnimals'].cast(TestFight)
@@ -171,7 +195,7 @@ def conjureAnimalsTest(Character):
         quit()
     print('Conjure Animals Test')
 
-def guidingBoltTest(Character, Enemy):
+def guidingBoltTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.spell_slot_counter[0] = 1
     Character.SpellBook['GuidingBolt'].cast(Enemy)
     if len(Character.TM.TokenList) == 0:
@@ -191,7 +215,7 @@ def guidingBoltTest(Character, Enemy):
         quit()
     print('Guiding Bolt Test')
 
-def PrimalCompanionTest(Character, Enemy):
+def PrimalCompanionTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.knows_primal_companion = True
     Character.used_primal_companion = False
     Enemy.action = 0
@@ -229,7 +253,7 @@ def PrimalCompanionTest(Character, Enemy):
     print('Primal Companion')
     return True
 
-def DodgeTest(Character, Enemy):
+def DodgeTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.use_dodge()
     if Character.is_dodged == False:
         print('not dodged')
@@ -270,24 +294,20 @@ if __name__ == '__main__':
         spell_to_lern.is_known = True #Spell is known
         Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
-    #Concentration Test
-    reset(fight)
-    ConcentrationTest1(Character, Enemy)
-    reset(fight)
-    ConcentrationTestEntangle(Character, Enemy)
-    reset(fight)
-    HasteRoundTest(Character)
-    reset(fight)
-    HasteUnconsciousTest(Character, Character2)
-    reset(fight)
-    HexTest(Character, Enemy)
-    reset(fight)
-    HexConTest(Character, Enemy)
-    reset(fight)
-    HexSwitchTest(Character, Enemy, Enemy2)
-    reset(fight)
-    conjureAnimalsTest(Character)
-    reset(fight)
-    PrimalCompanionTest(Character, Enemy)
-    reset(fight)
-    DodgeTest(Character, Enemy)
+    tests = [
+        ConcentrationTest1,
+        ConcentrationTestEntangle,
+        HasteRoundTest,
+        HasteUnconsciousTest,
+        HexTest,
+        HexConTest,
+        HexSwitchTest,
+        HuntersMarkTest,
+        conjureAnimalsTest,
+        PrimalCompanionTest,
+        DodgeTest
+    ]
+
+    for test in tests:
+        reset(fight)
+        test(Character, Character2, Character3, Enemy, Enemy2, Enemy3)

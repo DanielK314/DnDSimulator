@@ -116,13 +116,13 @@ class entity:                                          #A Character
         #If this updates, the All_Spells in the GUI will load this
         #Keep this in Order of the Spell Level, so that it also fits for the GUI
         self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
-                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds',
+                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds', 'HuntersMark',
                            'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
                            'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals',
                            'Blight']
         #Add here all Spell classes that are impemented
         self.Spell_classes = [firebolt, chill_touch, eldritch_blast,
-                         burning_hands, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds,
+                         burning_hands, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds, hunters_mark,
                          aganazzars_sorcher, scorching_ray, shatter, spiritual_weapon,
                          fireball, lightningBolt, haste, conjure_animals,
                          blight]
@@ -141,6 +141,11 @@ class entity:                                          #A Character
         self.is_hexing = False
         self.can_choose_new_hex = False 
         self.CurrentHexToken = False #This is the Hex Concentration Token
+        #Hunters Mark
+        self.is_hunters_marked = False
+        self.is_hunters_marking = False
+        self.can_choose_new_hunters_mark = False 
+        self.CurrentHuntersMarkToken = False #This is the Hunters Mark Concentration Token
         #Armor of Agathys
         self.has_armor_of_agathys = False
         self.agathys_dmg = 0
@@ -430,9 +435,9 @@ class entity:                                          #A Character
         self.has_cast_left = True #if a spell is cast, hast_cast_left = False
         self.is_concentrating = False
 
-        self.restrained = 0             #will be ckeckt wenn attack/ed 
+        self.restrained = False            #will be ckeckt wenn attack/ed, !!!!!!!!! only handle via Tokens
         self.prone = 0
-        self.blinded = 0   
+        self.is_blinded = False
         self.is_dodged = False    #is handled by the DodgedToken
 
         self.last_attacker = 0
@@ -651,7 +656,7 @@ class entity:                                          #A Character
         Score = self.dps() #see .dps() func, is dmg and heal*2 per turn
         if self.restrained == 1:
             Score = Score*0.9
-        if self.blinded == 1:
+        if self.is_blinded:
             Score = Score*0.9
         if self.prone == 1:
             Score = Score*0.95
@@ -1107,10 +1112,10 @@ class entity:                                          #A Character
         if target.is_dodged:
             advantage_disadvantage -= 1
             self.DM.say(target.name + ' dodged, ', end='')
-        if target.blinded == 1:
+        if target.is_blinded:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' blinded, ',end='')
-        if self.blinded == 1:
+        if self.is_blinded:
             advantage_disadvantage -= 1
             self.DM.say(self.name + ' blinded, ',end='')
         if target.prone == 1:
@@ -1195,21 +1200,13 @@ class entity:                                          #A Character
                     self.DM.say(' and ' + str(self.sneak_attack_dmg/2) + ' wails from the grave', end='')
                 self.sneak_attack_counter = 0
 
-    def check_combat_inspiration(self, Dmg, other_dmg):
-        if self.is_combat_inspired and self.inspired > 0 and other_dmg == False:
+    def check_combat_inspiration(self, Dmg, is_spell):
+        if self.is_combat_inspired and self.inspired > 0 and is_spell == False:
             #Works only for weapon dmg, so other_dmg == False
             Dmg.add(self.inspired, self.damage_type)
             self.DM.say('\n' + self.name + ' uses combat inspiration: +' + str(self.inspired), end='')
             self.inspired = 0
             self.is_combat_inspired = False
-
-    def check_hex(self, Dmg, target):
-        for x in target.TM.TokenList:
-            if x.subtype == 'hex': #Target is hexed
-                if x.origin.TM == self.TM: #is Hexed by you
-                    Dmg.add(3.5, 'necrotic')
-                    self.DM.say('\n' + target.name + ' was cursed with a hex: ', end='')
-                    return
 
     def check_great_weapon_fighting(self, Dmg, is_ranged, other_dmg, is_spell):
         rules = [self.knows_great_weapon_fighting,
@@ -1222,7 +1219,7 @@ class entity:                                          #A Character
 
     def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False, is_offhand = False, is_spell = False):
     #this is the attack funktion of a player attacking a target with a normak attack
-    #if another type of dmg is passed, it will be used, otherwise the player.dmg_type is used
+    #if another type of dmg is passed, it will be used, otherwise the player.damage_type is used
     #if no dmg is passed, the normal entitiy dmg is used
     #is_ranged tells the function if it is a meely or ranged attack
         #this ensures that for a normal attack the dmg type of the entity is used
@@ -1299,18 +1296,19 @@ class entity:                                          #A Character
                 self.DM.say('Critical Hit!, ',end='')                    
             self.DM.say('hit: ' + str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus), end= '')
 
+        #Tokens
+            target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
+            self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
         #Smite
             self.check_smite(Dmg, is_ranged, is_spell)
         #Snackattack
             self.check_sneak_attack(Dmg, advantage_disadvantage, is_spell)
         #Combat Inspiration 
-            self.check_combat_inspiration(Dmg, other_dmg)
-        #Hex
-            self.check_hex(Dmg, target)
+            self.check_combat_inspiration(Dmg, is_spell)
         #GreatWeaponFighting
             self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg, is_spell)
         #poison Bite
-            if self.knows_poison_bite and self.poison_bites == 1 and is_spell == False:
+            if self.knows_poison_bite and self.poison_bites == 1 and is_spell == False and is_offhand == False:
                 self.poison_bites = 0 #only once per turn
                 poisonDMG = self.poison_bite_dmg
                 poisonDC = self.poison_bite_dc
@@ -1869,9 +1867,9 @@ class entity:                                          #A Character
         self.has_cast_left = True
         self.is_concentrating = False
 
-        self.restrained = 0             #will be ckeckt wenn attack/ed 
+        self.restrained = False             #will be ckeckt wenn attack/ed 
         self.prone = 0
-        self.blinded = 0   
+        self.is_blinded = False
         self.is_dodged = False
 
         self.dash_target = False
@@ -1885,6 +1883,8 @@ class entity:                                          #A Character
         self.haste_round_counter = 0    #when this counter hits 10, haste will wear off
         #Hex
         self.can_choose_new_hex = False
+        #Hunters Mark
+        self.can_choose_new_hunters_mark = False
         #Armor of Agathys
         self.has_armor_of_agathys = False
         self.agathys_dmg = 0

@@ -61,7 +61,8 @@ class AI:
 
         #Choose new Hex
         if player.can_choose_new_hex: self.choose_new_hex(fight)
-        
+        if player.can_choose_new_hunters_mark: self.choose_new_hunters_mark(fight)
+
         #Use Second Wind
         if player.knows_second_wind and player.has_used_second_wind == False:
             if player.bonus_action == 1:
@@ -250,7 +251,9 @@ class AI:
         if player.restrained: #decreases Chance to hit
             dmg = dmg*0.8
         if player.is_hexing:
-            dmg += 3.5
+            dmg += 2+player.attacks
+        if player.is_hunters_marking:
+            dmg += 2+player.attacks
 
         #dmg score is about dmg times the attacks
         #This represents vs a test AC
@@ -359,16 +362,18 @@ class AI:
                 if x.type == 'r' and x.origin == target:
                     Score += PlayerDPS*2*(random()*RandomWeight + 1) #This player is entangling you 
         if player.is_hexing: #Check for hexing
-            for x in player.TM.TokenList:
-                if x.subtype == 'hexn': #You are hexing
-                    for HexToken in x.links:
-                        if HexToken.TM.player == target:
-                            Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
-                    break
+            for HexedToken in player.CurrentHexToken.links:
+                if HexedToken.TM.player == target:
+                    Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+        if player.is_hunters_marking: #Check for hunters Mark
+            for Token in player.CurrentHuntersMarkToken.links:
+                if Token.TM.player == target:
+                    Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+
         if target.is_concentrating: Score += TargetDPS/3*(random()*RandomWeight + 1)
         if target.has_summons: Score += TargetDPS/2*(random()*RandomWeight + 1)
         if target.has_armor_of_agathys: Score -= PlayerDPS/3*(random()*RandomWeight + 1)
-        if target.restrained or target.prone or target.blinded:
+        if target.restrained or target.prone or target.is_blinded:
             Score += TargetDPS/4*(random()*RandomWeight + 1)
         if target.is_dodged: Score -= dmg/5*(random()*RandomWeight + 1)
 
@@ -637,3 +642,9 @@ class AI:
         HexTarget = self.choose_att_target(HexChoices, AttackIsRanged=True, other_dmg=3.5)
         if HexTarget != False:
             self.player.SpellBook['Hex'].change_hex(HexTarget)
+
+    def choose_new_hunters_mark(self, fight):
+        HuntersMarkChoices = [x for x in fight if x.team != self.player.team and x.state == 1]
+        Target = self.choose_att_target(HuntersMarkChoices, AttackIsRanged=True, other_dmg=3.5)
+        if Target != False:
+            self.player.SpellBook['HuntersMark'].change_hunters_mark(Target)

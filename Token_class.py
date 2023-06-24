@@ -10,6 +10,8 @@ if __name__ == '__main__':
 #r - restrained
 #hex - is hexed
 #hexn - is hexing
+#hm - is hunters marked
+#hmg - is hunters marking
 #ca - conjured Animals
 #aop - is in aura of protection
 #gb - guiding Bolt
@@ -51,39 +53,41 @@ class TokenManager():
             x.identify()
     
     def update(self):
+        #This is important for effects that could come from multiple sources
+        #That is why this can not be handled via the tokens, because they would not know, if the effect come from more then one token
+        #Concentration on the other hand is handled via the con token class
+
         #Got a new Token, Update Player Stats, like Concentration
-        is_concentrating = False
         self.player.is_hasted = False #preset to false
         self.player.is_hexed = False
         self.player.is_hexing = False
+        self.player.is_hunters_marking = False
+        self.player.is_hunters_marked = False
+        self.player.restrained = False
+        self.player.is_blinded = False
         for x in self.TokenList:
-            #---------------Concentration------------
-            if x.type == 'con': #check for Concentration Tokens
-                if is_concentrating: #was already concentrated
-                    print(self.player.name + ' is double concentrated')
-                    quit()
-                else:
-                    is_concentrating = True #Is concentrating
             #--------------restrained----------------
             if x.subtype == 'r':
                 self.player.restrained = True #set player restrained
-            #--------------haste------------
+            #-------------blinded--------------
+            if x.subtype == 'bl':
+                self.player.is_blinded = True #set player restrained
+            #--------------hasted------------
             if x.subtype == 'h':
                 self.player.is_hasted = True #set player haste
-            #--------------hex
+            #--------------hex---------
             if x.subtype == 'hex':
                 self.player.is_hexed = True #set player hexed
 
             if x.subtype == 'hexn':
                 self.player.is_hexing = True
+            #--------------hunters mark---------
+            if x.subtype == 'hm':
+                self.player.is_hunters_marked = True #set player hunters marked
+
+            if x.subtype == 'hmg':
+                self.player.is_hunters_marking = True
         
-        #----------Update Player Stats
-        if self.player.is_concentrating: #was concentrating before
-            if is_concentrating == False: #but not anymore
-                self.player.DM.say(self.player.name + ' no longer concentrated')
-
-        self.player.is_concentrating = is_concentrating #set player concentration
-
     def checkFor(self, subtype):
         #This Function tests for a Subtype String tag
         #Returns Boolean
@@ -91,14 +95,11 @@ class TokenManager():
             if x.subtype == subtype: return True
         return False
 
-#-----------Trigger Conditions
+#-----------Resolve and Trigger Conditions
     def break_concentration(self):
         for x in self.TokenList:
             if x.type == 'con': #break concentration
                 x.resolve()
-#                self.player.DM.say(self.player.name + ' lost concentration, ', end='')
-                #I think I dont need this, as in all cases the links are resolved first
-                self.player.is_concentrating = False
                 return
 
     def unconscious(self):
@@ -121,6 +122,18 @@ class TokenManager():
         #ONLY called if player.state == 1
         for x in self.TokenList:
             if x.resolveAtTurnStart: x.resolve()
+
+    def hasHitWithAttack(self, target, Dmg, is_ranged, is_spell):
+        #This function triggers all Tokens with the Trigger
+        #Is called from the attack function if player hit with an attack
+        for x in self.TokenList:
+            if x.triggersWhenAttackHasHits: x.hasHitWithAttackTrigger(target, Dmg, is_ranged, is_spell)
+
+    def washitWithAttack(self, target, Dmg, is_ranged, is_spell):
+        #This function triggers all Tokens with the Trigger
+        #Is called from the attack function if player was hit with an attack
+        for x in self.TokenList:
+            if x.triggersWhenHitWithAttack: x.wasHitWithAttackTrigger(target, Dmg, is_ranged, is_spell)
 
     def death(self):
         for x in self.TokenList:
@@ -147,6 +160,11 @@ class Token():
         self.resolveIfAttacked = False
         self.hasATimer = False
         self.timer = 0
+
+        self.triggersWhenAttackHasHits = False
+        self.triggersWhenHitWithAttack = False
+
+
         self.TM.add(self) #add and update the Token to TM
     
     def resolve(self):
@@ -154,7 +172,19 @@ class Token():
         #Is then removed from TM list
         #Should be run last
         self.TM.resolve(self)
-    
+
+    def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
+        #This is a function of a Token
+        #It is called if the Character was hit with an attack
+        #It is a function, that not automatically resolves the token
+        return
+
+    def hasHitWithAttackTrigger(self, target, Dmg, is_ranged, is_spell):
+        #This is a function of a Token
+        #It is called if the Character has hit with an attack
+        #It is a function, that not automatically resolves the token
+        return 
+
     def identify(self):
         print(str(self))
 
@@ -209,10 +239,28 @@ class DockToken(Token):
 class ConcentrationToken(DockToken):
     #This is a token to give to a player when concentrating
     def __init__(self, TM, links):
+        #is a Dock Token, all linked Tokens are resolved, if this Token is resolved
         self.type = 'con'
-        super().__init__(TM, links)
-        #is a Dock Token, all linked Tokens are resolved, if this Token is resolved            
 
+        #Check for concentration before initiating
+        if TM.player.is_concentrating:
+            print(TM.player.name + ' tried to initiate concentration while concentrated')
+            quit()
+        TM.player.is_concentrating = True #set concentration
+
+        super().__init__(TM, links)
+
+    def resolve(self):
+        super().resolve()
+        #After the super().resolve from the dock token all link token are resolved aswell
+        if self.TM.player.is_concentrating:
+            #The if statement is here, because, the resolve function might be called twice
+            #If the dock token is resolved, it resolves all links, which in turn resolve the dock token
+            self.TM.player.is_concentrating = False #No longer concentrated
+            self.TM.player.DM.say(self.TM.player.name + ' no longer concentrated')
+
+
+#-------------Spell Tokens----------
 class EntangledToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
@@ -254,7 +302,14 @@ class HexedToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
         self.resolveWhenUnconcious = True
-    
+        self.triggersWhenHitWithAttack = True #add hex dmg
+
+    def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
+        if attacker.TM == self.origin.TM: #Attacker is hexing you
+            Dmg.add(3.5, 'necrotic')
+            self.TM.player.DM.say('\n' + self.TM.player.name + ' was cursed with a hex: ', end='')
+            return
+
     def resolve(self):
         self.TM.player.DM.say('hex of ' + self.TM.player.name + ' is unbound, ', end='')
         if self.origin.TM.player.CurrentHexToken != False:
@@ -278,6 +333,44 @@ class HexingToken(ConcentrationToken):
         #If concentration breaks, before plyer choose a new hex, then can_choose_new_hex might still be True
         self.TM.player.can_choose_new_hex = False
         self.TM.player.CurrentHexToken = False
+        self.TM.player.is_hexing = False
+        return super().resolve()
+
+class HuntersMarkedToken(LinkToken):
+    def __init__(self, TM, subtype):
+        super().__init__(TM, subtype)
+        self.resolveWhenUnconcious = True
+        self.triggersWhenHitWithAttack = True #add HM dmg
+
+    def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
+        if attacker.TM == self.origin.TM and is_spell == False: #Attacker is hexing you
+            Dmg.add(3.5, self.TM.player.damage_type)
+            self.TM.player.DM.say('\n' + self.TM.player.name + ' was hunters marked: ', end='')
+            return
+
+    def resolve(self):
+        self.TM.player.DM.say('hunters mark of ' + self.TM.player.name + ' is unbound, ', end='')
+        if self.origin.TM.player.CurrentHuntersMarkToken != False:
+            #Only set new hunters Mark, if orgin still concentrated on HM
+            self.origin.TM.player.can_choose_new_hunters_mark = True
+        super().resolve()
+
+class HuntersMarkingToken(ConcentrationToken):
+    def __init__(self, TM, links):
+        self.subtype = 'hmg' #Is hunters marking token
+        super().__init__(TM, links)
+    
+    def unlink(self, CLToken):
+        #This function takes a Concentration Link Token out of the link list
+        self.links.remove(CLToken)
+        #Usually a Concentration Token is resolved if all links are unlinked
+        #But hunters mark can switch Tokens multiple times
+        #The Spell Function creates a new link, the old link is unlinked but the hunters mark Token not resolved
+
+    def resolve(self):
+        #If concentration breaks, before plyer choose a new hunters mark, then can_choose_new_hunters_mark might still be True
+        self.TM.player.can_choose_new_hunters_mark = False
+        self.TM.player.CurrentHuntersMarkToken = False
         return super().resolve()
 
 class GuidingBoltedToken(LinkToken):
@@ -331,6 +424,8 @@ class SummenedToken(LinkToken):
         summon.state = -1
         return super().resolve()
 
+
+#--------------Other Ability Tokens-----------------
 class EmittingProtectionAuraToken(DockToken):
     def __init__(self, TM, links):
         super().__init__(TM, links)
