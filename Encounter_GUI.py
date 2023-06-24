@@ -24,6 +24,7 @@ class Controller(Frame):
         self.DM = DungeonMaster()
         self.Load_Entities()  #Loads the Entities from the files
         self.Load_Archive_Entities() #Loads from Archive
+        self.SelectedEntities = [] #List with names of Entities that have been selcted for sim
 
         #This is used multiple times, so it always calls master Controller
         self.DMG_Types = ['acid', 'cold', 'fire', 'force' , 'lightning', 'thunder', 'necrotic', 'poison', 'psychic' ,'radiant' ,'bludgeoning', 'piercing', 'slashing']
@@ -167,6 +168,7 @@ class Controller(Frame):
            widget.destroy()
         #and rebuild the page
         self.HomePage.Build_Page()
+        self.HomePage.update_add_buttons()
         self.root.update()
         self.HomePage.tkraise()
 
@@ -314,21 +316,42 @@ class HomePage_cl(Frame):
         root.attributes('-topmost',True)
         root.mainloop()
 
-    def init_hero(self, Player):
-        if Player in self.master.Fighters:
-            self.master.Fighters.remove(Player)
+    def init_entity(self, Player):
+        self.master.Fighters.append(Player)
+        if Player in self.master.Heros:
+            self.buttons_heros[self.master.Heros.index(Player)].configure(bootstyle='success solid')
+        else:
+            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger solid')
+
+    def uninit_entity(self, Player):
+        self.master.Fighters.remove(Player)
+        if Player in self.master.Heros:
             self.buttons_heros[self.master.Heros.index(Player)].configure(bootstyle='success outline')
         else:
-            self.master.Fighters.append(Player)
-            self.buttons_heros[self.master.Heros.index(Player)].configure(bootstyle='success solid')
+            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger outline')
+
+
+    def init_hero(self, Player):
+        if Player in self.master.Fighters:
+            self.master.SelectedEntities.remove(Player.name)
+            self.uninit_entity(Player)
+        else:
+            self.master.SelectedEntities.append(Player.name)
+            self.init_entity(Player)
 
     def init_monster(self, Player):
         if Player in self.master.Fighters:
-            self.master.Fighters.remove(Player)
-            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger outline')
+            self.master.SelectedEntities.remove(Player.name)
+            self.uninit_entity(Player)
         else:
-            self.master.Fighters.append(Player)
-            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger solid')
+            self.master.SelectedEntities.append(Player.name)
+            self.init_entity(Player)
+
+    def update_add_buttons(self):
+        entities = self.master.Heros + self.master.MonsterManuel
+        for Player in entities:
+            if Player.name in self.master.SelectedEntities:
+                self.init_entity(Player)
 
 class OtherAbilityEntry(Frame):
     def __init__(self, root, text, abilityName, className, attributeName, isFloatStat = False):
