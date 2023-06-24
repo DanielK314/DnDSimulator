@@ -273,6 +273,22 @@ def DodgeTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
         quit()
     print('Dodge Test')
 
+def SmiteTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
+    Character.knows_smite = True
+    for slot in Character.spell_slot_counter:
+        slot = 0
+    Character.spell_slot_counter[1] = 1
+    Character.tohit = 100
+    Character.has_range_attack = False
+    Character.make_normal_attack_on(Enemy, [Character, Enemy], False)
+
+    if Character.spell_slot_counter[1] != 0:
+        print('didnt use smite')
+        quit()
+    Character.tohit = Character.base_tohit
+    print('Smite Test')
+
+
 if __name__ == '__main__':
     DM = DungeonMaster()
     DM.enable_print()
@@ -305,7 +321,8 @@ if __name__ == '__main__':
         HuntersMarkTest,
         conjureAnimalsTest,
         PrimalCompanionTest,
-        DodgeTest
+        DodgeTest,
+        SmiteTest
     ]
 
     for test in tests:

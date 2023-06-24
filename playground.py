@@ -5,6 +5,9 @@ from Token_class import *
 from Spell_class import *
 import json
 import time
+from random import random
+
+
 
 testdict = {0:{'name':'zero'},
             1:{'name':'zero1'},
@@ -39,12 +42,27 @@ for x in Character.Spell_classes:
     Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
 
-Character.spell_slot_counter[0] = 2
-Character.SpellBook['Hex'].cast([Enemy])
-Character.has_cast_left = True
-Character.SpellBook['MagicMissile'].cast([Enemy])
+Enemy.CHP = 100
+Character.spell_slot_counter = [0,0,0,0,0,0,1,0,0]
+print(Character.AI.want_to_use_smite(Enemy))
 
 
+# n = 100000
+# start_time = time.time()
+# for i in range(n):
+#     string = ''
+#     for j in range(10):
+#         string += str(random())
+#     print(string)
+# run1 = (time.time()-start_time)
+# start_time = time.time()
+# for i in range(n):
+#     string = ''
+#     for j in range(10):
+#         string.join(str(random()))
+#     print(string)
+# print(str(run1))
+# print(str(time.time() - start_time))
 
 # Character.AI.do_your_turn(fight)
 # DM.say('')

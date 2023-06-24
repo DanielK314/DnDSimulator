@@ -73,7 +73,7 @@ class Controller(Frame):
             'AOERechargePropability':{'Text': 'AOE Recharge Propability', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_propability', 'IsFLoatStat': True}
         }
 
-        self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct']
+        self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct', 'fiend']
 
         #Initialize the Pages, attention, Order matters
         self.ArchivePage = Archive(self)

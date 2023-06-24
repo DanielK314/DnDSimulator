@@ -69,6 +69,7 @@ class do_attack(choice):
             for i in range(0,5):
                 if player.spell_slot_counter[4-i] > 0:
                     Score += (4-i)*4.5  #Smite Dmg once
+                    break
 
         #Other Stuff
         if player.dash_target != False: #Do you have a dash target?
@@ -82,12 +83,6 @@ class do_attack(choice):
         player = self.player
         #This function then actually does the attack<<
         if player.action == 1: #if nothing else, attack
-            #Smite if u can and have not cast
-            if player.knows_smite:
-                for i in range(0,5):
-                    if player.spell_slot_counter[4-i] > 0:  #here 0 - lv1 slot
-                        player.initiate_smite(4-i+1)   #here the actual level are important (1 - lv 1 slot)
-                        break
             if player.knows_reckless_attack:
                 player.rackless_attack()
             if player.knows_rage and player.bonus_action == 1 and player.raged == 0:
@@ -113,11 +108,6 @@ class do_offhand_attack(do_attack):
         player = self.player
         #This function does a offhand attack as BA
         if player.bonus_action == 1:
-            if player.knows_smite:
-                for i in range(0,5):
-                    if player.spell_slot_counter[4-i] > 0:  #here 0 - lv1 slot
-                        player.initiate_smite(4-i+1)   #here the actual level are important (1 - lv 1 slot)
-                        break
             if player.knows_reckless_attack:
                 player.rackless_attack()
             target = player.AI.choose_att_target(fight) #choose a target

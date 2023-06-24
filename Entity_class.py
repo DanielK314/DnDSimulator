@@ -259,8 +259,6 @@ class entity:                                          #A Character
         self.knows_smite = False
         if 'Smite' in self.other_abilities:
             self.knows_smite = True
-        #Smites use Spellslots
-        self.smite_initiated = [False, False, False, False, False]      #  lv1, lv2, lv3, ... lv5 (0 = no smite, 1 = smite)
         #Aura of Protection
         self.knows_aura_of_protection = False
         if 'AuraOfProtection' in self.other_abilities:
@@ -1174,16 +1172,18 @@ class entity:                                          #A Character
                 self.DM.say(self.name + ' has entered the polearm range of ' + target.name)
                 target.AI.do_opportunity_attack(self)
 
-    def check_smite(self, Dmg, is_ranged, is_spell):
+    def check_smite(self, target, Dmg, is_ranged, is_spell):
         if is_ranged == False and self.knows_smite and is_spell == False:  #smite only on melee
-            for i in range(0, len(self.smite_initiated)):
-                if self.smite_initiated[i]:             #smite initiated?
-                    if self.spell_slot_counter[i] > 0:
-                        smitedmg = 4.5*(i+2) #i=0 -> lv1 -> 2d8
-                        Dmg.add(smitedmg, 'radiant')
-                        self.spell_slot_counter[i] -= 1
-                        self.smite_initiated[i] = 0
-                        self.DM.say('\n' + self.name + ' uses ' + str(i + 1) + '. lv Smite: +' + str(smitedmg), end='')
+            slot = self.AI.want_to_use_smite(target) #returns slot or false
+            if slot != False and self.spell_slot_counter[slot-1] > 0:
+                #DMG calc
+                if slot > 4: smitedmg = 4.5*5 #5d8 max
+                else: smitedmg = 4.5*(slot + 1) #lv1 -> 2d8
+                if target.type in ['undead', 'fiend']: smitedmg += 4.5 #extra d8 
+
+                Dmg.add(smitedmg, 'radiant')
+                self.spell_slot_counter[slot - 1] -= 1
+                self.DM.say('\n' + self.name + ' uses ' + str(slot) + '. lv Smite: +' + str(smitedmg), end='')
 
     def check_sneak_attack(self, Dmg, advantage_disadvantage, is_spell):
         if self.sneak_attack_dmg > 0:    #Sneak Attack 
@@ -1300,7 +1300,7 @@ class entity:                                          #A Character
             target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
             self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
         #Smite
-            self.check_smite(Dmg, is_ranged, is_spell)
+            self.check_smite(target, Dmg, is_ranged, is_spell)
         #Snackattack
             self.check_sneak_attack(Dmg, advantage_disadvantage, is_spell)
         #Combat Inspiration 
@@ -1332,7 +1332,6 @@ class entity:                                          #A Character
             Dmg = dmg(amount=0)   #0 dmg
             self.DM.say(str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus) + ' miss', end= '')
         target.changeCHP(Dmg, self, is_ranged)  #actually change HP
-        self.reset_all_smites()
         target.last_attacker = self
         if self.knows_wolf_totem:
             target.has_wolf_mark = True #marked with wolf totem
@@ -1538,19 +1537,6 @@ class entity:                                          #A Character
             self.action = 0
             self.DM.say(self.name + ' uses lay on hands')
             target.changeCHP(dmg(-1*heal, 'heal'), self, False)
-
-    def initiate_smite(self, smite_level= 1):
-        if self.knows_smite and self.spell_slot_counter[smite_level - 1]>0:
-            self.smite_initiated[smite_level-1] = True
-        elif self.knows_smite == False:
-            self.DM.say(self.name + ' tried to initiate smite without knowing it')
-            quit()
-        else:
-            self.DM.say(self.name + ' tried to initiate smite without spellslots')
-            quit()
-
-    def reset_all_smites(self):
-        self.smite_initiated = [False, False, False, False, False]
 
     def use_empowered_spell(self):
         rules = [self.knows_empowered_spell, self.sorcery_points > 0, self.empowered_spell==False]
@@ -1783,8 +1769,6 @@ class entity:                                          #A Character
             self.dash_target = False
         self.has_dashed_this_round = False #reset for next round
 
-        self.reset_all_smites()
-
         if self.raged == True:
             self.rage_round_counter += 1 #another round of rage
             if self.rage_round_counter >= 10:
@@ -1817,7 +1801,6 @@ class entity:                                          #A Character
         for i in range(0, len(self.spell_slots)):
             self.spell_slot_counter[i] = self.spell_slots[i]
 
-        self.reset_all_smites()
         self.break_concentration()
         self.TM.resolveAll()
 

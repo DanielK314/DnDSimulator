@@ -174,6 +174,15 @@ class AI:
         if dmgWithGWM >= dmgNoGWM : return True
         else: return False
 
+    def want_to_use_smite(self, target):
+        #This function is called if an attack hit
+        #It should return False or a spell slot to use smite
+
+        if self.player.dmg > target.CHP: return False #is enough
+        if 'radiant' in target.damage_immunity: return False
+        return self.choose_highest_slot(1,4) #over lv4 slot does not increase dmg
+
+
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet
     #The chooser takes all enemies and chooses amoung those to hit with the area of effect
@@ -474,6 +483,29 @@ class AI:
         else:
             return False
 
+    def choose_smallest_slot(self, MinLevel, MaxLevel):
+        #Returns the smallest spellslot that is still available in the range
+        #MaxLevel is cast level, so MaxLevel = 4 means Level 4 Slot
+        #False, no Spell Slot available
+        if MaxLevel > 9: MaxLevel = 9
+        if MinLevel < 1: MinLevel = 1
+        for i in range(MinLevel-1, MaxLevel):
+            if self.player.spell_slot_counter[i]>0:  #i = 0 -> lv1 slot
+                return i+1
+        return False 
+
+    def choose_highest_slot(self, MinLevel, MaxLevel):
+        #Returns the highest spellslot that is still available in the range
+        #MinLevel is cast level, so MinLevel = 4 means Level 4 Slot
+        #False, no Spell Slot available
+        if MaxLevel > 9: MaxLevel = 9
+        if MinLevel < 1: MinLevel = 1
+        for i in reversed(range(MinLevel-1, MaxLevel)):
+            if self.player.spell_slot_counter[i]>0:
+                return i+1
+        return False 
+
+
 #---------Spells
 
     def choose_quickened_cast(self):
@@ -613,8 +645,6 @@ class AI:
 
     def choose_heal_spellslot(self, MinLevel = 1):
         player = self.player
-        spells = spell(player)
-        #It has no meaning which spell is used, I only want to use the choose lowest/highest spell function
         SpellPower = sum([player.spell_slot_counter[i]*np.sqrt((i + 1)) for i in range(0,9)])
         MaxSlot = 0 # Which is the max spell slot left
         for i in reversed(range(0,9)):
@@ -628,11 +658,11 @@ class AI:
             TestLevel -= 1
         
         #Use the TestLevel Slot or the next best lower then it
-        LowLevel = spells.choose_highest_slot(1,TestLevel)
+        LowLevel = self.choose_highest_slot(1,TestLevel)
         if LowLevel != False:
             return LowLevel
         #if no low level left, try higher
-        HighLevel = spells.choose_smallest_slot(TestLevel+1,9)
+        HighLevel = self.choose_smallest_slot(TestLevel+1,9)
         if HighLevel != False:
             return HighLevel
         return False
