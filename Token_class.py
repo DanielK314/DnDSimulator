@@ -16,6 +16,8 @@ if __name__ == '__main__':
 #aop - is in aura of protection
 #gb - guiding Bolt
 #prc - primal compantion
+#gw - great weapon master dock
+#gwa - great weapon attack token 
 
 #All Token of a Entity are handled by its TM Token Manager
 #It has a list with all Token
@@ -105,6 +107,7 @@ class TokenManager():
     def unconscious(self):
         for x in self.TokenList:
             if x.resolveWhenUnconcious: x.resolve()
+            if x.triggersWhenUnconscious: x.getUnconsciousTrigger()
 
     def endOfTurn(self):
         #This Function is called at the end of entities Turn and resolves timers
@@ -139,6 +142,7 @@ class TokenManager():
         for x in self.TokenList:
             if x.resolveWhenUnconcious or x.resolveWhenDead:
                 x.resolve()
+            if x.triggersWhenUnconscious: x.getUnconsciousTrigger()
 
     def isAttacked(self):
         for x in self.TokenList:
@@ -163,6 +167,7 @@ class Token():
 
         self.triggersWhenAttackHasHits = False
         self.triggersWhenHitWithAttack = False
+        self.triggersWhenUnconscious = False
 
 
         self.TM.add(self) #add and update the Token to TM
@@ -184,6 +189,10 @@ class Token():
         #It is called if the Character has hit with an attack
         #It is a function, that not automatically resolves the token
         return 
+
+    def getUnconsciousTrigger(self):
+        #this function is called if the target gets unconscious and has teh trigger
+        return
 
     def identify(self):
         print(str(self))
@@ -258,7 +267,6 @@ class ConcentrationToken(DockToken):
             #If the dock token is resolved, it resolves all links, which in turn resolve the dock token
             self.TM.player.is_concentrating = False #No longer concentrated
             self.TM.player.DM.say(self.TM.player.name + ' no longer concentrated')
-
 
 #-------------Spell Tokens----------
 class EntangledToken(LinkToken):
@@ -424,7 +432,6 @@ class SummenedToken(LinkToken):
         summon.state = -1
         return super().resolve()
 
-
 #--------------Other Ability Tokens-----------------
 class EmittingProtectionAuraToken(DockToken):
     def __init__(self, TM, links):
@@ -475,3 +482,25 @@ class DodgeToken(Token):
     def resolve(self):
         self.TM.player.is_dodged = False
         return super().resolve()
+
+class GreatWeaponToken(DockToken):
+    def __init__(self, TM, links):
+        super().__init__(TM, links)
+        self.subtype = 'gw'
+        self.resolveAtTurnEnd = True #after this turn, all tokens that were given for attacks are resolved
+        self.resolveWhenUnconcious = True #maybe unconcious before end of turn
+
+class GreatWeaponAttackToken(LinkToken):
+    def __init__(self, TM, subtype):
+        super().__init__(TM, subtype)
+        self.subtype = 'gwa'
+        self.triggersWhenUnconscious = True #if you are hit by an attack from a great weapon master, and go unconscious, this tokens triggers
+        #it also resolves at the end of the origins turn
+
+    def getUnconsciousTrigger(self):
+        #This function is called if a player is reduced to 0 HP or lower and has a great weapon attack token
+        #This means it was attacked by a great weapon master in this turn
+        if self.origin.TM.player.bonus_action == 1:
+            self.origin.TM.player.attack_counter += 1 #player gets another attack
+            self.origin.TM.player.bonus_action = 0
+            self.TM.player.DM.say(self.origin.TM.player.name + ' gains extra attack ', end='')

@@ -44,7 +44,11 @@ for x in Character.Spell_classes:
 
 Enemy.CHP = 100
 Character.spell_slot_counter = [0,0,0,0,0,0,1,0,0]
-print(Character.AI.want_to_use_smite(Enemy))
+
+a = [100]
+
+def test(a):
+    a += 10
 
 
 # n = 100000

@@ -288,6 +288,17 @@ def SmiteTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     Character.tohit = Character.base_tohit
     print('Smite Test')
 
+def GreatWeaponMasterTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
+    Character.knows_great_weapon_master = True
+    Character.tohit = 100
+    Character.dmg = 30
+    Character.attack_counter = 1
+    Character.has_range_attack = False
+    Character.make_normal_attack_on(Enemy, [Character, Enemy])
+    if Character.attack_counter != 1:
+        print('GWM didnt give extra attack')
+        quit()
+    print('great weapon master test')
 
 if __name__ == '__main__':
     DM = DungeonMaster()
@@ -322,7 +333,8 @@ if __name__ == '__main__':
         conjureAnimalsTest,
         PrimalCompanionTest,
         DodgeTest,
-        SmiteTest
+        SmiteTest,
+        GreatWeaponMasterTest
     ]
 
     for test in tests:

@@ -1217,6 +1217,58 @@ class entity:                                          #A Character
             self.DM.say('\n' + self.name + ' uses great weapon fighting', end='')
             Dmg.multiply(1.15) #no 1,2 in dmg roll, better dmg on attack
 
+    def pre_hit_modifier(self, target, Dmg, d20, advantage_disadvantage, is_crit, is_spell, is_ranged, is_offhand):
+        #Does the target AI wants to use Reaction to cast shield? 
+        if target.state == 1: #is still alive?
+            if target.reaction == 1 and 'Shield' in target.SpellBook:
+                target.AI.want_to_cast_shield(self, Dmg)  #call the target AI for shield
+
+        Modifier = 0 # Will go add to the attack to hit
+        ACBonus = 0
+        AdditionalDmg = 0 #This is damage that will not be multiplied
+
+        if self.knows_great_weapon_master:
+            rules = [is_spell == False, #No spells or other stuff
+                        is_ranged == False, is_offhand == False]
+            if all(rules): #No spells or range attacks
+                #Do you want to use great_weapon_master
+                if self.AI.want_to_use_great_weapon_master(target, advantage_disadvantage):
+                    Modifier -=5  #-5 to attack but +10 to dmg
+                    AdditionalDmg += 10
+                    self.DM.say('great weapon master, ', end='')
+                
+                if is_crit and self.bonus_action == 1: 
+                    #Just made a crit meele attack, take BA for another attack
+                    self.DM.say('extra attack through crit, ', end='')
+                    self.bonus_action = 0
+                    self.attack_counter += 1
+                
+                #Inititate Token
+                #This Token resolves at end of turn
+                #If target gets unconcious in this turn, the Token triggers and gives another attack to player
+                GreatWeaponToken(self.TM, GreatWeaponAttackToken(target.TM, subtype='gwa'))
+
+        if target.is_combat_inspired and target.inspired > 0:
+            if d20 + self.tohit > target.AC:
+                self.DM.say('combat inspired AC (' + str(target.inspired) + '), ', end='')
+                ACBonus += target.inspired
+                target.inspired = 0
+                target.is_combat_inspired = False
+
+        #Gives Bard Chance to protect himself with cutting Words
+        if target.knows_cutting_words and target.inspiration_counter > 0:
+            if d20 + self.tohit > target.AC:
+                self.DM.say(target.name + ' uses cutting word, ', end='')
+                Modifier += -target.inspiration_die
+                target.inspiration_counter -= 1 #One Use
+                target.reaction = 0 #uses reaction
+        
+        if self.knows_archery and is_ranged and is_spell == False:
+            self.DM.say(self.name + ' uses Archery, ', end='')
+            Modifier += 2 #Archery
+
+        return Modifier, ACBonus, AdditionalDmg
+
     def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False, is_offhand = False, is_spell = False):
     #this is the attack funktion of a player attacking a target with a normak attack
     #if another type of dmg is passed, it will be used, otherwise the player.damage_type is used
@@ -1248,53 +1300,14 @@ class entity:                                          #A Character
         else:
             is_crit = False
 
-        #Does the target AI wants to use Reaction to cast shield? 
-        if target.state == 1: #is still alive?
-            if target.reaction == 1 and 'Shield' in target.SpellBook:
-                target.AI.want_to_cast_shield(self, Dmg)  #call the target AI for shield
+        Modifier, ACBonus, AdditionalDmg  = self.pre_hit_modifier(target, Dmg, d20, advantage_disadvantage, is_crit, is_spell, is_ranged, is_offhand)
 
-        Modifier = 0 # Will go add to the attack to hit
-        ACBonus = 0
-        AdditionalDmg = 0 #This is damage that will not be multiplied
-
-        if self.knows_great_weapon_master:
-            rules = [is_spell == False, #No spells or other stuff
-                     is_ranged == False, is_offhand == False]
-            if all(rules): #No spells or range attacks
-                #Do you want to use great_weapon_master
-                if self.AI.want_to_use_great_weapon_master(target, advantage_disadvantage):
-                    Modifier -=5  #-5 to attack but +10 to dmg
-                    AdditionalDmg += 10
-                    self.DM.say('great weapon master, ', end='')
-                
-                if is_crit and self.bonus_action == 1: 
-                    #Just made a crit meele attack, take BA for another attack
-                    self.bonus_action == 0
-                    self.attack_counter += 1
-
-        if target.is_combat_inspired and target.inspired > 0:
-            if d20 + self.tohit > target.AC:
-                self.DM.say('combat inspired AC (' + str(target.inspired) + '), ', end='')
-                ACBonus += target.inspired
-                self.inspired = 0
-                self.is_combat_inspired = False
-
-        #Gives Bard Chance to protect himself with cutting Words
-        if target.knows_cutting_words and target.inspiration_counter > 0:
-            if d20 + self.tohit > target.AC:
-                self.DM.say(target.name + ' uses cutting word, ', end='')
-                Modifier += -target.inspiration_die
-                target.inspiration_counter -= 1 #One Use
-                target.reaction = 0 #uses reaction
-        
-        if self.knows_archery and is_ranged and is_spell == False:
-            self.DM.say(self.name + ' uses Archery, ', end='')
-            Modifier += 2 #Archery
-
+    #-----------------Hit---------------
         if d20 + tohit + Modifier >= target.AC + ACBonus or is_crit:       #Does it hit
             if is_crit:
-                self.DM.say('Critical Hit!, ',end='')                    
-            self.DM.say('hit: ' + str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus), end= '')
+                self.DM.say('Critical Hit!, ',end='')
+            text = ''.join(['hit: ',str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus)])
+            self.DM.say(text, end= '')
 
         #Tokens
             target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens

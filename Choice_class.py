@@ -136,7 +136,7 @@ class do_inspire(choice):
         if self.player.inspiration_counter == 0: return 0
         if self.player.knows_inspiration == False: return 0
         if self.player.bonus_action != 1: return 0
-        if random() > 0.5: Score = self.player.level*2
+        if random() > 0.2: Score = self.player.level*2
         if self.player.knows_cutting_words and self.player.inspiration_counter == 1:
             Score = Score/2 #keep last inspiration
         return Score
