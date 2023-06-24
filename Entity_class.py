@@ -309,6 +309,12 @@ class entity:                                          #A Character
             self.knows_agonizing_blast = True
 
         #Primal Companion
+        try: self.favored_foe_dmg = float(data['FavoredFoeDmg'])
+        except: self.favored_foe_dmg = 0
+        self.knows_favored_foe = False
+        self.favored_foe_counter = self.proficiency
+        self.has_favored_foe = False
+        if self.favored_foe_dmg > 0: self.knows_favored_foe = True
         self.knows_primal_companion = False
         self.used_primal_companion = False  #only use once per fight
         if 'PrimalCompanion' in self.other_abilities:
@@ -1309,9 +1315,6 @@ class entity:                                          #A Character
             text = ''.join(['hit: ',str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus)])
             self.DM.say(text, end= '')
 
-        #Tokens
-            target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
-            self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
         #Smite
             self.check_smite(target, Dmg, is_ranged, is_spell)
         #Snackattack
@@ -1320,6 +1323,14 @@ class entity:                                          #A Character
             self.check_combat_inspiration(Dmg, is_spell)
         #GreatWeaponFighting
             self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg, is_spell)
+        #Favored Foe
+            if self.knows_favored_foe:
+                if self.AI.want_to_use_favored_foe(target) and self.favored_foe_counter > 0 and self.is_concentrating == False:
+                    self.use_favored_foe(target)
+        #Tokens
+            target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
+            self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
+
         #poison Bite
             if self.knows_poison_bite and self.poison_bites == 1 and is_spell == False and is_offhand == False:
                 self.poison_bites = 0 #only once per turn
@@ -1708,6 +1719,23 @@ class entity:                                          #A Character
         self.DM.say(self.name + ' summons its primal companion')
         self.used_primal_companion = True #used it once 
 
+    def use_favored_foe(self, target):
+        rules = [
+            self.knows_favored_foe, #has the Ability
+            self.favored_foe_counter > 0, #has counter left
+            self.is_concentrating == False 
+        ]
+        errors = [
+            self.name + ' tried to use fav foe without knowing it',
+            self.name + ' tried to use fav foe without uses left',
+            self.name + ' tried to use fav foe while concentrating'
+        ]
+        ifstatements(rules, errors, self.DM).check()
+
+        self.DM.say(''.join(['\n', self.name, ' marked ', target.name, ' as favored foe']), end= '')
+        FavFoeToken(self.TM, FavFoeMarkToken(target.TM, subtype='fm')) #mark target as fav foe
+        self.favored_foe_counter -= 1
+
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
         #This function is called if a player is attacked and damaged in changeCHP
@@ -1834,6 +1862,8 @@ class entity:                                          #A Character
         self.has_additional_great_weapon_attack = False
         self.used_primal_companion = False
         self.primal_companion = False
+        self.favored_foe_counter = self.proficiency
+        self.has_favored_foe = False
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False

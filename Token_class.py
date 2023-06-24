@@ -18,6 +18,8 @@ if __name__ == '__main__':
 #prc - primal compantion
 #gw - great weapon master dock
 #gwa - great weapon attack token 
+#fav - favored foeing
+#fm - fav foe marked
 
 #All Token of a Entity are handled by its TM Token Manager
 #It has a list with all Token
@@ -119,6 +121,7 @@ class TokenManager():
                     x.resolve() #Timer based Token is resolved
             #End of Turn
             if x.resolveAtTurnEnd: x.resolve()
+            if x.triggersWhenEndOfTurn: x.endOfTurnTrigger()
 
     def startOfTurn(self):
         #Attention, is called in entity class and this is calles in do_the_fighting
@@ -168,7 +171,7 @@ class Token():
         self.triggersWhenAttackHasHits = False
         self.triggersWhenHitWithAttack = False
         self.triggersWhenUnconscious = False
-
+        self.triggersWhenEndOfTurn = False
 
         self.TM.add(self) #add and update the Token to TM
     
@@ -192,6 +195,9 @@ class Token():
 
     def getUnconsciousTrigger(self):
         #this function is called if the target gets unconscious and has teh trigger
+        return
+
+    def endOfTurnTrigger(self):
         return
 
     def identify(self):
@@ -504,3 +510,39 @@ class GreatWeaponAttackToken(LinkToken):
             self.origin.TM.player.attack_counter += 1 #player gets another attack
             self.origin.TM.player.bonus_action = 0
             self.TM.player.DM.say(self.origin.TM.player.name + ' gains extra attack ', end='')
+
+class FavFoeMarkToken(LinkToken):
+    def __init__(self, TM, subtype):
+        super().__init__(TM, subtype)
+        self.resolveWhenUnconcious = True
+        self.triggersWhenHitWithAttack = True #add hex dmg
+        self.triggersWhenEndOfTurn = True #regain one use at end of turn
+        self.has_triggered_this_round = False
+
+    def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
+        if self.has_triggered_this_round == False: #no double hit
+            if attacker.TM == self.origin.TM: #Attacker is hexing you
+                Dmg.add(self.origin.TM.player.favored_foe_dmg, self.origin.TM.player.damage_type)
+                self.has_triggered_this_round = True
+                self.TM.player.DM.say('\n' + self.TM.player.name + ' was marked as favored foe: ', end='')
+                return
+
+    def endOfTurnTrigger(self):
+        self.has_triggered_this_round = False
+
+    def resolve(self):
+        self.TM.player.DM.say('favored foe mark of ' + self.TM.player.name + ' is unbound, ', end='')
+        super().resolve()
+
+class FavFoeToken(ConcentrationToken):
+    def __init__(self, TM, links):
+        self.subtype = 'fav' #Is hexing token
+        super().__init__(TM, links)
+        self.TM.player.has_favored_foe = True
+    
+    def resolve(self):
+        self.TM.player.is_hexing = False
+        self.TM.player.has_favored_foe = False
+        return super().resolve()
+
+

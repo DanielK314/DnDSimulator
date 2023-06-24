@@ -182,6 +182,10 @@ class AI:
         if 'radiant' in target.damage_immunity: return False
         return self.choose_highest_slot(1,4) #over lv4 slot does not increase dmg
 
+    def want_to_use_favored_foe(self, target):
+        #more here pls
+        return True
+
 
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet

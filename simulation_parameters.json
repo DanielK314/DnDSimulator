@@ -1,15 +1,23 @@
 {
     "simulation_parameters": {
-        "printing_on": 0,
+        "printing_on": 1,
         "repetitions": 1
     },
     "Entities": [
         {
-            "name": "Herkules",
+            "name": "Ranger",
             "team": 0
         },
         {
-            "name": "Hades",
+            "name": "Goblin",
+            "team": 1
+        },
+        {
+            "name": "Guard 2",
+            "team": 1
+        },
+        {
+            "name": "Guard",
             "team": 1
         }
     ]
