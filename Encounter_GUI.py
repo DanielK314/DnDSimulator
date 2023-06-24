@@ -170,6 +170,16 @@ class Controller(Frame):
         self.root.update()
         self.HomePage.tkraise()
 
+    def change_to_HomePage_deleted(self):
+        self.Load_Entities()
+        #destroy everything in the frame 
+        for widget in self.HomePage.winfo_children():
+           widget.destroy()
+        #and rebuild the page
+        self.HomePage.Build_Page()
+        self.root.update()
+        self.HomePage.tkraise()
+
     def change_to_EntityPage(self):
         self.EntityPage.load_default_stats()
         self.EntityPage.tkraise()
@@ -269,9 +279,6 @@ class HomePage_cl(Frame):
         text_result = open(application_path + '/simulation_result.txt').read()
         open(application_path + '/simulation_result.txt', 'w').write('')
         self.open_message(text_result)
-
-#        old Message Box
-#        messagebox.showinfo('Simulation Info', text_result)
     
     def open_message(self, text):
         root = ttk.Toplevel()
@@ -524,9 +531,6 @@ class EntityPage_cl(Frame):
         ttk.Button(self.SpellFrame, text='Spell Book', bootstyle="outline", command= self.open_spell_book).grid(row=5, column=0, columnspan=6, sticky='w', pady=5)
         self.SpellFrame.grid(row=2, column=0, sticky='ew', pady=5)
 
-
-
-
         ##########Mid Frame
         #Attack Frame 
         self.AttackFrame = ttk.Labelframe(self.MidFrame, text='Attacks', padding = Framepadding)
@@ -773,7 +777,11 @@ class EntityPage_cl(Frame):
 
     def update_ability_mod(self, mod_number, *arg):
         #Updates the Mod Number displayed if the input changes
-        modifier = round((self.AbilityScoreValues[mod_number].get()-10)/2 -0.1)#calc Mod
+        try:
+            score = int(float(self.AbilityScoreEntries[mod_number].get())) #try to convert into int
+        except:
+            score = 0
+        modifier = round((score-10)/2 -0.1)#calc Mod
         if self.AbilityScoreProfList[mod_number].get() == 1:#if proficient
             Prof = self.BasicStatValues[self.BasicStatNames.index('Proficiency')].get()
             if Prof != '':
@@ -1068,7 +1076,7 @@ class EntityPage_cl(Frame):
         #save the Entity changes
 
     def save_Entity(self):
-        self.fetch_GUI_stats() #fetch current data im GUI into stats dict
+        self.fetch_GUI_stats() #fetch current data in GUI into stats dict
         self.save_stats_to_file() #write the data from dict to json file
         self.master.change_to_HomePage_saved() #return to homepage and reload
 
@@ -1095,7 +1103,7 @@ class EntityPage_cl(Frame):
             os.remove(application_path + '/Entities/' + self.name + '.json')
         else:    ## Show an error ##
             print("Error: Entity not found: " + self.name)
-        self.master.change_to_HomePage_saved()
+        self.master.change_to_HomePage_deleted()
 
     def abbort_delete(self, Open_Window):
         Open_Window.destroy()

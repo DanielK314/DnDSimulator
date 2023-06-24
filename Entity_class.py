@@ -1414,6 +1414,7 @@ class entity:                                          #A Character
         if self.wild_shape_HP != 0:
             self.name = self.orignial_name
             self.shape_AC = self.base_AC  #set the shape AC of Entity back to base AC (for more see __init__)
+            self.AC = self.shape_AC #set current AC back
             self.wild_shape_HP = 0
             self.tohit = self.base_tohit
             self.attacks = self.base_attacks
@@ -1675,6 +1676,7 @@ class entity:                                          #A Character
         ]
         ifstatements(rules, errors, self.DM).check()
         companion = self.summon_entity('Primal Companion', archive=True)
+        companion.name = ''.join([self.name, 's Companion'])
         companion.team = self.team  #your team
         #AC
         companion.AC = 13 + self.proficiency
@@ -1786,6 +1788,7 @@ class entity:                                          #A Character
             self.rage_round_counter += 1 #another round of rage
             if self.rage_round_counter >= 10:
                 self.end_rage()
+                self.DM.say('')
         
         if self.has_spiritual_weapon:
             self.SpiritualWeaponCounter += 1
@@ -1810,6 +1813,7 @@ class entity:                                          #A Character
         self.tohit = self.base_tohit
         self.attacks = self.base_attacks
         self.type = self.base_type
+        self.damage_type = self.base_damage_type
 
         for i in range(0, len(self.spell_slots)):
             self.spell_slot_counter[i] = self.spell_slots[i]
@@ -1854,6 +1858,8 @@ class entity:                                          #A Character
         self.initiative = 0
         self.attack_counter = self.attacks
         self.position = self.base_position #Go back 
+        self.is_attacking = False
+
 
         self.modifier = self.base_modifier
 

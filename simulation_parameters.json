@@ -1,31 +1,15 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 3
+        "repetitions": 1
     },
     "Entities": [
         {
-            "name": "Druid Lv 5",
+            "name": "Herkules",
             "team": 0
         },
         {
-            "name": "Bard Lv5",
-            "team": 0
-        },
-        {
-            "name": "Goblin",
-            "team": 1
-        },
-        {
-            "name": "Guard",
-            "team": 1
-        },
-        {
-            "name": "Guard 2",
-            "team": 1
-        },
-        {
-            "name": "Pirate Captain",
+            "name": "Hades",
             "team": 1
         }
     ]

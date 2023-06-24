@@ -68,7 +68,8 @@ class spell:
         self.was_cast += 1  #for spell recap
 
     def announce_cast(self):
-        self.player.DM.say(self.player.name + ' casts ' + self.spell_text + ' at lv.' + str(self.cast_level))
+        text = ''.join([self.player.name,' casts ',self.spell_text,' at lv.',str(self.cast_level)])
+        self.player.DM.say(text)
 
     def score(self, fight, twinned_cast = False):
         #The Score function is called in the Choices Class
@@ -384,10 +385,11 @@ class attack_spell(spell):
         self.cast_level = CastLevel #do that the following dmg_score functions works prop
 
         #Find a suitable target/targts for this spell
+        Choices = [x for x in fight if x.team != self.player.team]
         SpellTargets = []
         for i in range(0,self.number_of_attacks):
             #Append as many targets as attack numbers
-            SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type)
+            SpellTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type)
             if SpellTarget == False: #No target found
                 return self.return_0_score()
             else: SpellTargets.append(SpellTarget)
@@ -395,7 +397,8 @@ class attack_spell(spell):
         #Twin Cast
         if twinned_cast:
             if all([self.is_twin_castable, self.number_of_attacks == 1]):
-                TwinTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type)
+                Choices.remove(SpellTargets[0]) #do not double twin cast
+                TwinTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type)
                 if TwinTarget == False: return self.return_0_score()  #No Target found
                 SpellTargets.append(TwinTarget)
             else:
@@ -859,9 +862,14 @@ class hunters_mark(spell):
     def cast(self, target, cast_level=False, twinned=False):
         if type(target) == list: target = target[0]
         super().cast(target, cast_level, twinned)
+        self.DM.say(' at ' + target.name)
         HuntersMarkToken = HuntersMarkedToken(target.TM, subtype='hm') #hunters mark the Tagret
         self.player.CurrentHuntersMarkToken = HuntersMarkingToken(self.TM, HuntersMarkToken) #Concentration on the caster
         #Assign that Token as the Current Hunters Mark Token of the Player
+
+    def announce_cast(self):
+        text = ''.join([self.player.name,' casts ',self.spell_text,' at lv.',str(self.cast_level)])
+        self.player.DM.say(text, end= '')
 
     def change_hunters_mark(self, target):
         rules = [self.player.can_choose_new_hunters_mark,
@@ -881,7 +889,7 @@ class hunters_mark(spell):
         self.player.CurrentHuntersMarkToken.addLink(NewHuntersMarkToken) #Add the new Token
 
     def score(self, fight, twinned_cast=False):
-        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type=self.TM.player.dmg_type) #Choose best target
+        SpellTarget = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type=self.TM.player.damage_type) #Choose best target
         if SpellTarget == False: return self.return_0_score()
 
         Score = 0
@@ -1325,12 +1333,14 @@ class blight(aoe_dmg_spell):
 
         self.addedDmg = 0  #is later added for plants, undead and constructs
         dmg = self.spell_dmg()
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)]
+        Choices = [x for x in fight if x.team != self.player.team]
+        SpellTargets = [self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)]
         if SpellTargets == [False]: #No Target
             return self.return_0_score()
         if twinned_cast:
             #Secound Target for Twin Cast
-            twin_target = self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)
+            Choices.remove(SpellTargets[0]) #Do not double cast
+            twin_target = self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type)
             if twin_target == False:
                 return self.return_0_score()
             SpellTargets.append(twin_target)

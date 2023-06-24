@@ -352,7 +352,7 @@ class HuntersMarkedToken(LinkToken):
 
     def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
         if attacker.TM == self.origin.TM and is_spell == False: #Attacker is hexing you
-            Dmg.add(3.5, self.TM.player.damage_type)
+            Dmg.add(3.5, self.origin.TM.player.damage_type)
             self.TM.player.DM.say('\n' + self.TM.player.name + ' was hunters marked: ', end='')
             return
 

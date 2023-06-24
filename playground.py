@@ -42,14 +42,17 @@ for x in Character.Spell_classes:
     Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
 
-Enemy.CHP = 100
-Character.spell_slot_counter = [0,0,0,0,0,0,1,0,0]
-
-a = [100]
-
-def test(a):
-    a += 10
-
+Character.position = 0
+Enemy.position = 0
+Enemy.speed = 60
+Character.speed = 60
+Character.has_range_attack = False
+Character.knows_primal_companion = True
+fight = [Character, Enemy]
+Character.summon_primal_companion(fight)
+Character.knows_cunning_action = True
+Enemy.knows_cunning_action = True
+print(Character.enemies_reachable_sort(fight))
 
 # n = 100000
 # start_time = time.time()

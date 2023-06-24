@@ -35,7 +35,7 @@ class do_attack(choice):
 
         #Offhand Attack
         else:
-            if player.attack_counter != 0: return 0 #didnt attack in action
+            if player.is_attacking == False: return 0 #didnt attack in action
             dmg = player.offhand_dmg
             attacks = 1
             if dmg == 0: return 0  #no offhand attack if dmg = 0
