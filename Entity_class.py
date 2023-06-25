@@ -60,7 +60,7 @@ class entity:                                          #A Character
         #random factor between 1 and the RandomWeight
         #Random Weight of 0 is no random, should not be 
         #Random Weight around 2 is average 
-        self.random_weight = 38.4/(self.strategy_level+2.47) -2.95
+        self.random_weight = 38.4/(self.strategy_level+2.47)-2.95
 
     #Position management
         self.speed = int(data['Speed'])
@@ -1359,7 +1359,7 @@ class entity:                                          #A Character
                 target.interception_amount = 0 #only once
         else:
             Dmg = dmg(amount=0)   #0 dmg
-            self.DM.say(''.join(' ',[str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus),' miss']))
+            self.DM.say(''.join([' ',str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus),' miss']))
         target.changeCHP(Dmg, self, is_ranged)  #actually change HP
         target.last_attacker = self
         if self.knows_wolf_totem:

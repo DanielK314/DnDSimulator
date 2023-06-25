@@ -53,6 +53,7 @@ class do_attack(choice):
         if len(TestACs) > 0:
             TestAC = np.mean(TestACs)
         else: TestAC = 16
+        if TestAC > 20: TestAC = 20 #if one has rediculous high armor
         Score = dmg*(20 - TestAC + player.tohit)/20*attacks
 
         #Only on one Attack 

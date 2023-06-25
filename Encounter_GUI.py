@@ -881,6 +881,7 @@ class EntityPage_cl(Frame):
         self.stats['Level'] = Player.level
         self.stats['Hero_or_Villain'] = Player.team
         self.stats['Type'] = Player.type
+        self.stats['StrategyLevel'] = Player.strategy_level
 
         self.stats['Str'] = Player.Str
         self.stats['Dex'] = Player.Dex
@@ -1022,6 +1023,12 @@ class EntityPage_cl(Frame):
         self.stats['AOESaveType'] = self.AOESaveEntry.get()
         self.stats['AOERechargeType'] = self.RechagreType.get()
 
+        #Strategy
+        StrategyLevel = int(self.StrategyEntry.get())
+        if StrategyLevel < 1: StrategyLevel = 1
+        if StrategyLevel > 10: StrategyLevel = 10
+        self.stats['StrategyLevel'] = StrategyLevel
+
     def load_default_stats(self):
         #This is called when the #new character button is pressed, restore default stats 
         self.fetch_default_stats() #fetch default stats into dict 
@@ -1123,6 +1130,8 @@ class EntityPage_cl(Frame):
         self.AOESaveEntry.update()
         self.RechagreType.update()
 
+        #Strategy
+        self.update_Entry(self.StrategyEntry, self.stats['StrategyLevel'])
 
         #update the Modifier Labels
         self.update_all_ability_mod()
@@ -1178,7 +1187,6 @@ class EntityPage_cl(Frame):
         #Make the window jump above all
         root.attributes('-topmost',True)
         root.mainloop()
-
 
 class Archive(Frame):
     def __init__(self, root):
