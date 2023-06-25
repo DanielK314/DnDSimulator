@@ -20,6 +20,8 @@ class DungeonMaster:
         #density: 0 - loose, 1 - normal, 2 - dense
         self.rounds_number = 1
 
+        self.text = ''
+
     def reset(self):
         #This function is called a the start of the fighting and resets the DM
         self.rounds_number = 1
