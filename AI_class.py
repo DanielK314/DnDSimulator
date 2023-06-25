@@ -397,38 +397,39 @@ class AI:
         if target.wild_shape_HP <= dmg: 
             Score = Score*1.4*(random()*RandomWeight + 1)
 
-        #Movement (this section takes a lot of time to run, check it)
-        NeedDash = player.need_dash(target, fight)
-        if NeedDash == 1 and player.knows_cunning_action == False:
-            Score -= PlayerDPS/1.3*(random()*RandomWeight + 1)
-            #Player cant attack this turn if dashed
-        elif NeedDash == 1 and player.knows_cunning_action:
-            Score -= dmg/2*(random()*RandomWeight + 1)
-        elif NeedDash == 1 and player.knows_eagle_totem:
-            Score -= dmg/2*(random()*RandomWeight + 1)
-            #With cunning action/eagle totem less of a Problem
-        if player.will_provoke_Attack(target, fight):
-            if player.knows_eagle_totem:
-                Score -= PlayerDPS/6*(random()*RandomWeight + 1)
-            elif player.CHP > player.HP/3: 
-                Score -= PlayerDPS/4*(random()*RandomWeight + 1)
-            else: 
-                Score -= PlayerDPS/2*(random()*RandomWeight + 1)
+        #this whole part took too long in performance
+        # NeedDash = player.need_dash(target, fight)
+        # if NeedDash == 1 and player.knows_cunning_action == False:
+        #     Score -= PlayerDPS/1.3*(random()*RandomWeight + 1)
+        #     #Player cant attack this turn if dashed
+        # elif NeedDash == 1 and player.knows_cunning_action:
+        #     Score -= dmg/2*(random()*RandomWeight + 1)
+        # elif NeedDash == 1 and player.knows_eagle_totem:
+        #     Score -= dmg/2*(random()*RandomWeight + 1)
+        #     #With cunning action/eagle totem less of a Problem
+        # if player.will_provoke_Attack(target, fight):
+        #     if player.knows_eagle_totem:
+        #         Score -= PlayerDPS/6*(random()*RandomWeight + 1)
+        #     elif player.CHP > player.HP/3: 
+        #         Score -= PlayerDPS/4*(random()*RandomWeight + 1)
+        #     else: 
+        #         Score -= PlayerDPS/2*(random()*RandomWeight + 1)
 
         #Line Score, Frontliner will go for front and mid mainly
         if player.position == 0: #front
-            if target.position == 0: Score = Score*1.2*(random()*RandomWeight + 1)
-            elif target.position == 1: Score = Score*1.1*(random()*RandomWeight + 1)
+            if target.position == 0: Score = Score*1.4
+            elif target.position == 1: Score = Score*1.2
+            elif target.position == 2: Score = Score*0.8
         elif player.position == 1: #Mid
-            if target.position == 0: Score = Score*1.3*(random()*RandomWeight + 1)
-            elif target.position == 1: Score = Score*1.2*(random()*RandomWeight + 1)
-            elif target.position == 2: Score = Score*1.1*(random()*RandomWeight + 1)
-            elif target.position == 3: Score = Score*1.1*(random()*RandomWeight + 1)
+            if target.position == 0: Score = Score*1.4
+            elif target.position == 1: Score = Score*1.3
+            elif target.position == 2: Score = Score*1.1
+            elif target.position == 3: Score = Score*1.1
         elif player.position == 2: #Back
-            if target.position == 2: Score = Score*1.2*(random()*RandomWeight + 1)
-            elif target.position == 3: Score = Score*1.3*(random()*RandomWeight + 1)
+            if target.position == 2: Score = Score*1.3
+            elif target.position == 3: Score = Score*1.4
         elif player.position == 3: #Airborn
-            if target.position == 2: Score = Score*1.2*(random()*RandomWeight + 1)
+            if target.position == 2: Score = Score*1.3
         
         if target.is_a_turned_undead:
             Score = Score/4 #almost no threat at the moment

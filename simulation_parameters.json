@@ -1,11 +1,19 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 1
+        "repetitions": 3
     },
     "Entities": [
         {
-            "name": "Ranger",
+            "name": "Paladin Lv5",
+            "team": 0
+        },
+        {
+            "name": "Ranger Lv5",
+            "team": 0
+        },
+        {
+            "name": "Wizard Lv5",
             "team": 0
         },
         {
@@ -13,11 +21,19 @@
             "team": 1
         },
         {
-            "name": "Guard 2",
+            "name": "Guard",
             "team": 1
         },
         {
-            "name": "Guard",
+            "name": "Pirate Captain",
+            "team": 1
+        },
+        {
+            "name": "Ilias",
+            "team": 1
+        },
+        {
+            "name": "Ogre",
             "team": 1
         }
     ]

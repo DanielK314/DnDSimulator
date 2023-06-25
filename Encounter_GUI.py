@@ -573,7 +573,7 @@ class EntityPage_cl(Frame):
         self.OffHandEntry.grid(row=3, column=1, sticky='w', padx=5, pady=1)
         #Range
         self.Range_Attack_Value = IntVar()
-        ttk.Checkbutton(self.AttackFrame, text='Range Attacks',variable=self.Range_Attack_Value, onvalue=1, offvalue=0).grid(row=1,column=0, sticky='w', pady=5, padx=4)
+        ttk.Checkbutton(self.AttackFrame, text='Uses Range Attacks',variable=self.Range_Attack_Value, onvalue=1, offvalue=0).grid(row=1,column=0, sticky='w', pady=5, padx=4)
 
         StatsFrame.grid(row=0, column=0, sticky='w')
         self.AttackFrame.grid(row=0, column=0, sticky='ewn')

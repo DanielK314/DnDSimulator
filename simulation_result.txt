@@ -1,94 +1,92 @@
 Simulation estimates:
 _____________________
 Difficulty: Insane
-Win Probability: 64.5 %
-Fight Length: 8.0 +/- 2.5
-Team Health: 24.9 %
-Total Party Kill: 35.5 %
+Win Probability: 66.5 %
+Fight Length: 8.2 +/- 2.5
+Team Health: 28.2 %
+Total Party Kill: 33.5 %
 
 This is madness and could bring death to all. Be cautious.
 
 ----DEATHS----
-Bard Lv5 dies: 43.0 %
-Barbarian Lv5 dies: 70.5 %
-Cleric Lv8 dies: 46.5 %
-Druid Lv 5 dies: 47.0 %
-Paladin Lv5 dies: 66.0 %
-Rogue Lv5 dies: 58.0 %
-Sorcerer lv8 dies: 89.0 %
-Warlock Lv5 dies: 89.0 %
+Bard Lv5 dies: 48.0 %
+Barbarian Lv5 dies: 64.5 %
+Cleric Lv8 dies: 42.0 %
+Druid Lv 5 dies: 44.0 %
+Paladin Lv5 dies: 59.0 %
+Rogue Lv5 dies: 51.5 %
+Sorcerer lv8 dies: 87.5 %
+Warlock Lv5 dies: 85.0 %
 Wizard Lv5 dies: 45.0 %
 
 ----PLAYER PERFORMANCE----
-Bard Lv5 : 67/100 
-Barbarian Lv5 : 74/100 
-Cleric Lv8 : 95/100 
+Bard Lv5 : 63/100 
+Barbarian Lv5 : 78/100 
+Cleric Lv8 : 100/100 
 Druid Lv 5 : 7/100 
-Paladin Lv5 : 64/100 
+Paladin Lv5 : 63/100 
 Rogue Lv5 : 53/100 
-Sorcerer lv8 : 79/100 
-Warlock Lv5 : 53/100 
-Wizard Lv5 : 100/100 
+Sorcerer lv8 : 75/100 
+Warlock Lv5 : 54/100 
+Wizard Lv5 : 87/100 
 
 ----DAMAGE DONE----
-Bard Lv5 : 90
-Barbarian Lv5 : 98
-Cleric Lv8 : 127
+Bard Lv5 : 87
+Barbarian Lv5 : 108
+Cleric Lv8 : 137
 Druid Lv 5 : 10
-Paladin Lv5 : 85
-Rogue Lv5 : 71
-Sorcerer lv8 : 105
-Warlock Lv5 : 70
-Wizard Lv5 : 133
-Young Dragon : 190
-Vamire Spawn : 31
-Thoran : 226
-Ogre : 17
-Guard : 12
-Giant Eagle : 9
-Goblin : 2
-Flameskull : 66
+Paladin Lv5 : 87
+Rogue Lv5 : 74
+Sorcerer lv8 : 104
+Warlock Lv5 : 74
+Wizard Lv5 : 120
+Young Dragon : 187
+Vamire Spawn : 29
+Thoran : 218
+Ogre : 20
+Guard : 11
+Giant Eagle : 8
+Goblin : 1
+Flameskull : 64
 Fire Elemental : 62
-Displayer Beast : 13
+Displayer Beast : 14
 
 ----SPELLS CAST----
-Bard Lv5 cast fire bolt: 0.54
-Bard Lv5 cast healing word: 1.67
-Bard Lv5 cast shatter: 3.52
-Bard Lv5 cast haste: 0.25
-Cleric Lv8 cast chill touch: 0.22
-Cleric Lv8 cast guiding bolt: 1.285
-Cleric Lv8 cast healing word: 0.655
-Cleric Lv8 cast armor of agathys: 0.94
-Cleric Lv8 cast shatter: 0.965
-Cleric Lv8 cast spiritual weapon: 0.425
-Cleric Lv8 cast haste: 0.1
-Cleric Lv8 cast blight: 1.535
-Druid Lv 5 cast entangle: 0.62
-Druid Lv 5 cast cure wounds: 0.435
-Druid Lv 5 cast healing word: 0.6
-Paladin Lv5 cast cure wounds: 0.015
-Sorcerer lv8 cast fire bolt: 0.63
-Sorcerer lv8 cast magic missile: 0.05
-Sorcerer lv8 cast guiding bolt: 1.085
+Bard Lv5 cast fire bolt: 0.495
+Bard Lv5 cast healing word: 1.565
+Bard Lv5 cast shatter: 3.31
+Bard Lv5 cast haste: 0.295
+Cleric Lv8 cast chill touch: 0.3
+Cleric Lv8 cast guiding bolt: 1.355
+Cleric Lv8 cast healing word: 0.785
+Cleric Lv8 cast armor of agathys: 0.945
+Cleric Lv8 cast shatter: 1.355
+Cleric Lv8 cast spiritual weapon: 0.385
+Cleric Lv8 cast haste: 0.07
+Cleric Lv8 cast blight: 1.42
+Druid Lv 5 cast entangle: 0.695
+Druid Lv 5 cast cure wounds: 0.505
+Druid Lv 5 cast healing word: 0.76
+Paladin Lv5 cast cure wounds: 0.005
+Sorcerer lv8 cast fire bolt: 0.635
+Sorcerer lv8 cast magic missile: 0.06
+Sorcerer lv8 cast guiding bolt: 1.32
 Sorcerer lv8 cast armor of agathys: 0.245
-Sorcerer lv8 cast shield: 1.42
-Sorcerer lv8 cast fireball: 0.28
-Sorcerer lv8 cast haste: 0.005
-Sorcerer lv8 cast blight: 1.86
-Warlock Lv5 cast eldritch blast: 1.03
-Warlock Lv5 cast hex: 0.18
-Warlock Lv5 cast fireball: 1.28
-Warlock Lv5 cast haste: 0.035
-Wizard Lv5 cast fire bolt: 0.17
-Wizard Lv5 cast burning hands: 0.34
-Wizard Lv5 cast magic missile: 2.04
-Wizard Lv5 cast armor of agathys: 0.49
-Wizard Lv5 cast shield: 0.985
-Wizard Lv5 cast shatter: 0.915
-Wizard Lv5 cast fireball: 1.655
-Wizard Lv5 cast haste: 0.035
-Flameskull cast magic missile: 0.115
-Flameskull cast shield: 0.605
-Flameskull cast shatter: 0.115
-Flameskull cast fireball: 1.0
+Sorcerer lv8 cast shield: 1.315
+Sorcerer lv8 cast fireball: 0.33
+Sorcerer lv8 cast haste: 0.01
+Sorcerer lv8 cast blight: 1.605
+Warlock Lv5 cast eldritch blast: 1.075
+Warlock Lv5 cast hex: 0.225
+Warlock Lv5 cast fireball: 1.215
+Warlock Lv5 cast haste: 0.04
+Wizard Lv5 cast fire bolt: 0.145
+Wizard Lv5 cast burning hands: 0.445
+Wizard Lv5 cast magic missile: 2.285
+Wizard Lv5 cast armor of agathys: 0.585
+Wizard Lv5 cast shield: 1.185
+Wizard Lv5 cast fireball: 1.645
+Wizard Lv5 cast haste: 0.04
+Flameskull cast magic missile: 0.27
+Flameskull cast shield: 0.615
+Flameskull cast fireball: 0.96
