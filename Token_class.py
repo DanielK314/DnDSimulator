@@ -281,7 +281,7 @@ class EntangledToken(LinkToken):
         self.resolveWhenUnconcious = True
     
     def resolve(self):
-        self.TM.player.DM.say(self.TM.player.name + ' breaks Entangle, ', end='')
+        self.TM.player.DM.say(self.TM.player.name + ' breaks Entangle, ', True)
         return super().resolve()
 
 class HastedToken(LinkToken):
@@ -293,7 +293,7 @@ class HastedToken(LinkToken):
         self.timer = 10 #10 Rounds
     
     def resolve(self):
-        self.TM.player.DM.say(self.TM.player.name + ' Haste wares of, ', end='')
+        self.TM.player.DM.say(self.TM.player.name + ' Haste wares of, ', True)
         LostHaseToken(self.TM)
         #This Token will resolve at start of players Turn
         #Will take away action and bonus action
@@ -321,11 +321,11 @@ class HexedToken(LinkToken):
     def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
         if attacker.TM == self.origin.TM: #Attacker is hexing you
             Dmg.add(3.5, 'necrotic')
-            self.TM.player.DM.say('\n' + self.TM.player.name + ' was cursed with a hex: ', end='')
+            self.TM.player.DM.say(self.TM.player.name + ' was cursed with a hex: ', True)
             return
 
     def resolve(self):
-        self.TM.player.DM.say('hex of ' + self.TM.player.name + ' is unbound, ', end='')
+        self.TM.player.DM.say('hex of ' + self.TM.player.name + ' is unbound, ')
         if self.origin.TM.player.CurrentHexToken != False:
             #Only set new hex, is orgin still concentrated on hex
             self.origin.TM.player.can_choose_new_hex = True
@@ -359,11 +359,11 @@ class HuntersMarkedToken(LinkToken):
     def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
         if attacker.TM == self.origin.TM and is_spell == False: #Attacker is hexing you
             Dmg.add(3.5, self.origin.TM.player.damage_type)
-            self.TM.player.DM.say('\n' + self.TM.player.name + ' was hunters marked: ', end='')
+            self.TM.player.DM.say(self.TM.player.name + ' was hunters marked: ', True)
             return
 
     def resolve(self):
-        self.TM.player.DM.say('hunters mark of ' + self.TM.player.name + ' is unbound, ', end='')
+        self.TM.player.DM.say('hunters mark of ' + self.TM.player.name + ' is unbound, ')
         if self.origin.TM.player.CurrentHuntersMarkToken != False:
             #Only set new hunters Mark, if orgin still concentrated on HM
             self.origin.TM.player.can_choose_new_hunters_mark = True
@@ -433,7 +433,7 @@ class SummenedToken(LinkToken):
             print('Should have a summoner')
             quit()
         
-        summon.DM.say(' ' + summon.name + ' vanishes ', end='')
+        summon.DM.say(summon.name + ' vanishes ', True)
         summon.CHP = 0
         summon.state = -1
         return super().resolve()
@@ -471,7 +471,7 @@ class PrimalCompanionToken(LinkToken):
     
     def resolve(self):
         summon = self.TM.player
-        summon.DM.say(' ' + summon.name + ' vanishes ', end='')
+        summon.DM.say(summon.name + ' vanishes ', True)
         summon.CHP = 0
         summon.state = -1
 
@@ -509,7 +509,7 @@ class GreatWeaponAttackToken(LinkToken):
         if self.origin.TM.player.bonus_action == 1:
             self.origin.TM.player.attack_counter += 1 #player gets another attack
             self.origin.TM.player.bonus_action = 0
-            self.TM.player.DM.say(self.origin.TM.player.name + ' gains extra attack ', end='')
+            self.TM.player.DM.say(self.origin.TM.player.name + ' gains extra attack ')
 
 class FavFoeMarkToken(LinkToken):
     def __init__(self, TM, subtype):
@@ -524,14 +524,14 @@ class FavFoeMarkToken(LinkToken):
             if attacker.TM == self.origin.TM: #Attacker is hexing you
                 Dmg.add(self.origin.TM.player.favored_foe_dmg, self.origin.TM.player.damage_type)
                 self.has_triggered_this_round = True
-                self.TM.player.DM.say('\n' + self.TM.player.name + ' was marked as favored foe: ', end='')
+                self.TM.player.DM.say(self.TM.player.name + ' was marked as favored foe: ', True)
                 return
 
     def endOfTurnTrigger(self):
         self.has_triggered_this_round = False
 
     def resolve(self):
-        self.TM.player.DM.say('favored foe mark of ' + self.TM.player.name + ' is unbound, ', end='')
+        self.TM.player.DM.say('favored foe mark of ' + self.TM.player.name + ' is unbound, ')
         super().resolve()
 
 class FavFoeToken(ConcentrationToken):

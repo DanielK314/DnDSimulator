@@ -69,7 +69,7 @@ class spell:
 
     def announce_cast(self):
         text = ''.join([self.player.name,' casts ',self.spell_text,' at lv.',str(self.cast_level)])
-        self.player.DM.say(text)
+        self.player.DM.say(text, True)
 
     def score(self, fight, twinned_cast = False):
         #The Score function is called in the Choices Class
@@ -98,7 +98,7 @@ class spell:
         #Is reaction Spell break here
         if self.is_reaction_spell:
             if self.player.reaction == 0:
-                self.DM.say(self.player.name + ' tired to cast ' + self.spell_name + ', but hast no reaction')
+                print(self.player.name + ' tired to cast ' + self.spell_name + ', but hast no reaction')
                 quit()
             else:
                 self.player.reaction = 0
@@ -106,7 +106,7 @@ class spell:
                 return True
         #check if player has cast this round
         elif self.player.has_cast_left == False:
-            self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but has already cast a spell')
+            print(self.player.name + ' tried to cast ' + self.spell_name + ', but has already cast a spell')
             quit()
         #check is player has action/bonus action left
         elif self.make_action_check() == False:
@@ -162,12 +162,12 @@ class spell:
                     return True
                 #No Bonus Action left
                 else:
-                    self.DM.say(self.player.name + ' tried to quickened cast ' + self.spell_name + ', but has no Bonus Action left')
+                    print(self.player.name + ' tried to quickened cast ' + self.spell_name + ', but has no Bonus Action left')
                     quit()
             #No Quickened Spell
             else:
                 if self.player.action == 0:
-                    self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but has no action left')
+                    self.DM.say(self.player.name + ' tried to cast ' + self.spell_name + ', but has no action left', True)
                     return False
                 else:
                     self.player.action = 0  #action used
@@ -197,7 +197,7 @@ class spell:
             else:
                 self.player.sorcery_points -= cast_level
                 self.player.spell_slot_counter[cast_level -1] += 1 #add another spell Slots as two will be used in the twin cast
-            self.DM.say(self.player.name + ' twinned casts ' + self.spell_name)
+            self.DM.say(self.player.name + ' twinned casts ' + self.spell_name, True)
             if self.is_concentration_spell and self.is_twin_castable:
                 #Must enable these here again, as they are disabled in make_action_check()
                 if self.is_bonus_action_spell:
@@ -230,7 +230,7 @@ class spell:
 
         self.player.sorcery_points -= 2
         self.player.quickened_spell = 1  #see make_spell_check
-        self.DM.say(self.player.name + ' used Quickened Spell')
+        self.DM.say(self.player.name + ' used Quickened Spell', True)
         if cast_level==False:
             cast_level = self.spell_level
         self.cast(targets, cast_level)
@@ -349,7 +349,7 @@ class attack_spell(spell):
         if self.player.empowered_spell:
             dmg = dmg*1.21
             self.player.empowered_spell = False #reset empowered spell
-            self.DM.say('Empowered: ', end='')
+            self.DM.say(' Empowered: ')
 
         #Everything is set up and in order
         #Now make the attack/attacks       
@@ -466,7 +466,7 @@ class aoe_dmg_spell(spell):
         if self.player.empowered_spell:
             damage = damage*1.21
             self.player.empowered_spell = False
-            self.DM.say('Empowered: ', end='')
+            self.DM.say(' Empowered: ')
 
         for target in targets:
             #Every target makes save
@@ -564,7 +564,7 @@ class chill_touch(attack_spell):
         if type(target) == list: target = target[0]
         if dmg_dealed > 0:
             target.chill_touched = True
-            self.DM.say(str(target.name) + ' was chill touched')
+            self.DM.say(str(target.name) + ' was chill touched', True)
     
     def score(self, fight, twinned_cast=False):
         Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
@@ -604,7 +604,7 @@ class eldritch_blast(attack_spell):
 
     def cast(self, targets, cast_level=False, twinned=False):
         if self.player.knows_agonizing_blast:
-            self.DM.say('Agonizing: ', end='')
+            self.DM.say('Agonizing: ')
         super().cast(targets, cast_level, twinned)
 
 #1-Level Spell
@@ -636,7 +636,7 @@ class magic_missile(spell):
         if self.player.empowered_spell:
             damage = damage*1.21
             self.player.empowered_spell = False
-            self.DM.say('Empowered: ', end='')
+            self.DM.say(' Empowered: ')
         super().cast(targets, cast_level, twinned)
         if type(targets) != list: targets = [targets]
         self.hurl_missile(targets, damage)
@@ -722,7 +722,7 @@ class entangle(save_spell):
             quit()
         if cast_level == False: cast_level = self.spell_level
         self.autorize_cast(cast_level) #self.cast_level now set
-        self.player.DM.say(self.player.name + ' casts ' + self.spell_text)
+        self.player.DM.say(self.player.name + ' casts ' + self.spell_text, True)
 
         self.EntangleTokens = [] #List for entagle Tokens
         for target in targets:
@@ -773,7 +773,7 @@ class cure_wounds(spell):
         if type(target) == list: target = target[0]
         super().cast(target, cast_level, twinned)
         heal = 4.5*self.cast_level + self.player.spell_mod
-        self.DM.say(self.player.name + ' touches ' + target.name + ' with magic:', end='')
+#        self.DM.say(self.player.name + ' touches ' + target.name + ' with magic:')
         target.changeCHP(dmg(-heal, 'heal'), self.player, False)
 
 class healing_word(spell):
@@ -791,7 +791,7 @@ class healing_word(spell):
         super().cast(target, cast_level, twinned)
         heal = 2.5*self.cast_level + self.player.spell_mod
         if heal < 0: heal = 1
-        self.DM.say(self.player.name + ' speaks to ' + target.name, end='')
+#        self.DM.say(self.player.name + ' speaks to ' + target.name)
         target.changeCHP(dmg(-heal, 'heal'), self.player, True)
 
 class hex(spell):
@@ -823,7 +823,7 @@ class hex(spell):
                 self.player.name + ' tried to change a hex without having a bonus action']
         ifstatements(rules, errors, self.DM).check()
 
-        self.DM.say(self.player.name + ' changes the hex to ' + target.name)
+        self.DM.say(self.player.name + ' changes the hex to ' + target.name, True)
         self.player.bonus_action = 0 #takes a BA
         self.player.can_choose_new_hex = False
         NewHexToken = HexedToken(target.TM, subtype='hex') #hex the Tagret
@@ -869,7 +869,7 @@ class hunters_mark(spell):
 
     def announce_cast(self):
         text = ''.join([self.player.name,' casts ',self.spell_text,' at lv.',str(self.cast_level)])
-        self.player.DM.say(text, end= '')
+        self.player.DM.say(text, True)
 
     def change_hunters_mark(self, target):
         rules = [self.player.can_choose_new_hunters_mark,
@@ -882,7 +882,7 @@ class hunters_mark(spell):
                 self.player.name + ' tried to change a hunters mark without having a bonus action']
         ifstatements(rules, errors, self.DM).check()
 
-        self.DM.say(self.player.name + ' changes the hunters mark to ' + target.name)
+        self.DM.say(self.player.name + ' changes the hunters mark to ' + target.name, True)
         self.player.bonus_action = 0 #takes a BA
         self.player.can_choose_new_hunters_mark = False
         NewHuntersMarkToken = HuntersMarkedToken(target.TM, subtype='hm') #hunters mark the Tagret
@@ -1086,7 +1086,7 @@ class spiritual_weapon(spell):
         player = self.player
         WeaponTohit = player.spell_mod + player.proficiency #ToHit of weapon
         WeaponDmg = player.SpiritualWeaponDmg #Set by the Spell 
-        self.DM.say('Spiritual Weapon of ' + player.name + ' attacks: ')
+        self.DM.say('Spiritual Weapon of ' + player.name + ' attacks: ', True)
         #Make a weapon Attack against first target
         self.player.attack(target, is_ranged=False, other_dmg=WeaponDmg, damage_type='force', tohit=WeaponTohit, is_spell=True)
         self.player.bonus_action = 0 #It uses the BA to attack
@@ -1168,7 +1168,7 @@ class haste(spell):
         for target in targets:
             HasteToken = HastedToken(target.TM, subtype='h')
             HasteTokens.append(HasteToken)
-            self.DM.say(self.player.name + ' gives haste to ' + target.name)
+            self.DM.say(self.player.name + ' gives haste to ' + target.name, True)
         ConcentrationToken(self.TM, HasteTokens)
         #Player is now concentrated on 1-2 Haste Tokens
 
@@ -1192,6 +1192,7 @@ class haste(spell):
             #Dont haste low Ally
             if x.CHP < x.HP/4:
                 Score -= x.dmg
+            if x.is_summoned: Score = 0 #do not haste summons
 
         CastLevel = self.choose_smallest_slot(3,9) #smalles slot 
         if CastLevel == False: return self.return_0_score()
@@ -1223,7 +1224,7 @@ class conjure_animals(spell):
         for i in range(0,Number):
             animal = player.summon_entity(AnimalName, archive=True)
             animal.name = 'Conjured ' + AnimalName + str(i+1)
-            self.DM.say(animal.name + ' appears')
+            self.DM.say(animal.name + ' appears', True)
             animal.summoner = player
             fight.append(animal)
 
@@ -1316,11 +1317,11 @@ class blight(aoe_dmg_spell):
         if target.type == 'plant':
             extraAdvantage = -1 #disadvantage for plants
             damage = 32 + 8*self.cast_level #max dmg
-            self.DM.say('is plant: ', end ='')
+            self.DM.say('is plant: ')
         save = target.make_save(self.spell_save_type,DC = self.player.spell_dc, extraAdvantage=extraAdvantage)
 
         if target.type == 'undead' or target.type == 'construct':
-            self.DM.say('\nIs undead or construct and immune', end='')
+            self.DM.say('Is undead or construct and immune', True)
             self.apply_dmg(target, damage=0) #no effect on this types        
         elif save >= self.player.spell_dc:
             self.apply_dmg(target, damage=damage/2)        

@@ -78,7 +78,7 @@ class AI:
             while (player.action == 1 or player.bonus_action == 1) and player.state == 1:
                 EnemiesConscious = [x for x in fight if x.state == 1 and x.team != player.team]
                 if len(EnemiesConscious) == 0:
-                    player.DM.say('All enemies defeated')
+                    player.DM.say('All enemies defeated', True)
                     return #nothing left to do
                 
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
@@ -95,7 +95,7 @@ class AI:
                         player.attack_counter > 0,
                         len([x for x in fight if x.team != player.team and x.state == 1]) == 0]
                     if all(rules):
-                        player.DM.say(player.name + ' count not decide what to do!')
+                        player.DM.say(player.name + ' count not decide what to do!', True)
                         quit()
                     return
 
@@ -315,12 +315,14 @@ class AI:
 
         if len(EnemiesInReach) == 0:
             if is_silent == False:
-                player.DM.say('There are no Enemies in reach for ' + player.name + ' to attack')
+                player.DM.say('There are no Enemies in reach for ' + player.name + ' to attack', True)
                 player.move_position() #if no target in range, move a line forward
                 player.attack_counter = 0
             return False  #return, there is no target
         else:
             target_list = EnemiesInReach
+            if self.player.strategy_level < 3:
+                return target_list[int(random()*len(target_list))] #if low strategy, attack random
             #This function is the intelligence behind choosing the best target to hit from a List of given Targets. It chooses reguarding lowest Enemy and AC and so on
             ThreatScore = np.zeros(len(target_list))
             for i in range(0, len(target_list)):
@@ -331,7 +333,11 @@ class AI:
         #This functions helps in decision on a att taget by assining a score
         player = self.player
         Score = 0
-        RandomWeight = 2 #random factor between 1 and the RandomWeight
+        RandomWeight = player.random_weight
+        #random factor between 1 and the RandomWeight
+        #Random Weight of 0 is no random, should not be 
+        #Random Weight around 2 is average 
+        
         TargetDPS = target.dps()
         PlayerDPS = player.dps()
 
@@ -346,12 +352,13 @@ class AI:
         Score += target.heal_given/player.DM.rounds_number*(random()*RandomWeight + 1)
 
         #Target is unconscious or can be One Shot
-        if target.state == 0:
-            Score += TargetDPS*2*(random()*RandomWeight + 1)
+        if player.strategy_level > 5:
+            if target.state == 0: #encourage only if strategic
+                Score += TargetDPS*2*(random()*RandomWeight + 1)
         elif target.CHP <= dmg: #kill is good, oneshot is better
             Score += TargetDPS*4*(random()*RandomWeight + 1)
         elif dmg > target.HP*2: #Can Instakill
-            Score += TargetDPS*10*(random()*RandomWeight + 1)
+            Score += TargetDPS*5*(random()*RandomWeight + 1)
 
         #Hit low ACs
         if (target.AC - player.tohit)/20 < 0.2:
@@ -362,27 +369,28 @@ class AI:
         if (target.AC - player.tohit)/20 > 0.8: #90% no hit prop
             Score -= TargetDPS*(random()*RandomWeight + 1)
 
-        #Attack player with your Vulnerability as dmg
-        if target.last_used_DMG_Type in player.damage_vulnerability:
-            Score += TargetDPS*(random()*RandomWeight + 1)
-        if dmg_type in target.damage_vulnerability:
-            Score += TargetDPS*(random()*RandomWeight + 1)
-        elif dmg_type in target.damage_resistances:
-            Score -= TargetDPS*2*(random()*RandomWeight + 1)
+        if player.strategy_level > 4:
+            #Attack player with your Vulnerability as dmg
+            if target.last_used_DMG_Type in player.damage_vulnerability:
+                Score += TargetDPS*(random()*RandomWeight + 1)
+            if dmg_type in target.damage_vulnerability:
+                Score += TargetDPS*(random()*RandomWeight + 1)
+            elif dmg_type in target.damage_resistances:
+                Score -= TargetDPS*2*(random()*RandomWeight + 1)
 
-        #Spells
-        if player.restrained:
-            for x in player.TM.TokenList:
-                if x.type == 'r' and x.origin == target:
-                    Score += PlayerDPS*2*(random()*RandomWeight + 1) #This player is entangling you 
-        if player.is_hexing: #Check for hexing
-            for HexedToken in player.CurrentHexToken.links:
-                if HexedToken.TM.player == target:
-                    Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
-        if player.is_hunters_marking: #Check for hunters Mark
-            for Token in player.CurrentHuntersMarkToken.links:
-                if Token.TM.player == target:
-                    Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+            #Spells
+            if player.restrained:
+                for x in player.TM.TokenList:
+                    if x.type == 'r' and x.origin == target:
+                        Score += PlayerDPS*2*(random()*RandomWeight + 1) #This player is entangling you 
+            if player.is_hexing: #Check for hexing
+                for HexedToken in player.CurrentHexToken.links:
+                    if HexedToken.TM.player == target:
+                        Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+            if player.is_hunters_marking: #Check for hunters Mark
+                for Token in player.CurrentHuntersMarkToken.links:
+                    if Token.TM.player == target:
+                        Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
 
         if target.is_concentrating: Score += TargetDPS/3*(random()*RandomWeight + 1)
         if target.has_summons: Score += TargetDPS/2*(random()*RandomWeight + 1)

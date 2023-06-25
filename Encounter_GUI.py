@@ -489,6 +489,11 @@ class EntityPage_cl(Frame):
             self.BasicStatLabels[i].grid(row=i+1, column=0, sticky="w")
             self.BasicStatEntries[i].grid(row=i+1, column=1, padx=5)
         self.BasicStatsFrame.grid(row=0, column=0, sticky='w')
+
+        Level_info = 'The level of character. Some functions and abilities are influenced by this level. For beasts and monsters this level is equal to the CR'        
+        ttk.Button(self.BasicStatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Level_info)).grid(row=4, column=2, sticky='e')
+        Hero_info = 'The characters are sorted in heros and villains according to this.'        
+        ttk.Button(self.BasicStatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Hero_info)).grid(row=5, column=2, sticky='e')
         #Type Frame
         self.TypeFrame = Frame(self.BasicFrame)
         Label(self.TypeFrame, text='Character Type:  ').grid(row=0, column=0)
@@ -575,7 +580,15 @@ class EntityPage_cl(Frame):
         self.Range_Attack_Value = IntVar()
         ttk.Checkbutton(self.AttackFrame, text='Uses Range Attacks',variable=self.Range_Attack_Value, onvalue=1, offvalue=0).grid(row=1,column=0, sticky='w', pady=5, padx=4)
 
-        StatsFrame.grid(row=0, column=0, sticky='w')
+        Attack_Info = 'If a charater uses its attack to attack, it attacks with this to hit modifier, no Dex or Str is added. The Dmg is considered to be what is given here. (Smite, Sneack Attack, ... are implemented as other abilities). The number of attacks referres to the action attack, not offhand.'        
+        ttk.Button(StatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Attack_Info)).grid(row=0, column=2, sticky='e')
+        OffHand_Info = 'If a non 0 off hand dmg is given, the character can use its BA to attack offhand, if it attacked as action before. The to hit modifier is considered to be the same.'        
+        ttk.Button(StatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, OffHand_Info)).grid(row=3, column=2, sticky='e')
+        Range_Info = 'If a character attacks and has range attacks actived, it will attack with range. Keep that in mind for things like smite, or great weapon master.'        
+        ttk.Button(self.AttackFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Range_Info)).grid(row=1, column=2, sticky='w')
+
+
+        StatsFrame.grid(row=0, column=0, sticky='ew')
         self.AttackFrame.grid(row=0, column=0, sticky='ewn')
 
         #Position Management
@@ -594,6 +607,10 @@ class EntityPage_cl(Frame):
         ttk.Radiobutton(self.PositionButtonsFrame, text="Back", variable=self.PositionValue, value=2).grid(row=0, column=2)
         self.PositionButtonsFrame.grid(row=2,column=0, columnspan=3, sticky='w')
         self.PositionFrame.grid(row=1, column=0, pady=10, sticky='ew')
+
+        Position_Info = 'The characters are sorted in lines, front, mid and back. Frontliner will take the most attacks and will attack mainly the other front and mid. Backliner will attack with range if they can, they are protected by the Frontliner.'
+        ttk.Button(self.PositionFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Position_Info)).grid(row=0, column=2, sticky='w')
+
 
         #Damage Type
         self.DMGTypes = []
@@ -643,12 +660,25 @@ class EntityPage_cl(Frame):
         self.AbilityDisplayList = StringVar(value=[])
         self.AbilityDisplay = Listbox(self.OtherFrame, listvariable=self.AbilityDisplayList, height=6)
         self.AbilityDisplay.grid(row=0, column=0, columnspan=2, sticky="w", pady=4)
+
+        #Strategy
+        self.StrategyFrame = ttk.Labelframe(self.RightFrame, text= 'Strategy', padding = Framepadding)
+        Label(self.StrategyFrame, text='Strategy Level (1-10)').grid(row=0, column=0, sticky='w')
+        self.StrategyEntry = Entry(self.StrategyFrame, bd=self.Entrybd, width=self.Entrywidth)
+        self.StrategyEntry.grid(row=0, column=1, sticky='w', padx=5, pady=1)
+        Label(self.StrategyFrame, text='Level 2 - Beast').grid(row=1, column=0, columnspan=1, sticky='w')
+        Label(self.StrategyFrame, text='Level 5 - Average Player').grid(row=2, column=0, columnspan=2, sticky='w')
+        Label(self.StrategyFrame, text='Level 8 - Evil Wizard').grid(row=3, column=0, columnspan=2, sticky='w', pady=3)
+        strategy_info = 'The strategy level of a player character should be 5, maybe 6 for smart player. Higher level are intendet for evil monsters that will kill player if they get a chance.'        
+        ttk.Button(self.StrategyFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, strategy_info)).grid(row= 1, column=1, sticky='e')
+
         #Scrollbar
         self.AbilityScrollbar = ttk.Scrollbar(self.OtherFrame, orient='vertical', command=self.AbilityDisplay.yview)
         self.AbilityDisplay['yscrollcommand'] = self.AbilityScrollbar.set
         self.AbilityScrollbar.grid(row=0, column=4, sticky='ns')
-        #SneakAttackDmg
+        #Other
         self.OtherFrame.grid(row=0, column=0,sticky='nw')
+        self.StrategyFrame.grid(row=1, column=0,sticky='enw', pady=5)
 
 
         #Align Left and Right Frame
@@ -1131,6 +1161,24 @@ class EntityPage_cl(Frame):
 
     def abbort_delete(self, Open_Window):
         Open_Window.destroy()
+
+    #-----------Info Windows-----------
+
+    def open_info(self, text):
+        root = ttk.Toplevel()
+        root.geometry("300x180")
+        root.title('Info')
+        # Create A Main frame
+        MainFrame = Frame(root)
+        MainFrame.pack(fill=BOTH,expand=1, pady=10)
+        Label(MainFrame, text=text, wraplength = 250).pack(expand=True, fill=BOTH, padx=10)
+        ttk.Button(MainFrame, text='Back', bootstyle="outline", command=root.destroy).pack()
+
+
+        #Make the window jump above all
+        root.attributes('-topmost',True)
+        root.mainloop()
+
 
 class Archive(Frame):
     def __init__(self, root):

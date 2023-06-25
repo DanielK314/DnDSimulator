@@ -114,3 +114,6 @@ Create a Exe File
 Use the program pyinstall
 'pyinstall --onefile StartSimulator.py'
 Add the rest of the Stuff and .zip it 
+
+Test ttkinter bootstrap
+python -m ttkbootstrap

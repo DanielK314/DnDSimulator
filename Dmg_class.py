@@ -43,15 +43,15 @@ class dmg:
             for i in range(0, len(self.dmg_amount_list)):
                 DMGType  = self.dmg_type_list[i]
                 if DMGType in player.damage_resistances or DMGType in player.additional_resistances:
-                    player.DM.say(str(player.name) + ' is resistant against ' + DMGType)
+                    player.DM.say(str(player.name) + ' is resistant against ' + DMGType, True)
                     self.dmg_amount_list[i] = self.dmg_amount_list[i]/2
                     DMGTotal += self.dmg_amount_list[i]
                 elif DMGType in player.damage_immunity:
-                    player.DM.say(str(player.name) + ' is immune against ' + DMGType)
+                    player.DM.say(str(player.name) + ' is immune against ' + DMGType, True)
                     self.dmg_amount_list[i] = 0
                     DMGTotal += 0
                 elif DMGType in player.damage_vulnerability:
-                    player.DM.say(str(player.name) + ' is vulnarable against ' + DMGType)
+                    player.DM.say(str(player.name) + ' is vulnarable against ' + DMGType, True)
                     self.dmg_amount_list[i] = self.dmg_amount_list[i]*2
                     DMGTotal += self.dmg_amount_list[i]
                 else:

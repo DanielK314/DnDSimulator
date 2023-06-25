@@ -51,6 +51,16 @@ class entity:                                          #A Character
         self.offhand_dmg = float(data['OffHand']) #If 0, no Offhand dmg
 
         self.level = float(data['Level'])           #It is not fully implementet yet, but level is used in some functions already, Level is used as CR for wildshape and co
+        try: self.strategy_level = int(data['StrategyLevel']) #Value 1-10, how strategig a player is, 10 means min. randomness
+        except: self.strategy_level = 5 #Medium startegy
+        if self.strategy_level < 1: self.strategy_level = 1
+        if self.strategy_level > 10: self.strategy_level = 10
+
+        #Calculate Random Weight, for target_attack_score function
+        #random factor between 1 and the RandomWeight
+        #Random Weight of 0 is no random, should not be 
+        #Random Weight around 2 is average 
+        self.random_weight = 38.4/(self.strategy_level+2.47) -2.95
 
     #Position management
         self.speed = int(data['Speed'])
@@ -476,12 +486,12 @@ class entity:                                          #A Character
                 d20 += self.inspired
                 self.inspired = 0
                 self.is_combat_inspired = False
-                self.DM.say('(with inspiration), ', end= '')
+                self.DM.say('(with inspiration), ')
         return d20
 
 #---------------------Character State Handling----------------
     def unconscious(self):
-        self.DM.say(self.name + ' is unconscious ', end='')
+        self.DM.say(self.name + ' is unconscious ', True)
         self.CHP = 0
         self.state = 0   # now unconscious
         self.unconscious_counter += 1 #for statistics
@@ -490,13 +500,12 @@ class entity:                                          #A Character
         self.end_rage()
         self.break_concentration()
         self.TM.unconscious()
-        self.DM.say('\n', end='')
 
         if self.team == 1: #this is for Monsters
             self.state = -1
     
     def get_conscious(self):
-        self.DM.say(self.name + ' regains consciousness')
+        self.DM.say(self.name + ' regains consciousness', True)
         self.state = 1
         self.heal_counter = 0
         self.death_counter = 0
@@ -515,7 +524,7 @@ class entity:                                          #A Character
             if dmg.abs_amount() > 0 and self.reaction == 1 and self.state == 1: #uncanny dodge condition
                 dmg.multiply(1/2) #Uncanny Dodge halfs all dmg
                 self.reaction = 0
-                self.DM.say('with Uncanny Dodge, ', end='')
+                self.DM.say(' Uncanny Dodge')
 
     def check_new_state(self, was_ranged):
         #State Handling after Changing CHP
@@ -527,7 +536,7 @@ class entity:                                          #A Character
             if self.CHP <0:
                 if self.CHP < -1*self.HP:
                     self.death()
-                    self.DM.say(str(self.name) + ' died due to the damage ')
+                    self.DM.say(str(self.name) + ' died due to the damage ', True)
                 else:
                     self.CHP = 0
                     if was_ranged:
@@ -536,20 +545,19 @@ class entity:                                          #A Character
                         self.death_counter += 2
                     if self.death_counter >= 3:
                         self.death()
-                        self.DM.say(str(self.name) + ' was attacked and died')
+                        self.DM.say(str(self.name) + ' was attacked and died', True)
                     else:
-                        self.DM.say(str(self.name) + ' death saves at ' + self.StringDeathCounter())
+                        self.DM.say(str(self.name) + ' death saves at ' + self.StringDeathCounter(), True)
 
         #----------State handling alive
         if self.state == 1:                    #the following is if the player was alive before
             if self.CHP < 0-self.HP:              #if more then -HP dmg, character dies
                 self.death()
-                self.DM.say(str(self.name) + ' died due to the damage ')
+                self.DM.say(str(self.name) + ' died due to the damage ', True)
             if self.CHP <= 0 and self.state != -1:   #if below 0 and not dead, state dying 
                 self.unconscious()
 
     def changeCHP(self, Dmg, attacker, was_ranged):
-        self.DM.say('\n', end='')
         self.check_uncanny_dodge(Dmg)
 
         damage = Dmg.calculate_for(self) #call dmg class, does the Resistances 
@@ -578,50 +586,50 @@ class entity:                                          #A Character
                     AgathysDmg = self.check_for_armor_of_agathys() #returns the agathys dmg
                     if damage < self.THP: #Still THP
                         self.THP -= damage
-                        self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP')
+                        self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP', True)
                         damage = 0
                     else: #THP gone
                         damage = damage - self.THP #substract THP
                         self.THP = 0
-                        self.DM.say('temporaray HP empty, ', end='')
+                        self.DM.say('temporaray HP empty, ')
 
                 #Change CHP
                 if damage > 0: #If still damage left
                     self.CHP -= damage
-                    self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now at: ' + str(round(self.CHP,2)))
+                    self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now at: ' + str(round(self.CHP,2)), True)
 
         #---------Armor of Agathys 
         if AgathysDmg.abs_amount() > 0 and was_ranged == False:
-            self.DM.say(attacker.name + ' is harmed by the Armor of Agathys', end='')
+            self.DM.say(attacker.name + ' is harmed by the Armor of Agathys', True)
             attacker.changeCHP(AgathysDmg, self, was_ranged=False)
 
         #---------Heal
         if damage < 0:               #neg. damage is heal
             if self.state == -1:
-                self.DM.say('This is stupid, dead cant be healed')
+                print('This is stupid, dead cant be healed', True)
                 quit()
             if self.chill_touched: 
                 self.DM.say(self.name + ' is chill touched and cant be healed.')
             elif abs(self.HP - self.CHP) >= abs(damage):
                 self.CHP -= damage    
-                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)))
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)), True)
             else:                     #if more heal then HP, only fill HP up
                 damage = -1*(self.HP - self.CHP)
                 self.CHP -= damage
-                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)))
+                self.DM.say(str(self.name) + ' is healed for: ' + str(-damage) + ' now at: ' + str(round(self.CHP,2)), True)
 
         self.check_new_state(was_ranged)
 
     def change_wild_shape_HP(self, damage, attacker, was_ranged):
         if damage < self.wild_shape_HP:     #damage hits the wild shape
             self.wild_shape_HP -= damage
-            self.DM.say(str(self.name) + ' takes damage in wild shape: ' + str(round(damage,2)) + ' now: ' + str(round(self.wild_shape_HP,2)))
+            self.DM.say(str(self.name) + ' takes damage in wild shape: ' + str(round(damage,2)) + ' now: ' + str(round(self.wild_shape_HP,2)), True)
         else:                  #wild shape breakes, overhang goes to changeCHP
             overhang_damage = abs(self.wild_shape_HP - damage)
             
             #reshape after critical damage
             self.wild_shape_drop()  #function that resets the players stats
-            self.DM.say(str(self.name) + ' wild shape breaks', end='')
+            self.DM.say(str(self.name) + ' wild shape breaks', True)
             #Remember, this function is called in ChangeCHP, so resistances and stuff has already been handled
             #For this reason a 'true' dmg type is passed here
             Dmg = dmg(overhang_damage, 'true')
@@ -636,7 +644,7 @@ class entity:                                          #A Character
             #New THP will break the Armor
         else:
             self.THP = newTHP
-        self.DM.say(self.name + ' gains ' + str(newTHP) + ' temporary HP')
+        self.DM.say(self.name + ' gains ' + str(newTHP) + ' temporary HP', True)
 
     def stand_up(self):
         rules = [self.prone == 1, self.restrained == 0]
@@ -644,7 +652,7 @@ class entity:                                          #A Character
                 self.name + ' tried to stand up, but is restrained']
         ifstatements(rules, errors, self.DM).check()
         self.prone = 0
-        self.DM.say(self.name + ' stood up to end prone')
+        self.DM.say(self.name + ' stood up to end prone', True)
 
     def dps(self):
         #DPS is a reference used to determine the performance of the player so far in the fight
@@ -708,26 +716,26 @@ class entity:                                          #A Character
             else:
                 text += 'disad, '
     
-        if notSilent: self.DM.say(text, end='') #only if not silent
+        if notSilent: self.DM.say(text) #only if not silent
         return saves_adv_dis[which_save] + extraAdvantage
 
     def make_save(self, which_save, extraAdvantage = 0, DC = False):          #0-Str, 1-Dex, 2-Con, 3-Int, 4-Wis, 5-Cha
     #how to disadvantage and advantage here !!!
         save_text = ['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha']
-        self.DM.say(str(self.name) + ' is ', end='')
+        self.DM.say(str(self.name) + ' is ', True)
         Advantage = self.check_advantage(which_save, extraAdvantage = extraAdvantage)
         AuraBonus = self.protection_aura()
         if AuraBonus > 0:
-            self.DM.say('in protection aura, ', end='')
+            self.DM.say('in protection aura, ')
         if Advantage < 0:
             d20_roll = self.rollD20(advantage_disadvantage=-1)
-            self.DM.say('in disadvantage doing a ' + save_text[which_save] + ' save: ', end='')
+            self.DM.say('in disadvantage doing a ' + save_text[which_save] + ' save: ')
         elif Advantage > 0:
             d20_roll = self.rollD20(advantage_disadvantage=1)
-            self.DM.say('in advantage doing a ' + save_text[which_save] + ' save: ', end='')
+            self.DM.say('in advantage doing a ' + save_text[which_save] + ' save: ')
         else:
             d20_roll = self.rollD20(advantage_disadvantage=0)
-            self.DM.say('doing a ' + save_text[which_save] + ' save: ', end='')
+            self.DM.say('doing a ' + save_text[which_save] + ' save: ')
 
         modifier = self.modifier[which_save]
         if save_text[which_save] in self.saves_prof: #Save Proficiency
@@ -737,14 +745,14 @@ class entity:                                          #A Character
         #Legendary Resistances
         if result < DC and self.legendary_resistances_counter > 0:
             self.legendary_resistances_counter -= 1
-            self.DM.say(self.name + ' uses a legendary resistance: ' + str(self.legendary_resistances_counter) + '/' + str(self.legendary_resistances), end= ' ')
+            self.DM.say(self.name + ' uses a legendary resistance: ' + str(self.legendary_resistances_counter) + '/' + str(self.legendary_resistances))
             return 10000  #make sure to pass save
         else:
             #Just display text 
             roll_text = str(int(d20_roll)) + ' + ' + str(int(modifier))
             if AuraBonus != 0: roll_text += ' + ' + str(int(AuraBonus))
             if DC != False: roll_text += ' / ' + str(DC)
-            self.DM.say(roll_text, end=' ')
+            self.DM.say(roll_text)
             return result
 
     def make_death_save(self):
@@ -752,11 +760,11 @@ class entity:                                          #A Character
         AuraBonus = self.protection_aura()
         if AuraBonus > 0:
             d20_roll += AuraBonus
-            self.DM.say('Aura of protection +' + str(int(AuraBonus)) + ' : ', end= '')
-        self.DM.say(self.StringDeathCheck(d20_roll))
+            self.DM.say(''.join(['Aura of protection +',str(int(AuraBonus)),' : ']), True)
+        self.DM.say(self.StringDeathCheck(d20_roll), True)
         if self.death_counter >= 3:
             self.death()
-            self.DM.say(str(self.name) + ' failed death save and died')
+            self.DM.say(str(self.name) + ' failed death save and died', True)
         if self.heal_counter >= 3:
             self.CHP = 1
             self.get_conscious()
@@ -785,10 +793,8 @@ class entity:                                          #A Character
             if damage/2 > 10: saveDC = damage/2
             save_res = self.make_save(2, DC=saveDC)
             if save_res >= saveDC:   #concentration is con save
-                self.DM.say('') #Just to break line
                 return 
             else:
-                self.DM.say('')
                 self.break_concentration()
                 return 
         else:
@@ -806,7 +812,7 @@ class entity:                                          #A Character
             self.agathys_dmg = 0
             self.DM.say(self.name + ' Armor of Agathys breaks, ')
         else:
-            self.DM.say(self.name + ' Armor of Agathys broke without having one')
+            print(self.name + ' Armor of Agathys broke without having one')
             quit()
 
     def break_spiritual_weapon(self):
@@ -819,7 +825,7 @@ class entity:                                          #A Character
     def end_turned_undead(self):
         self.is_a_turned_undead == False #no longer turned
         self.turned_undead_round_counter = 0
-        self.DM.say(self.name + ' is no longer turned')
+        self.DM.say(self.name + ' is no longer turned', True)
 
 #--------------------Position Management----------------------
     def need_dash(self, target, fight, AttackIsRanged = False):
@@ -893,13 +899,13 @@ class entity:                                          #A Character
 
     def use_disengage(self):
         if self.bonus_action == 1 and self.knows_cunning_action:
-            self.DM.say(self.name + ' used cunning action to disengage')
+            self.DM.say(self.name + ' used cunning action to disengage', True)
             self.bonus_action = 0
         elif self.action == 1:
-            self.DM.say(self.name + ' used an action to disengage')
+            self.DM.say(self.name + ' used an action to disengage', True)
             self.action = 0
         else:
-            self.DM.say(self.name + ' tried to disengage, but has no action left')
+            print(self.name + ' tried to disengage, but has no action left', True)
             quit()
 
     def enemies_reachable_sort(self,fight, AttackIsRanged = False):
@@ -973,10 +979,10 @@ class entity:                                          #A Character
 
     def use_dash(self, target):
         if self.knows_cunning_action and self.bonus_action == 1:
-            self.DM.say(self.name + ' uses cunning action to dash to ' + target.name)
+            self.DM.say(self.name + ' uses cunning action to dash to ' + target.name, True)
             is_BADash = True 
         elif self.knows_eagle_totem and self.bonus_action == 1:
-            self.DM.say(self.name + ' uses eagle totem to dash to ' + target.name)
+            self.DM.say(self.name + ' uses eagle totem to dash to ' + target.name, True)
             is_BADash = True
         else:
             is_BADash = False
@@ -989,15 +995,15 @@ class entity:                                          #A Character
             self.attack_counter = 0
             self.dash_target = target
             self.has_dashed_this_round = True
-            self.DM.say(self.name + ' uses dash to get to ' + target.name)
+            self.DM.say(self.name + ' uses dash to get to ' + target.name, True)
         else:
-            self.DM.say(self.name + ' tried to dash, but has no action left')
+            print(self.name + ' tried to dash, but has no action left', True)
             quit()
 
     def move_position(self):
         #This function will be called, if the player hat no target in reach last turn
         if self.position == 1: #if you are usually in mid go front 
-            self.DM.say(self.name + ' moves to the front line')
+            self.DM.say(self.name + ' moves to the front line', True)
             self.position = 0
             self.action = 0 #took the action
 
@@ -1005,7 +1011,7 @@ class entity:                                          #A Character
         if self.action == 0:
             print(self.name + ' tried to dodge without action')
             quit()
-        self.DM.say(self.name + ' uses its turn to dodge')
+        self.DM.say(self.name + ' uses its turn to dodge', True)
         self.action = 0 #uses an action to do
         DodgeToken(self.TM) #give self a dodge token
         #The dodge token sets and resolves self.is_dodge = True
@@ -1013,23 +1019,23 @@ class entity:                                          #A Character
 #-------------------Attack Handling----------------------
     def make_attack_check(self, target, fight, is_off_hand):
         if self.action == 0 and self.is_attacking == False and is_off_hand == False:
-            self.DM.say(self.name + ' tried to attack, but has no action left')
+            print(self.name + ' tried to attack, but has no action left')
             quit()
         elif self.bonus_action == 0 and is_off_hand:
-            self.DM.say(self.name + ' tried to offhand attack, but has no bonus attacks left')
+            print(self.name + ' tried to offhand attack, but has no bonus attacks left')
             quit()
         elif is_off_hand and self.is_attacking == False:
-            self.DM.say(self.name + ' tried to offhand attack, but has not attacked with action')
+            print(self.name + ' tried to offhand attack, but has not attacked with action')
             quit()
         elif self.attack_counter < 1 and is_off_hand == False:
-            self.DM.say(self.name + ' tried to attack, but has no attacks left')
+            print(self.name + ' tried to attack, but has no attacks left')
             quit()
         elif self.state != 1:
-            self.DM.say(self.name +' treid to attack but is not conscious')
+            print(self.name +' treid to attack but is not conscious')
             quit()
         #check if target is in range
         elif target not in self.enemies_reachable_sort(fight):
-            self.DM.say(self.name + ' tried to attack, but ' + target.name + ' is out of reach')
+            print(self.name + ' tried to attack, but ' + target.name + ' is out of reach')
             quit()            
 
     def check_dash_and_op_attack(self, target, fight, NeedDash):
@@ -1057,7 +1063,7 @@ class entity:                                          #A Character
         #target is within reach
         NeedDash = self.need_dash(target, fight)
         if NeedDash == 2:
-            self.DM.say(self.name + ' tried to attack, but ' + target.name + ' is out of reach, this is weird here, check enemies_rechable_sort')
+            print(self.name + ' tried to attack, but ' + target.name + ' is out of reach, this is weird here, check enemies_rechable_sort')
             quit()
         #----attack of opportunity and dash
         self.check_dash_and_op_attack(target, fight, NeedDash)
@@ -1082,7 +1088,7 @@ class entity:                                          #A Character
 
     def provoke_opportunit_attack(self, target):
         if self.no_attack_of_opportunity_yet: #only one per turn 
-            self.DM.say(self.name + ' has provoked an attack of opportunity:')
+            self.DM.say(self.name + ' has provoked an attack of opportunity:', True)
             self.no_attack_of_opportunity_yet = False
             target.AI.do_opportunity_attack(self)
             if self.state != 1: return False
@@ -1096,52 +1102,52 @@ class entity:                                          #A Character
         advantage_disadvantage = 0
         if target.state == 0:
             advantage_disadvantage += 1 #advantage against unconscious
-            self.DM.say(target.name + ' unconscious, ',end='')
+            self.DM.say(target.name + ' unconscious, ')
         if target.reckless == 1:
             advantage_disadvantage += 1
-            self.DM.say(target.name + ' reckless, ',end='')
+            self.DM.say(target.name + ' reckless, ')
         if self.reckless == 1:
             advantage_disadvantage += 1    
-            self.DM.say(self.name + ' reckless, ',end='')
+            self.DM.say(self.name + ' reckless, ')
         if target.knows_eagle_totem and is_opportunity_attack:
             advantage_disadvantage -= 1
             #disadvantage for opp. att against eagle totem
-            self.DM.say('eagle totem, ',end='')
+            self.DM.say('eagle totem, ')
         if target.restrained == 1:
             advantage_disadvantage += 1
-            self.DM.say(target.name + ' restrained, ',end='')
+            self.DM.say(target.name + ' restrained, ')
         if self.restrained == 1:
             advantage_disadvantage -= 1
-            self.DM.say(self.name + ' restrained, ',end='')
+            self.DM.say(self.name + ' restrained, ')
         if target.is_dodged:
             advantage_disadvantage -= 1
-            self.DM.say(target.name + ' dodged, ', end='')
+            self.DM.say(target.name + ' dodged, ',)
         if target.is_blinded:
             advantage_disadvantage += 1
-            self.DM.say(target.name + ' blinded, ',end='')
+            self.DM.say(target.name + ' blinded, ')
         if self.is_blinded:
             advantage_disadvantage -= 1
-            self.DM.say(self.name + ' blinded, ',end='')
+            self.DM.say(self.name + ' blinded, ')
         if target.prone == 1:
             if is_ranged:
                 advantage_disadvantage -=1 #disad for ranged against prone
             else:
                 advantage_disadvantage += 1
-            self.DM.say(target.name + ' prone, ',end='')
+            self.DM.say(target.name + ' prone, ')
         if self.prone == 1:
             advantage_disadvantage -= 1
-            self.DM.say(self.name + ' prone, ',end='')
+            self.DM.say(self.name + ' prone, ')
         if self.knows_assassinate:
             if self.DM.rounds_number == 1 and self.initiative > target.initiative:
                 #Assassins have advantage against player that have not had a turn
                 advantage_disadvantage += 1
-                self.DM.say(self.name + ' assassinte, ', end='')
+                self.DM.say(self.name + ' assassinte, ')
         if target.has_wolf_mark and is_ranged == False:
-            self.DM.say(target.name + ' wolf totem, ', end='')
+            self.DM.say(target.name + ' wolf totem, ')
             advantage_disadvantage += 1
         if target.is_guiding_bolted:
             #This is set by the guidingBolted Token triggered bevore
-            self.DM.say('guiding bolt, ', end='')
+            self.DM.say('guiding bolt, ')
             advantage_disadvantage += 1
             #Being guiding boltet is reset at the make_attack_roll function
             #It should not happen here, as I want to use this function also for AI stuff
@@ -1157,13 +1163,12 @@ class entity:                                          #A Character
         #Roll the Die to hit
         if advantage_disadvantage > 0:
             d20 = self.rollD20(advantage_disadvantage=1)
-            self.DM.say('\nAdvantage: ', end='')
+            self.DM.say('Advantage: ')
         elif advantage_disadvantage < 0:
             d20 = self.rollD20(advantage_disadvantage=-1)
-            self.DM.say('\nDisadvantage: ', end='')
+            self.DM.say('Disadvantage: ')
         else:
             d20 = self.rollD20(advantage_disadvantage=0)
-            self.DM.say('\n', end='')
         #The roll and advantage is returned, advantage is still important for sneak attack
         return d20 , advantage_disadvantage
 
@@ -1175,7 +1180,7 @@ class entity:                                          #A Character
                      target.last_attacker != self, #if attacked before, you didnt just enter their range
                      target.reaction == 1]  #has reaction left
             if all(rules):
-                self.DM.say(self.name + ' has entered the polearm range of ' + target.name)
+                self.DM.say(self.name + ' has entered the polearm range of ' + target.name, True)
                 target.AI.do_opportunity_attack(self)
 
     def check_smite(self, target, Dmg, is_ranged, is_spell):
@@ -1189,7 +1194,7 @@ class entity:                                          #A Character
 
                 Dmg.add(smitedmg, 'radiant')
                 self.spell_slot_counter[slot - 1] -= 1
-                self.DM.say('\n' + self.name + ' uses ' + str(slot) + '. lv Smite: +' + str(smitedmg), end='')
+                self.DM.say(''.join([self.name,' uses ',str(slot),'. lv Smite: +',str(smitedmg)]), True)
 
     def check_sneak_attack(self, Dmg, advantage_disadvantage, is_spell):
         if self.sneak_attack_dmg > 0:    #Sneak Attack 
@@ -1199,18 +1204,18 @@ class entity:                                          #A Character
                      ]
             if all(rules):
                 Dmg.add(self.sneak_attack_dmg, self.damage_type)
-                self.DM.say('\n' + self.name + " Sneak Attack: +" + str(self.sneak_attack_dmg), end='')
+                self.DM.say(''.join([self.name,' Sneak Attack: +', str(self.sneak_attack_dmg)]), True)
                 if self.wailsfromthegrave == 1 and self.wailsfromthegrave_counter > 0:  #if sneak attack hits and wails from the grave is active
                     Dmg.add(self.sneak_attack_dmg/2, 'necrotic')
                     self.wailsfromthegrave_counter -= 1
-                    self.DM.say(' and ' + str(self.sneak_attack_dmg/2) + ' wails from the grave', end='')
+                    self.DM.say(' and ' + str(self.sneak_attack_dmg/2) + ' wails from the grave')
                 self.sneak_attack_counter = 0
 
     def check_combat_inspiration(self, Dmg, is_spell):
         if self.is_combat_inspired and self.inspired > 0 and is_spell == False:
             #Works only for weapon dmg, so other_dmg == False
             Dmg.add(self.inspired, self.damage_type)
-            self.DM.say('\n' + self.name + ' uses combat inspiration: +' + str(self.inspired), end='')
+            self.DM.say(self.name + ' uses combat inspiration: +' + str(self.inspired), True)
             self.inspired = 0
             self.is_combat_inspired = False
 
@@ -1220,7 +1225,7 @@ class entity:                                          #A Character
                 is_ranged == False,     #no range
                 is_spell == False]   #no spells or stuff
         if all(rules):
-            self.DM.say('\n' + self.name + ' uses great weapon fighting', end='')
+            self.DM.say(self.name + ' uses great weapon fighting', True)
             Dmg.multiply(1.15) #no 1,2 in dmg roll, better dmg on attack
 
     def pre_hit_modifier(self, target, Dmg, d20, advantage_disadvantage, is_crit, is_spell, is_ranged, is_offhand):
@@ -1241,11 +1246,11 @@ class entity:                                          #A Character
                 if self.AI.want_to_use_great_weapon_master(target, advantage_disadvantage):
                     Modifier -=5  #-5 to attack but +10 to dmg
                     AdditionalDmg += 10
-                    self.DM.say('great weapon master, ', end='')
+                    self.DM.say('great weapon master, ')
                 
                 if is_crit and self.bonus_action == 1: 
                     #Just made a crit meele attack, take BA for another attack
-                    self.DM.say('extra attack through crit, ', end='')
+                    self.DM.say('extra attack through crit, ')
                     self.bonus_action = 0
                     self.attack_counter += 1
                 
@@ -1256,7 +1261,7 @@ class entity:                                          #A Character
 
         if target.is_combat_inspired and target.inspired > 0:
             if d20 + self.tohit > target.AC:
-                self.DM.say('combat inspired AC (' + str(target.inspired) + '), ', end='')
+                self.DM.say('combat inspired AC (' + str(target.inspired) + '), ')
                 ACBonus += target.inspired
                 target.inspired = 0
                 target.is_combat_inspired = False
@@ -1264,13 +1269,13 @@ class entity:                                          #A Character
         #Gives Bard Chance to protect himself with cutting Words
         if target.knows_cutting_words and target.inspiration_counter > 0:
             if d20 + self.tohit > target.AC:
-                self.DM.say(target.name + ' uses cutting word, ', end='')
+                self.DM.say(target.name + ' uses cutting word, ')
                 Modifier += -target.inspiration_die
                 target.inspiration_counter -= 1 #One Use
                 target.reaction = 0 #uses reaction
         
         if self.knows_archery and is_ranged and is_spell == False:
-            self.DM.say(self.name + ' uses Archery, ', end='')
+            self.DM.say(self.name + ' uses Archery, ')
             Modifier += 2 #Archery
 
         return Modifier, ACBonus, AdditionalDmg
@@ -1290,11 +1295,11 @@ class entity:                                          #A Character
         if tohit == False: tohit = self.tohit
         if self.state != 1: return 0   #maybe already dead because of attack of opp
 
-        self.DM.say(self.name + " -> " + target.name + ', ', end='')
+        self.DM.say(self.name + " -> " + target.name + ', ', True)
 
-        if is_ranged: self.DM.say('ranged, ', end='')
-        else: self.DM.say('melee, ', end='')
-        if is_offhand: self.DM.say('off hand, ', end='')
+        if is_ranged: self.DM.say('ranged, ')
+        else: self.DM.say('melee, ')
+        if is_offhand: self.DM.say('off hand, ')
 
         target.TM.isAttacked()     #Triggers All Tokens, that trigger if target is attacked
 
@@ -1311,9 +1316,9 @@ class entity:                                          #A Character
     #-----------------Hit---------------
         if d20 + tohit + Modifier >= target.AC + ACBonus or is_crit:       #Does it hit
             if is_crit:
-                self.DM.say('Critical Hit!, ',end='')
+                self.DM.say('Critical Hit!, ')
             text = ''.join(['hit: ',str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus)])
-            self.DM.say(text, end= '')
+            self.DM.say(text)
 
         #Smite
             self.check_smite(target, Dmg, is_ranged, is_spell)
@@ -1336,7 +1341,7 @@ class entity:                                          #A Character
                 self.poison_bites = 0 #only once per turn
                 poisonDMG = self.poison_bite_dmg
                 poisonDC = self.poison_bite_dc
-                self.DM.say('\n' + self.name + ' uses poison bite, ', end = '')
+                self.DM.say(self.name + ' uses poison bite, ', True)
                 if target.make_save(2, DC = poisonDC) >= poisonDC: #Con save
                     poisonDMG = poisonDMG/2
                 Dmg.add(poisonDMG, 'poison')
@@ -1349,12 +1354,12 @@ class entity:                                          #A Character
                 Dmg.add(self.rage_dmg, self.damage_type)
         #Interception
             if target.interception_amount > 0:
-                self.DM.say(' Attack was intercepted: -' + str(target.interception_amount), end=' ')
+                self.DM.say(' Attack was intercepted: -' + str(target.interception_amount))
                 Dmg.substract(target.interception_amount)
                 target.interception_amount = 0 #only once
         else:
             Dmg = dmg(amount=0)   #0 dmg
-            self.DM.say(str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus) + ' miss', end= '')
+            self.DM.say(''.join(' ',[str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus),' miss']))
         target.changeCHP(Dmg, self, is_ranged)  #actually change HP
         target.last_attacker = self
         if self.knows_wolf_totem:
@@ -1365,61 +1370,58 @@ class entity:                                          #A Character
     def wild_shape(self, ShapeIndex):
         #ShapeIndex is Index in BeastFroms from entity __init__
         #Wild shape needs an action or a bonus action if you know combat_wild_shape
-        player_can_wild_shape = False
-        if self.wild_shape_uses > 0 and self.wild_shape_HP == 0 and self.knows_wild_shape and self.DruidCR >= self.BeastForms[ShapeIndex]['Level']:
-                if self.bonus_action == 1 and self.knows_combat_wild_shape:
-                    player_can_wild_shape = True
-                    self.bonus_action = 0
-                elif self.action == 1:
-                    player_can_wild_shape = True
-                    self.action = 0
+        rules = [
+            self.knows_wild_shape,
+            self.wild_shape_uses > 0,
+            self.wild_shape_HP == 0,
+            self.DruidCR >= self.BeastForms[ShapeIndex]['Level'],
 
-        if player_can_wild_shape:
-            #A Shape form is choosen and then initiated as entity to use their stats
-            ShapeName = self.BeastForms[ShapeIndex]['Name']
-            NewShape = entity(ShapeName, self.team, self.DM, archive=True)
-        #Wild Shape Properties
-            self.name = self.orignial_name + '(' + ShapeName + ')'
-            self.shape_AC = NewShape.AC
-            self.wild_shape_HP = NewShape.HP
-            self.tohit = NewShape.tohit
-            self.attacks = NewShape.attacks
-            self.type = NewShape.type
-            #number auf Attacks
-            self.attack_counter = self.attacks
-            self.dmg = NewShape.dmg
-            self.wild_shape_name = ShapeName
+        ]
+        errors = [
+                self.name + ' tried to go into wild shape without knowing how',
+                self.name + ' cant go into wild shape anymore',
+                self.name + ' cant go into wild shape while in wildshape',
+                self.name + ' tried to go into a too high CR shape: ' + str(self.BeastForms[ShapeIndex]['Level'])
+        ]
+        ifstatements(rules, errors, self.DM)
 
-            #new modifier
-            self.stats_list = NewShape.stats_list
-            self.modifier = NewShape.modifier
-
-            #new dmg types
-            self.damage_type = NewShape.damage_type
-            self.damage_resistances = NewShape.damage_resistances
-            self.damage_immunity = NewShape.damage_immunity
-            self.damage_vulnerability = NewShape.damage_vulnerability
-
-            self.DM.say(self.name + ' goes into wild shape ' + ShapeName)
-            self.wild_shape_uses -= 1
-
-        #Cant go into wild shape
+        if self.bonus_action == 1 and self.knows_combat_wild_shape:
+            player_can_wild_shape = True
+            self.bonus_action = 0
+        elif self.action == 1:
+            player_can_wild_shape = True
+            self.action = 0
         else:
-            if self.wild_shape_uses < 1:
-                self.DM.say(self.name + ' cant go into wild shape anymore')
-            elif self.action == 0:
-                self.DM.say(self.name + ' cant go into wild shape without an action left')
-            elif self.wild_shape_HP != 0:
-                self.DM.say(self.name + ' cant go into wild shape while in wildshape')
-            elif self.knows_wild_shape == False:
-                self.DM.say(self.name + ' tried to go into wild shape without knowing how')
-                quit()
-            elif self.DruidCR < self.BeastForms[ShapeIndex]['Level']:
-                self.DM.say(self.name + ' tried to go into a too high CR shape: ' + str(self.BeastForms[ShapeIndex]['Level']))
-                quit()
-            else:
-                self.DM.say('ERROR Wild Shape')
+            print('no action left for wildshape')
             quit()
+
+        #A Shape form is choosen and then initiated as entity to use their stats
+        ShapeName = self.BeastForms[ShapeIndex]['Name']
+        NewShape = entity(ShapeName, self.team, self.DM, archive=True)
+        #Wild Shape Properties
+        self.name = self.orignial_name + '(' + ShapeName + ')'
+        self.shape_AC = NewShape.AC
+        self.wild_shape_HP = NewShape.HP
+        self.tohit = NewShape.tohit
+        self.attacks = NewShape.attacks
+        self.type = NewShape.type
+        #number auf Attacks
+        self.attack_counter = self.attacks
+        self.dmg = NewShape.dmg
+        self.wild_shape_name = ShapeName
+
+        #new modifier
+        self.stats_list = NewShape.stats_list
+        self.modifier = NewShape.modifier
+
+        #new dmg types
+        self.damage_type = NewShape.damage_type
+        self.damage_resistances = NewShape.damage_resistances
+        self.damage_immunity = NewShape.damage_immunity
+        self.damage_vulnerability = NewShape.damage_vulnerability
+
+        self.DM.say(self.name + ' goes into wild shape ' + ShapeName, True)
+        self.wild_shape_uses -= 1
 
     def wild_shape_drop(self):
         if self.wild_shape_HP != 0:
@@ -1447,13 +1449,13 @@ class entity:                                          #A Character
         if self.bonus_action == 1 and self.wild_shape_HP != 0:
             self.bonus_action = 0
             self.wild_shape_drop()
-            self.DM.say(self.name + ' drops wild shape')
+            self.DM.say(self.name + ' drops wild shape', True)
         else:
             if self.wild_shape_HP == 0:
-                self.DM.say(self.name + ' tried to drop wild shape, but is not in wild shape')
+                print(self.name + ' tried to drop wild shape, but is not in wild shape')
                 quit()
             else:
-                self.DM.say(self.name + ' tried to drop wild shape, but has no bonus action left')
+                print(self.name + ' tried to drop wild shape, but has no bonus action left')
                 quit()
 
     def use_combat_wild_shape_heal(self, spell_level=1):
@@ -1476,9 +1478,9 @@ class entity:                                          #A Character
     def rackless_attack(self):
         if self.knows_reckless_attack:
             self.reckless = 1
-            self.DM.say(self.name + ' uses reckless Attack')
+            self.DM.say(self.name + ' uses reckless Attack', True)
         else:
-            self.DM.say(self.name + ' tried to reckless Attack without knowing it')
+            print(self.name + ' tried to reckless Attack without knowing it')
             quit()
 
     def rage(self):
@@ -1495,25 +1497,25 @@ class entity:                                          #A Character
             if self.knows_frenzy:
                 self.is_in_frenzy = True
                 rage_text += ' franzy'
-            self.DM.say(rage_text + ' rage')
+            self.DM.say(rage_text + ' rage', True)
         else:
             if self.bonus_action == 0:
-                self.DM.say(self.name + ' tried to rage, but has no bonus action')
+                print(self.name + ' tried to rage, but has no bonus action')
                 quit()
             elif self.knows_rage == False:
-                self.DM.say(self.name + ' tried to rage but cant')
+                print(self.name + ' tried to rage but cant')
                 quit()
 
     def use_frenzy_attack(self):
         if self.is_in_frenzy and self.bonus_action == 1:
-            self.DM.say(self.name + ' uses the bonus action for a frenzy attack')
+            self.DM.say(self.name + ' uses the bonus action for a frenzy attack', True)
             self.attack_counter += 1  #additional attack
             self.bonus_action = 0
         elif self.bonus_action == 0:
-            self.DM.say(self.name + ' tried to use frenzy attack without a bonus action')
+            print(self.name + ' tried to use frenzy attack without a bonus action')
             quit()
         elif self.is_in_frenzy == False:
-            self.DM.say(self.name + ' tried to use franzy attack but is not in a frenzy rage')
+            print(self.name + ' tried to use franzy attack but is not in a frenzy rage')
             quit()
 
     def end_rage(self):
@@ -1521,11 +1523,11 @@ class entity:                                          #A Character
             self.raged = 0
             self.update_additional_resistances()
             self.is_in_frenzy = False
-            self.DM.say(self.name + ' falls out of rage, ', end= '')
+            self.DM.say(self.name + ' falls out of rage, ')
 
     def inspire(self, target):
         if self.bonus_action == 0:  #needs a bonus action
-            self.DM.say(self.name + ' tried to use bardic inspiration but has no bonus action left')
+            print(self.name + ' tried to use bardic inspiration but has no bonus action left')
             quit()
         else:
             if self.inspiration_counter > 0:
@@ -1538,20 +1540,20 @@ class entity:                                          #A Character
                     CombatInspirationText = ' combat'
 
                 self.inspiration_counter -= 1
-                self.DM.say(self.name + CombatInspirationText + ' inspired ' + str(target.name) + ' with awesomeness')
+                self.DM.say(''.join([self.name,CombatInspirationText,' inspired ',str(target.name),' with awesomeness']), True)
             else:
-                self.DM.say(self.name + ' tried to use bardic inspiration but has none left')
+                print(self.name + ' tried to use bardic inspiration but has none left')
                 quit()
 
     def use_lay_on_hands(self, target, heal):
         if self.action == 0:
-            self.DM.say(self.name + ' tried to lay on hands, but has no action left')
+            print(self.name + ' tried to lay on hands, but has no action left')
             quit()
         elif heal <= 0:
-            self.DM.say('Lay on Hands was called with a negative heal')
+            print('Lay on Hands was called with a negative heal')
             quit()
         elif self.lay_on_hands_counter <= 0:
-            self.DM.say(self.name + ' tried to lay on hands, but has no points left')
+            print(self.name + ' tried to lay on hands, but has no points left')
             quit()
         else:
             if self.lay_on_hands_counter > heal:
@@ -1560,7 +1562,7 @@ class entity:                                          #A Character
                 heal = self.lay_on_hands_counter
                 self.lay_on_hands_counter = 0
             self.action = 0
-            self.DM.say(self.name + ' uses lay on hands')
+            self.DM.say(self.name + ' uses lay on hands', True)
             target.changeCHP(dmg(-1*heal, 'heal'), self, False)
 
     def use_empowered_spell(self):
@@ -1573,7 +1575,7 @@ class entity:                                          #A Character
 
         self.sorcery_points -= 1
         self.empowered_spell = True
-        self.DM.say(self.name + ' used Empowered Spell')
+        self.DM.say(self.name + ' used Empowered Spell', True)
 
     def use_action_surge(self):
         rules = [self.knows_action_surge,
@@ -1588,7 +1590,7 @@ class entity:                                          #A Character
         self.action_surge_counter -= 1
         self.action_surge_used = True
         self.action_surge()      #This resets the action, cast and attacks
-        self.DM.say(self.name + ' used action surge')
+        self.DM.say(self.name + ' used action surge', True)
 
     def use_aura_of_protection(self, allies):
         #passiv ability, restes at start of Turn or if unconscious
@@ -1635,7 +1637,7 @@ class entity:                                          #A Character
         ifstatements(rules, errors, self.DM).check()
 
         heal = 5.5 + self.level
-        self.DM.say(self.name + ' used second wind')
+        self.DM.say(self.name + ' used second wind', True)
         self.changeCHP(dmg(-heal,'heal'), self, was_ranged=False)
         self.bonus_action = 0
         self.has_used_second_wind = True #until end of fight
@@ -1649,17 +1651,17 @@ class entity:                                          #A Character
                 self.name + ' tried to use turn undead, but ' + 'has no channel divinity left']
         ifstatements(rules, errors, self.DM).check()
 
-        self.DM.say(self.name + ' uses turn undead:')
+        self.DM.say(self.name + ' uses turn undead:', True)
         for target in targets:
             if target.type == 'undead':
                 if target.make_save(4, DC = self.spell_dc) < self.spell_dc:
                     #Destroy undead
                     if target.level <= self.destroy_undead_CR:
-                        self.DM.say(target.name + ' is destroyed')
+                        self.DM.say(target.name + ' is destroyed', True)
                         target.death()
                     else:
                         target.is_a_turned_undead = True
-                        self.DM.say(target.name + ' is turned')
+                        self.DM.say(target.name + ' is turned', True)
             else:
                 continue
         self.action = 0
@@ -1672,7 +1674,7 @@ class entity:                                          #A Character
         elif self.state != 1:
             return  #not consious
         else:
-            self.DM.say(self.name + ' uses regeneration', end='')
+            self.DM.say(self.name + ' uses regeneration', True)
             heal = dmg(-self.start_of_turn_heal, type='heal')
             self.changeCHP(heal, self, was_ranged=False)
 
@@ -1716,7 +1718,7 @@ class entity:                                          #A Character
         if self.AI.primalCompanionChoice not in self.AI.Choices:
             self.AI.Choices.append(self.AI.primalCompanionChoice) #activate this choice, to attaack with companion 
         PrimalBeastMasterToken(self.TM, PrimalCompanionToken(companion.TM, subtype='prc')) #The Token will resolve if one of them dies
-        self.DM.say(self.name + ' summons its primal companion')
+        self.DM.say(self.name + ' summons its primal companion', True)
         self.used_primal_companion = True #used it once 
 
     def use_favored_foe(self, target):
@@ -1732,7 +1734,7 @@ class entity:                                          #A Character
         ]
         ifstatements(rules, errors, self.DM).check()
 
-        self.DM.say(''.join(['\n', self.name, ' marked ', target.name, ' as favored foe']), end= '')
+        self.DM.say(''.join([self.name, ' marked ', target.name, ' as favored foe']), True)
         FavFoeToken(self.TM, FavFoeMarkToken(target.TM, subtype='fm')) #mark target as fav foe
         self.favored_foe_counter -= 1
 
@@ -1816,7 +1818,6 @@ class entity:                                          #A Character
             self.rage_round_counter += 1 #another round of rage
             if self.rage_round_counter >= 10:
                 self.end_rage()
-                self.DM.say('')
         
         if self.has_spiritual_weapon:
             self.SpiritualWeaponCounter += 1
@@ -1943,7 +1944,7 @@ class entity:                                          #A Character
         if self.knows_dragons_breath and self.dragons_breath_is_charged and self.action == 1:
             if type(targets) != list: #maybe only one Element was passed
                 targets = [targets]  #make it a list then
-            self.DM.say(self.name + ' is breathing fire')
+            self.DM.say(self.name + ' is breathing fire', True)
             self.dragons_breath_is_charged = False
             for target in targets:
                 DragonBreathDC = 12 + self.modifier[2] + int((self.level - 10)/3)  #Calculate the Dragons Breath DC 
@@ -1963,7 +1964,7 @@ class entity:                                          #A Character
         if self.knows_recharge_aoe and self.recharge_aoe_is_charged and self.action == 1:
             if type(targets) != list: #maybe only one Element was passed
                 targets = [targets]  #make it a list then
-            self.DM.say(self.name + ' uses its recharge AOE')
+            self.DM.say(self.name + ' uses its recharge AOE', True)
             self.recharge_aoe_is_charged = False
             for target in targets:
                 target.last_attacker = self    #target remembers last attacker
@@ -1979,13 +1980,13 @@ class entity:                                          #A Character
 
     def use_spider_web(self, target):
         if self.knows_spider_web and self.spider_web_is_charged and self.action == 1:
-            self.DM.say(self.name + ' is shooting web')
+            self.DM.say(self.name + ' is shooting web', True)
             self.spider_web_is_charged = False
             target.last_attacker = self #remember last attacker
             SpiderWebDC = 9 + self.Dex
             #Shoot Web at random Target
             if target.make_save(1, DC = SpiderWebDC) < SpiderWebDC:
-                self.DM.say('\n' + target.name + ' is caugth in the web and restrained')
+                self.DM.say(target.name + ' is caugth in the web and restrained', True)
                 SpiderToken = Token(target.TM)
                 SpiderToken.subtype = 'r'  #restrain Target, no break condition yet
             self.action = 0
