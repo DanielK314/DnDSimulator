@@ -126,6 +126,17 @@ class do_offhand_attack(do_attack):
             else:
                 player.make_normal_attack_on(target, fight, is_off_hand=True)  #attack that target
 
+class do_dodge(choice):
+    def __init__(self, player):
+        super().__init__(player)
+    
+    def score(self, fight):
+        if self.player.action == 0: return 0
+        else: return 1  #For now
+    
+    def execute(self, fight):
+        self.player.use_dodge()
+
 class do_inspire(choice):
     def __init__(self, player):
         super().__init__(player)
@@ -337,6 +348,37 @@ class do_monster_ability(choice):
         else:
             #No enemies left
             player.action = 0 #use acrion, nothing left to attack
+
+class attack_with_primal_companion(choice):
+    def __init__(self, player):
+        super().__init__(player)
+
+    def score(self, fight):
+        if self.player.primal_companion == False: return 0
+        companion = self.player.primal_companion
+        if companion.state != 1: return 0
+        if self.player.bonus_action == 0: return 0
+        if self.player.primal_companion.action == 0: return 0
+        if self.player.primal_companion.attack_counter <= 0: return 0
+        return (companion.dmg + companion.value())/2*companion.attacks
+    
+    def execute(self, fight):
+        companion = self.player.primal_companion
+        rules = [
+            companion != False,
+            companion.attack_counter > 0,
+            companion.action == 1,
+            companion.state == 1,
+            self.player.bonus_action == 1
+        ]
+        if all(rules):
+            while companion.attack_counter > 0 and companion.state == 1:  #attack enemies as long as attacks are free and alive (attack of opportunity might change that)
+                target = companion.AI.choose_att_target(fight) #choose a target
+                if target == False: #there might be no target
+                    return
+                else:
+                    companion.make_normal_attack_on(target, fight)  #attack that target
+            self.player.bonus_action = 0
 
 class do_heal(choice):
     def __init__(self, player):

@@ -30,14 +30,31 @@ class Controller(Frame):
 
         self.All_Spells = self.Archive_Heros[0].SpellNames #see Entity Class
 
-        self.All_Abilities = ['ActionSurge', 'ImprovedCritical', 'SecondWind', 'Archery', 'GreatWeaponFighting', 'Interception',
+        self.All_Abilities = ['ActionSurge', 'ImprovedCritical', 'SecondWind',
+        'Archery', 'GreatWeaponFighting', 'Interception',
         'UncannyDodge', 'CunningAction', 'Assassinate', 'WailsFromTheGrave',
         'Rage', 'RecklessAttack', 'Frenzy', 'BearTotem', 'EagleTotem', 'WolfTotem',
         'Smite', 'AuraOfProtection', 'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
-        'WildShape', 'CombatWildShape', 'Inspiration', 'CuttingWords', 'CombatInspiration',
+        'WildShape', 'CombatWildShape',
+        'Inspiration', 'CuttingWords', 'CombatInspiration',
+        'PrimalCompanion', 'BestialFury',
         'AgonizingBlast','TurnUndead',
         'GreatWeaponMaster', 'PolearmMaster',
         'DragonsBreath', 'SpiderWeb', 'PoisonBite', 'RechargeAOE']
+
+        self.Class = {0:{'name':'Fighter', 'Number':3},
+                1:{'name':'Fighting Style', 'Number':3},
+                2:{'name':'Rogue', 'Number': 4},
+                3:{'name':'Barbarian', 'Number':6},
+                4:{'name':'Paladin', 'Number':2},
+                5:{'name':'Sorcerer', 'Number':3},
+                6:{'name':'Druid', 'Number':2},
+                7:{'name':'Bard', 'Number':3},
+                8:{'name':'Ranger', 'Number':2},
+                9:{'name':'Warlock', 'Number':1},
+                10:{'name':'Cleric', 'Number':1},
+                11:{'name':'Feats', 'Number':2},
+                12:{'name':'Monster', 'Number':4}}
 
         self.All_Other_Ability_Entries = {
             'ActionSurges':{'Text': 'Action Surges', 'ClassName': 'Fighter', 'AttributeName': 'action_surges', 'IsFLoatStat': False},
@@ -657,21 +674,10 @@ class EntityPage_cl(Frame):
         self.Abilities1Frame = Frame(self.AbilitiesFrame)
         Break1 = 4
         self.Abilities2Frame = Frame(self.AbilitiesFrame)
-        Break2 = 8
+        Break2 = 9
         self.Abilities3Frame = Frame(self.AbilitiesFrame)
         #Label Frames for the Abilities
-        Class = {0:{'name':'Fighter', 'Number':3},
-                1:{'name':'Fighting Style', 'Number':3},
-                2:{'name':'Rogue', 'Number': 4},
-                3:{'name':'Barbarian', 'Number':6},
-                4:{'name':'Paladin', 'Number':2},
-                5:{'name':'Sorcerer', 'Number':3},
-                6:{'name':'Druid', 'Number':2},
-                7:{'name':'Bard', 'Number':3},
-                8:{'name':'Warlock', 'Number':1},
-                9:{'name':'Cleric', 'Number':1},
-                10:{'name':'Feats', 'Number':2},
-                11:{'name':'Monster', 'Number':4}}
+        Class = self.master.Class
         Class_Frames = []
         ChoosenFrame = self.Abilities1Frame
         for i in range(0, len(Class)):

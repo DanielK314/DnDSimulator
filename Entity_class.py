@@ -10,7 +10,7 @@ import json
 import os
 import sys
 
-class entity:                                          #A NPC or PC
+class entity:                                          #A Character
     def __init__(self, name, team, DM, archive = False):                  #Atk - Attack [+x to Hit, mean dmg]
 
         if getattr(sys, 'frozen', False):
@@ -33,7 +33,6 @@ class entity:                                          #A NPC or PC
         self.name = str(name)
         self.orignial_name = str(name)        #restore name after zB WildShape
         self.team = team                                      #which Team they fight for
-        self.NPC = 0                        #NPCs like Skeletons
         self.type = str(data['Type'])
         self.base_type = self.type
 
@@ -45,8 +44,7 @@ class entity:                                          #A NPC or PC
         self.tohit = int(data['To_Hit'])
         self.base_tohit = int(data['To_Hit'])
 
-
-        self.base_attacks = int(data['Attacks'])    #attacks of original form                           #number auf Attacks
+        self.base_attacks = int(data['Attacks'])    #attacks of original form   #number auf Attacks
         self.attacks = self.base_attacks  #at end_of_turn attack_counter reset to self.attack
         self.dmg = float(data['DMG'])           #dmg per attack
         self.base_dmg = float(data['DMG'])
@@ -302,11 +300,20 @@ class entity:                                          #A NPC or PC
         #DestroyUndead
         self.destroy_undead_CR = float(data['DestroyUndeadCR'])
 
-
         #Agonizing Blast
         self.knows_agonizing_blast = False
         if 'AgonizingBlast' in self.other_abilities:
             self.knows_agonizing_blast = True
+
+        #Primal Companion
+        self.knows_primal_companion = False
+        self.used_primal_companion = False  #only use once per fight
+        if 'PrimalCompanion' in self.other_abilities:
+            self.knows_primal_companion = True
+        self.primal_companion = False 
+        self.knows_beastial_fury = False
+        if 'BestialFury' in self.other_abilities:
+            self.knows_beastial_fury = True
 
     #Feats
         #Great Weapon Master
@@ -445,6 +452,7 @@ class entity:                                          #A NPC or PC
         self.restrained = 0             #will be ckeckt wenn attack/ed 
         self.prone = 0
         self.blinded = 0   
+        self.is_dodged = False    #is handled by the DodgedToken
 
         self.last_attacker = 0
         self.dmg_dealed = 0
@@ -686,25 +694,31 @@ class entity:                                          #A NPC or PC
 
     def check_advantage(self, which_save, extraAdvantage = 0, notSilent = True):
         saves_adv_dis = [0,0,0,0,0,0] #calculate all factors to saves:
+        text = '' #collect text to say
         if self.restrained == 1:  #disadvantage in dex if restrained
             saves_adv_dis[1] -= 1
-            if notSilent: self.DM.say('restrained, ', end='')
+            text += 'restrained, '
+        if self.is_dodged:
+            saves_adv_dis[1] += 1  #dodge adv on dex save
+            text += 'restrained, '
         if self.raged == 1:   #str ad if raged
             saves_adv_dis[0] += 1
-            if notSilent: self.DM.say('raging, ', end='')
+            text += 'raging, '
         if self.is_hasted:
             saves_adv_dis[1] += 1
-            if notSilent: self.DM.say('hasted, ', end='')
+            text += 'hasted, '
         if self.is_hexed:
             HexType = int(random()*2 + 1) #random hex disad at Str, Dex or Con
             HexText = ['Str ', 'Dex ', 'Con ']
-            if notSilent: self.DM.say('hexed ' + HexText[HexType] + ', ', end='')
+            text += 'hexed ' + HexText[HexType] + ', '
             saves_adv_dis[HexType] -= 1 #one rand disad 
         if extraAdvantage != 0: #an extra, external source of advantage
             if extraAdvantage > 0:
-                if notSilent: self.DM.say('adv, ', end='')
+                text += 'adv, '
             else:
-                if notSilent: self.DM.say('disad, ', end='')
+                text += 'disad, '
+    
+        if notSilent: self.DM.say(text, end='') #only if not silent
         return saves_adv_dis[which_save] + extraAdvantage
 
     def make_save(self, which_save, extraAdvantage = 0, DC = False):          #0-Str, 1-Dex, 2-Con, 3-Int, 4-Wis, 5-Cha
@@ -997,6 +1011,15 @@ class entity:                                          #A NPC or PC
             self.position = 0
             self.action = 0 #took the action
 
+    def use_dodge(self):
+        if self.action == 0:
+            print(self.name + ' tried to dodge without action')
+            quit()
+        self.DM.say(self.name + ' uses its turn to dodge')
+        self.action = 0 #uses an action to do
+        DodgeToken(self.TM) #give self a dodge token
+        #The dodge token sets and resolves self.is_dodge = True
+
 #-------------------Attack Handling----------------------
     def make_attack_check(self, target, fight, is_off_hand):
         if self.action == 0 and self.is_attacking == False and is_off_hand == False:
@@ -1059,7 +1082,7 @@ class entity:                                          #A NPC or PC
         if is_off_hand:
             #Make Offhand Attack
             self.bonus_action = 0
-            self.attack(target, is_ranged, other_dmg=self.offhand_dmg, is_offhand=True)
+            self.attack(target, is_ranged, other_dmg=self.offhand_dmg, is_offhand=True, is_spell=False)
         else:
             self.check_polearm_master(target, is_ranged) #Check if target is a polearm master
             self.action = 0 #if at least one attack, action = 0
@@ -1100,6 +1123,9 @@ class entity:                                          #A NPC or PC
         if self.restrained == 1:
             advantage_disadvantage -= 1
             self.DM.say(self.name + ' restrained, ',end='')
+        if target.is_dodged:
+            advantage_disadvantage -= 1
+            self.DM.say(target.name + ' dodged, ', end='')
         if target.blinded == 1:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' blinded, ',end='')
@@ -1117,7 +1143,7 @@ class entity:                                          #A NPC or PC
             self.DM.say(self.name + ' prone, ',end='')
         if self.knows_assassinate:
             if self.DM.rounds_number == 1 and self.initiative > target.initiative:
-                #Assassins have advantage against player that havnt had a turn
+                #Assassins have advantage against player that have not had a turn
                 advantage_disadvantage += 1
                 self.DM.say(self.name + ' assassinte, ', end='')
         if target.has_wolf_mark and is_ranged == False:
@@ -1162,8 +1188,8 @@ class entity:                                          #A NPC or PC
                 self.DM.say(self.name + ' has entered the polearm range of ' + target.name)
                 target.AI.do_opportunity_attack(self)
 
-    def check_smite(self, Dmg, is_ranged):
-        if is_ranged == False and self.knows_smite:  #smite only on melee
+    def check_smite(self, Dmg, is_ranged, is_spell):
+        if is_ranged == False and self.knows_smite and is_spell == False:  #smite only on melee
             for i in range(0, len(self.smite_initiated)):
                 if self.smite_initiated[i]:             #smite initiated?
                     if self.spell_slot_counter[i] > 0:
@@ -1173,9 +1199,13 @@ class entity:                                          #A NPC or PC
                         self.smite_initiated[i] = 0
                         self.DM.say('\n' + self.name + ' uses ' + str(i + 1) + '. lv Smite: +' + str(smitedmg), end='')
 
-    def check_sneak_attack(self, Dmg, advantage_disadvantage):
+    def check_sneak_attack(self, Dmg, advantage_disadvantage, is_spell):
         if self.sneak_attack_dmg > 0:    #Sneak Attack 
-            if self.sneak_attack_counter == 1 and advantage_disadvantage >= 0: #not in disadv.
+            rules = [self.sneak_attack_counter == 1, 
+                     advantage_disadvantage >= 0, #not in disadv.
+                     is_spell == False
+                     ]
+            if all(rules):
                 Dmg.add(self.sneak_attack_dmg, self.damage_type)
                 self.DM.say('\n' + self.name + " Sneak Attack: +" + str(self.sneak_attack_dmg), end='')
                 if self.wailsfromthegrave == 1 and self.wailsfromthegrave_counter > 0:  #if sneak attack hits and wails from the grave is active
@@ -1200,16 +1230,16 @@ class entity:                                          #A NPC or PC
                     self.DM.say('\n' + target.name + ' was cursed with a hex: ', end='')
                     return
 
-    def check_great_weapon_fighting(self, Dmg, is_ranged, other_dmg):
+    def check_great_weapon_fighting(self, Dmg, is_ranged, other_dmg, is_spell):
         rules = [self.knows_great_weapon_fighting,
                 self.offhand_dmg == 0,  #no offhand
                 is_ranged == False,     #no range
-                other_dmg == False]   #no spells or stuff
+                is_spell == False]   #no spells or stuff
         if all(rules):
             self.DM.say('\n' + self.name + ' uses great weapon fighting', end='')
             Dmg.multiply(1.15) #no 1,2 in dmg roll, better dmg on attack
 
-    def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False, is_offhand = False):
+    def attack(self, target, is_ranged, other_dmg = False, damage_type = False, tohit = False, is_opportunity_attack = False, is_offhand = False, is_spell = False):
     #this is the attack funktion of a player attacking a target with a normak attack
     #if another type of dmg is passed, it will be used, otherwise the player.dmg_type is used
     #if no dmg is passed, the normal entitiy dmg is used
@@ -1250,7 +1280,7 @@ class entity:                                          #A NPC or PC
         AdditionalDmg = 0 #This is damage that will not be multiplied
 
         if self.knows_great_weapon_master:
-            rules = [other_dmg == False, #No spells or other stuff
+            rules = [is_spell == False, #No spells or other stuff
                      is_ranged == False, is_offhand == False]
             if all(rules): #No spells or range attacks
                 #Do you want to use great_weapon_master
@@ -1279,7 +1309,7 @@ class entity:                                          #A NPC or PC
                 target.inspiration_counter -= 1 #One Use
                 target.reaction = 0 #uses reaction
         
-        if self.knows_archery and is_ranged:
+        if self.knows_archery and is_ranged and is_spell == False:
             self.DM.say(self.name + ' uses Archery, ', end='')
             Modifier += 2 #Archery
 
@@ -1289,17 +1319,17 @@ class entity:                                          #A NPC or PC
             self.DM.say('hit: ' + str(d20) + '+' + str(tohit) + '+' + str(Modifier) + '/' + str(target.AC) +'+' + str(ACBonus), end= '')
 
         #Smite
-            self.check_smite(Dmg, is_ranged)
+            self.check_smite(Dmg, is_ranged, is_spell)
         #Snackattack
-            self.check_sneak_attack(Dmg, advantage_disadvantage)
+            self.check_sneak_attack(Dmg, advantage_disadvantage, is_spell)
         #Combat Inspiration 
             self.check_combat_inspiration(Dmg, other_dmg)
         #Hex
             self.check_hex(Dmg, target)
         #GreatWeaponFighting
-            self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg)
+            self.check_great_weapon_fighting(Dmg, is_ranged, other_dmg, is_spell)
         #poison Bite
-            if self.knows_poison_bite and self.poison_bites == 1:
+            if self.knows_poison_bite and self.poison_bites == 1 and is_spell == False:
                 self.poison_bites = 0 #only once per turn
                 poisonDMG = self.poison_bite_dmg
                 poisonDC = self.poison_bite_dc
@@ -1656,6 +1686,48 @@ class entity:                                          #A NPC or PC
             heal = dmg(-self.start_of_turn_heal, type='heal')
             self.changeCHP(heal, self, was_ranged=False)
 
+    def summon_primal_companion(self, fight):
+        rules = [
+            self.knows_primal_companion, #has the Ability
+            self.used_primal_companion == False #has not used this fight
+        ]
+        errors = [
+            self.name + ' tried to summon primal companion but has none',
+            self.name + ' tried to summon primal companion but used it before'
+        ]
+        ifstatements(rules, errors, self.DM).check()
+        companion = self.summon_entity('Primal Companion', archive=True)
+        companion.team = self.team  #your team
+        #AC
+        companion.AC = 13 + self.proficiency
+        companion.shape_AC = companion.AC
+        companion.base_AC = companion.AC
+        #Stats
+        companion.HP = 5 + 5*self.level
+        companion.CHP = companion.HP
+        companion.proficiency = self.proficiency
+        #Attack
+        companion.tohit = self.spell_mod + self.proficiency
+        companion.base_tohit = companion.tohit
+        companion.dmg = 6.5 + self.proficiency
+        companion.base_dmg = companion.dmg
+        if self.knows_beastial_fury:  #double attacks Beast
+            companion.base_attacks = 2
+            companion.attacks = companion.base_attacks
+            companion.attack_counter = companion.base_attacks
+        #actions
+        companion.AI.Choices = [companion.AI.dodgeChoice]  #It can only act if player uses BA, or dodge
+        companion.summoner = self  #the player is this companions summoner
+
+        fight.append(companion) #Add companion to the fight
+        self.primal_companion = companion
+
+        if self.AI.primalCompanionChoice not in self.AI.Choices:
+            self.AI.Choices.append(self.AI.primalCompanionChoice) #activate this choice, to attaack with companion 
+        PrimalBeastMasterToken(self.TM, PrimalCompanionToken(companion.TM, subtype='prc')) #The Token will resolve if one of them dies
+        self.DM.say(self.name + ' summons its primal companion')
+        self.used_primal_companion = True #used it once 
+
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
         #This function is called if a player is attacked and damaged in changeCHP
@@ -1781,6 +1853,8 @@ class entity:                                          #A NPC or PC
         self.action_surge_used = False
         self.has_used_second_wind = False
         self.has_additional_great_weapon_attack = False
+        self.used_primal_companion = False
+        self.primal_companion = False
 
         self.dragons_breath_is_charged = False
         self.spider_web_is_charged = False
@@ -1817,6 +1891,7 @@ class entity:                                          #A NPC or PC
         self.restrained = 0             #will be ckeckt wenn attack/ed 
         self.prone = 0
         self.blinded = 0   
+        self.is_dodged = False
 
         self.dash_target = False
         self.has_dashed_this_round = False
@@ -1849,7 +1924,7 @@ class entity:                                          #A NPC or PC
         self.empowered_spell = False
         self.quickened_spell = False
     
-#Monster Abilities
+#-------------Monster Abilities-------------
     def use_dragons_breath(self, targets, DMG_Type = 'fire'):
         #only works if charged at begining of turn
         if self.knows_dragons_breath and self.dragons_breath_is_charged and self.action == 1:

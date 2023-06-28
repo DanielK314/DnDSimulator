@@ -23,7 +23,8 @@ class AI:
             ch.do_attack(player),
             ch.do_offhand_attack(player),
             ch.do_monster_ability(player),
-            ch.do_heal(player)
+            ch.do_heal(player),
+            ch.do_dodge(player)
         ]
         if len(self.player.SpellBook) > 0:
             self.Choices.append(ch.do_spellcasting(player))#if any Spell is known, add this choice option
@@ -38,6 +39,8 @@ class AI:
 
         #Conditional Choices        
         self.spiritualWeaponChoice = ch.do_spiritual_weapon(player) #This will be later added to the Choices list, if a Character casts spiritual weapon
+        self.primalCompanionChoice = ch.attack_with_primal_companion(player) #This Choice is added if a primal companion is summoned
+        self.dodgeChoice = ch.do_dodge(player)
 
     def do_your_turn(self,fight):
         player = self.player
@@ -47,6 +50,11 @@ class AI:
         #stand up if prone
         if player.prone == 1 and player.restrained == 0:
             player.stand_up()
+        
+        #Summon Primal Companion if you have
+        if player.knows_primal_companion:
+            if player.used_primal_companion == False:
+                player.summon_primal_companion(fight)
 
         #Choosing Aura of Protection Targets:
         if player.knows_aura_of_protection: player.use_aura_of_protection(self.allies)
@@ -70,7 +78,8 @@ class AI:
                 EnemiesConscious = [x for x in fight if x.state == 1 and x.team != player.team]
                 if len(EnemiesConscious) == 0:
                     player.DM.say('All enemies defeated')
-                    return #nothing left to do                
+                    return #nothing left to do
+                
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
 #                print(ChoiceScores)
 #                print(self.Choices)
@@ -133,7 +142,7 @@ class AI:
         else:
             if self.player.has_range_attack: is_ranged = True
             else: is_ranged = False
-            self.player.attack(target, is_ranged, is_opportunity_attack = True)
+            self.player.attack(target, is_ranged, is_opportunity_attack = True, is_spell=False)
 
     def want_to_cast_shield(self, attacker, damage):
         #This function is called in the attack function as a reaction, if Shild spell is known
@@ -361,6 +370,7 @@ class AI:
         if target.has_armor_of_agathys: Score -= PlayerDPS/3*(random()*RandomWeight + 1)
         if target.restrained or target.prone or target.blinded:
             Score += TargetDPS/4*(random()*RandomWeight + 1)
+        if target.is_dodged: Score -= dmg/5*(random()*RandomWeight + 1)
 
         #Wild shape, it is less useful to attack wildshape forms
         if target.wild_shape_HP > 0 and target.knows_combat_wild_shape == False:
