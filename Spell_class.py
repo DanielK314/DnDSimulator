@@ -602,10 +602,10 @@ class eldritch_blast(attack_spell):
             spell_dmg += self.player.modifier[5] #Add Cha Mod
         return spell_dmg
 
-    def cast(self, targets, cast_level=False, twinned=False):
+    def announce_cast(self):
+        super().announce_cast()
         if self.player.knows_agonizing_blast:
-            self.DM.say('Agonizing: ')
-        super().cast(targets, cast_level, twinned)
+            self.DM.say(', Agonizing: ')
 
 #1-Level Spell
 class burning_hands(aoe_dmg_spell):
@@ -984,6 +984,10 @@ class shield(spell):
     def cast(self, target=False, cast_level=False, twinned=False):
         super().cast(target, cast_level, twinned)
         self.player.AC += 5
+
+    def announce_cast(self):
+        super().announce_cast()
+        self.DM.say(' ') #for printing in attacks so it fits with next print
 
 class inflict_wounds(attack_spell):
     def __init__(self, player):

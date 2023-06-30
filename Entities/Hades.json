@@ -1,6 +1,6 @@
 {
     "AC": 20,
-    "HP": 10,
+    "HP": 150,
     "Proficiency": 5,
     "To_Hit": 10.0,
     "Attacks": 2.0,
@@ -52,5 +52,7 @@
     "AOERechargePropability": 0.0,
     "AOERechargeType": "fire",
     "StartOfTurnHeal": 10,
-    "LegendaryResistances": 2
+    "LegendaryResistances": 2,
+    "FavoredFoeDmg": 0.0,
+    "StrategyLevel": 5
 }

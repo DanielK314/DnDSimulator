@@ -105,6 +105,10 @@ OR: Add to All_Other_Ability_Entries in Controller class
 New Chreature Type:
 1. Add to Controller __init__ as all types
 
+DM.say():
+1. If you want to print something use DM.say() (it will be disabled, if printing is disabled)
+2. If you want this print to start a new line use DM.say(string, True)
+
 Run Time Benchmark:
 1. Configure Benchmark in run_time_benchmark.py
 2. The Benchmark Entities are in a folder
@@ -112,8 +116,10 @@ Run Time Benchmark:
 
 Create a Exe File
 Use the program pyinstall
-'pyinstall --onefile StartSimulator.py'
+'pyinstaller --onefile StartSimulator.py'
+File is in dist foulder
 Add the rest of the Stuff and .zip it 
+
 
 Test ttkinter bootstrap
 python -m ttkbootstrap

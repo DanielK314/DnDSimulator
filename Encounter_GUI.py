@@ -35,7 +35,8 @@ class Controller(Frame):
         'Archery', 'GreatWeaponFighting', 'Interception',
         'UncannyDodge', 'CunningAction', 'Assassinate', 'WailsFromTheGrave',
         'Rage', 'RecklessAttack', 'Frenzy', 'BearTotem', 'EagleTotem', 'WolfTotem',
-        'Smite', 'AuraOfProtection', 'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
+        'Smite', 'AuraOfProtection',
+        'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
         'WildShape', 'CombatWildShape',
         'Inspiration', 'CuttingWords', 'CombatInspiration',
         'PrimalCompanion', 'BestialFury',
@@ -330,7 +331,6 @@ class HomePage_cl(Frame):
             self.buttons_heros[self.master.Heros.index(Player)].configure(bootstyle='success outline')
         else:
             self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger outline')
-
 
     def init_hero(self, Player):
         if Player in self.master.Fighters:

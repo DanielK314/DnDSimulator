@@ -41,30 +41,28 @@ for x in Character.Spell_classes:
     spell_to_lern.is_known = True #Spell is known
     Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
+Character.knows_agonizing_blast = True
+Character.SpellBook['EldritchBlast'].cast(Enemy)
 
-DM.say('Test')
-DM.say(', What?')
-DM.say('What?',this_is_new_line=True)
+# from scipy.optimize import curve_fit
+# import matplotlib.pyplot as plt
 
-from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
+# #Fit
+# from random import random
+# data_x = [i for i in range(1,11)]
+# data_y = [8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.25]
+# model = lambda x, a, b, c: a/(x+b) + c
+# popt, pcov = curve_fit(model, data_x, data_y)
+# print(popt)
 
-#Fit
-from random import random
-data_x = [i for i in range(1,11)]
-data_y = [8, 6, 4, 3, 2, 1.5, 1, 0.75, 0.5, 0.25]
-model = lambda x, a, b, c: a/(x+b) + c
-popt, pcov = curve_fit(model, data_x, data_y)
-print(popt)
+# fitx = data_x
+# fity = [model(x, 38.4, 2.47, -2.95) for x in fitx]
+# plt.plot(data_x, data_y, 'rx')
+# plt.plot(fitx, fity, color= 'red')
+# #plt.show()
 
-fitx = data_x
-fity = [model(x, 38.4, 2.47, -2.95) for x in fitx]
-plt.plot(data_x, data_y, 'rx')
-plt.plot(fitx, fity, color= 'red')
-#plt.show()
-
-for x in range(1,11):
-    print(str(x) + ': ' + str(model(x, popt[0], popt[1], popt[2])))
+# for x in range(1,11):
+#     print(str(x) + ': ' + str(model(x, popt[0], popt[1], popt[2])))
 
 # n = 100000
 # start_time = time.time()

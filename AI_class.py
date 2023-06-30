@@ -186,7 +186,6 @@ class AI:
         #more here pls
         return True
 
-
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet
     #The chooser takes all enemies and chooses amoung those to hit with the area of effect
@@ -684,7 +683,7 @@ class AI:
     def choose_new_hex(self, fight):
         HexChoices = [x for x in fight if x.team != self.player.team and x.state == 1]
         HexTarget = self.choose_att_target(HexChoices, AttackIsRanged=True, other_dmg=3.5, is_silent=True)
-        if HexTarget != False:
+        if HexTarget != False and self.player.bonus_action == 1:
             self.player.SpellBook['Hex'].change_hex(HexTarget)
 
     def choose_new_hunters_mark(self, fight):

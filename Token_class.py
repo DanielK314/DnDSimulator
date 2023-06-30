@@ -306,7 +306,7 @@ class LostHaseToken(Token):
         self.resolveAtTurnStart = True
     
     def resolve(self):
-        self.TM.player.DM.say(self.TM.player.name + ' is tiered from Haste')
+        self.TM.player.DM.say(self.TM.player.name + ' is tiered from Haste', True)
         self.TM.player.action = 0
         self.TM.player.attack_counter = 0
         self.TM.player.bonus_action = 0
@@ -325,7 +325,7 @@ class HexedToken(LinkToken):
             return
 
     def resolve(self):
-        self.TM.player.DM.say('hex of ' + self.TM.player.name + ' is unbound, ')
+        self.TM.player.DM.say(', hex of ' + self.TM.player.name + ' is unbound ')
         if self.origin.TM.player.CurrentHexToken != False:
             #Only set new hex, is orgin still concentrated on hex
             self.origin.TM.player.can_choose_new_hex = True
@@ -363,7 +363,7 @@ class HuntersMarkedToken(LinkToken):
             return
 
     def resolve(self):
-        self.TM.player.DM.say('hunters mark of ' + self.TM.player.name + ' is unbound, ')
+        self.TM.player.DM.say(', hunters mark of ' + self.TM.player.name + ' is unbound ')
         if self.origin.TM.player.CurrentHuntersMarkToken != False:
             #Only set new hunters Mark, if orgin still concentrated on HM
             self.origin.TM.player.can_choose_new_hunters_mark = True
@@ -509,7 +509,7 @@ class GreatWeaponAttackToken(LinkToken):
         if self.origin.TM.player.bonus_action == 1:
             self.origin.TM.player.attack_counter += 1 #player gets another attack
             self.origin.TM.player.bonus_action = 0
-            self.TM.player.DM.say(self.origin.TM.player.name + ' gains extra attack ')
+            self.TM.player.DM.say(', 'self.origin.TM.player.name + ' gains extra attack')
 
 class FavFoeMarkToken(LinkToken):
     def __init__(self, TM, subtype):
@@ -531,7 +531,7 @@ class FavFoeMarkToken(LinkToken):
         self.has_triggered_this_round = False
 
     def resolve(self):
-        self.TM.player.DM.say('favored foe mark of ' + self.TM.player.name + ' is unbound, ')
+        self.TM.player.DM.say(', favored foe mark of ' + self.TM.player.name + ' is unbound ')
         super().resolve()
 
 class FavFoeToken(ConcentrationToken):

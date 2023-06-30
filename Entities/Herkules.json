@@ -1,6 +1,6 @@
 {
-    "AC": 19,
-    "HP": 10,
+    "AC": 20,
+    "HP": 150,
     "Proficiency": 5,
     "To_Hit": 10.0,
     "Attacks": 2.0,
@@ -30,7 +30,7 @@
     "Spell_Slot_8": 0,
     "Spell_Slot_9": 0,
     "Spell_List": "FireBolt ChillTouch EldritchBlast BurningHands MagicMissile GuidingBolt Entangle CureWounds HealingWord Hex ArmorOfAgathys FalseLife Shield InflictWounds HuntersMark AganazzarsSorcher ScorchingRay Shatter SpiritualWeapon Fireball LightningBolt Haste ConjureAnimals Blight ",
-    "Other_Abilities": "ActionSurge ImprovedCritical SecondWind Archery GreatWeaponFighting Interception UncannyDodge CunningAction Assassinate WailsFromTheGrave Rage RecklessAttack Frenzy AuraOfProtection QuickenedSpell EmpoweredSpell TwinnedSpell WildShape CombatWildShape Inspiration CuttingWords CombatInspiration PrimalCompanion BestialFury AgonizingBlast TurnUndead GreatWeaponMaster PolearmMaster ",
+    "Other_Abilities": "ActionSurge ImprovedCritical SecondWind Archery GreatWeaponFighting Interception UncannyDodge CunningAction Assassinate WailsFromTheGrave Rage RecklessAttack Frenzy BearTotem EagleTotem WolfTotem Smite AuraOfProtection QuickenedSpell EmpoweredSpell TwinnedSpell WildShape CombatWildShape Inspiration CuttingWords CombatInspiration PrimalCompanion BestialFury AgonizingBlast TurnUndead GreatWeaponMaster PolearmMaster ",
     "Sneak_Attack_Dmg": 10.0,
     "Lay_on_Hands_Pool": 100,
     "Sorcery_Points": 20,
@@ -52,5 +52,7 @@
     "AOERechargePropability": 0.0,
     "AOERechargeType": "fire",
     "StartOfTurnHeal": 10,
-    "LegendaryResistances": 2
+    "LegendaryResistances": 2,
+    "FavoredFoeDmg": 0.0,
+    "StrategyLevel": 5
 }

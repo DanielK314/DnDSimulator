@@ -38,7 +38,7 @@ class entity:                                          #A Character
 
         self.AC = int(data['AC'])         #Current AC that will be called, and reset at start of turn
         self.shape_AC =int(data['AC'])     #AC of the current form, changed by wild shape
-        self.base_AC = int(data['AC'])      #AC of initial form
+        self.base_AC = int(data['AC'])      #AC of initial form, will be set to this after reshape
         self.HP = int(data['HP'])
         self.proficiency = int(data['Proficiency'])
         self.tohit = int(data['To_Hit'])
@@ -586,7 +586,7 @@ class entity:                                          #A Character
                     AgathysDmg = self.check_for_armor_of_agathys() #returns the agathys dmg
                     if damage < self.THP: #Still THP
                         self.THP -= damage
-                        self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP', True)
+                        self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + 'now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP', True)
                         damage = 0
                     else: #THP gone
                         damage = damage - self.THP #substract THP
@@ -596,7 +596,7 @@ class entity:                                          #A Character
                 #Change CHP
                 if damage > 0: #If still damage left
                     self.CHP -= damage
-                    self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now at: ' + str(round(self.CHP,2)), True)
+                    self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + 'now at: ' + str(round(self.CHP,2)), True)
 
         #---------Armor of Agathys 
         if AgathysDmg.abs_amount() > 0 and was_ranged == False:
@@ -1143,7 +1143,7 @@ class entity:                                          #A Character
                 advantage_disadvantage += 1
                 self.DM.say(self.name + ' assassinte, ')
         if target.has_wolf_mark and is_ranged == False:
-            self.DM.say(target.name + ' wolf totem, ')
+            self.DM.say(target.name + ' has wolf totem, ')
             advantage_disadvantage += 1
         if target.is_guiding_bolted:
             #This is set by the guidingBolted Token triggered bevore
@@ -1359,7 +1359,7 @@ class entity:                                          #A Character
                 target.interception_amount = 0 #only once
         else:
             Dmg = dmg(amount=0)   #0 dmg
-            self.DM.say(''.join([' ',str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus),' miss']))
+            self.DM.say(''.join(['miss: ',str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus)]))
         target.changeCHP(Dmg, self, is_ranged)  #actually change HP
         target.last_attacker = self
         if self.knows_wolf_totem:
@@ -1626,7 +1626,9 @@ class entity:                                          #A Character
         AuraBonus = 0
         if self.TM.checkFor('aop') == True: #Check if you have a aura of protection Token
             for x in self.TM.TokenList:
-                if x.subtype == 'aop': AuraBonus += x.auraBonus #take the Aura Bonus from Token
+                if x.subtype == 'aop':
+                    if x.auraBonus > AuraBonus: # mag. effects dont stack, take stronger effect
+                        AuraBonus += x.auraBonus #take the Aura Bonus from Token
         return AuraBonus
 
     def use_second_wind(self):
