@@ -1,19 +1,15 @@
 {
     "simulation_parameters": {
-        "printing_on": 1,
-        "repetitions": 1
+        "printing_on": 0,
+        "repetitions": 100
     },
     "Entities": [
         {
-            "name": "Barbarian Lv5",
-            "team": 0
+            "name": "Giant Spider",
+            "team": 1
         },
         {
-            "name": "Druid Lv5",
-            "team": 0
-        },
-        {
-            "name": "Cleric Lv8",
+            "name": "Bard Lv5",
             "team": 0
         },
         {
@@ -21,107 +17,23 @@
             "team": 0
         },
         {
-            "name": "Ranger Lv5",
-            "team": 0
-        },
-        {
-            "name": "Rogue Lv5",
-            "team": 0
-        },
-        {
-            "name": "Test",
-            "team": 0
-        },
-        {
             "name": "Wizard Lv5",
             "team": 0
         },
         {
-            "name": "Warlock Lv5",
+            "name": "Barbarian Lv5",
             "team": 0
         },
         {
-            "name": "Sorcerer lv8",
+            "name": "Cleric Lv5",
             "team": 0
         },
         {
-            "name": "Ranger",
-            "team": 0
-        },
-        {
-            "name": "Pirate",
-            "team": 0
-        },
-        {
-            "name": "Druid Lv 5",
-            "team": 0
-        },
-        {
-            "name": "Herkules",
-            "team": 0
-        },
-        {
-            "name": "Bard Lv5",
+            "name": "Sorcerer Lv5",
             "team": 0
         },
         {
             "name": "Fire Elemental",
-            "team": 1
-        },
-        {
-            "name": "Flameskull",
-            "team": 1
-        },
-        {
-            "name": "Goblin",
-            "team": 1
-        },
-        {
-            "name": "Guard",
-            "team": 1
-        },
-        {
-            "name": "Ilias",
-            "team": 1
-        },
-        {
-            "name": "Ogre",
-            "team": 1
-        },
-        {
-            "name": "Thoran",
-            "team": 1
-        },
-        {
-            "name": "Vampire",
-            "team": 1
-        },
-        {
-            "name": "Vamire Spawn",
-            "team": 1
-        },
-        {
-            "name": "Pirate Captain",
-            "team": 1
-        },
-        {
-            "name": "Necromancer",
-            "team": 1
-        },
-        {
-            "name": "Hades",
-            "team": 1
-        },
-        {
-            "name": "Guard 2",
-            "team": 1
-        },
-        {
-            "name": "Giant Eagle",
-            "team": 1
-        },
-        {
-            "name": "Displayer Beast",
             "team": 1
         }
     ]

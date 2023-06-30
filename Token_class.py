@@ -509,7 +509,7 @@ class GreatWeaponAttackToken(LinkToken):
         if self.origin.TM.player.bonus_action == 1:
             self.origin.TM.player.attack_counter += 1 #player gets another attack
             self.origin.TM.player.bonus_action = 0
-            self.TM.player.DM.say(', 'self.origin.TM.player.name + ' gains extra attack')
+            self.TM.player.DM.say(', ' + self.origin.TM.player.name + ' gains extra attack')
 
 class FavFoeMarkToken(LinkToken):
     def __init__(self, TM, subtype):
