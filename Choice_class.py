@@ -35,7 +35,7 @@ class do_attack(choice):
 
         #Offhand Attack
         else:
-            if player.attack_counter != 0: return 0 #didnt attack in action
+            if player.is_attacking == False: return 0 #didnt attack in action
             dmg = player.offhand_dmg
             attacks = 1
             if dmg == 0: return 0  #no offhand attack if dmg = 0
@@ -53,6 +53,7 @@ class do_attack(choice):
         if len(TestACs) > 0:
             TestAC = np.mean(TestACs)
         else: TestAC = 16
+        if TestAC > 20: TestAC = 20 #if one has rediculous high armor
         Score = dmg*(20 - TestAC + player.tohit)/20*attacks
 
         #Only on one Attack 
@@ -69,6 +70,7 @@ class do_attack(choice):
             for i in range(0,5):
                 if player.spell_slot_counter[4-i] > 0:
                     Score += (4-i)*4.5  #Smite Dmg once
+                    break
 
         #Other Stuff
         if player.dash_target != False: #Do you have a dash target?
@@ -82,12 +84,6 @@ class do_attack(choice):
         player = self.player
         #This function then actually does the attack<<
         if player.action == 1: #if nothing else, attack
-            #Smite if u can and have not cast
-            if player.knows_smite:
-                for i in range(0,5):
-                    if player.spell_slot_counter[4-i] > 0:  #here 0 - lv1 slot
-                        player.initiate_smite(4-i+1)   #here the actual level are important (1 - lv 1 slot)
-                        break
             if player.knows_reckless_attack:
                 player.rackless_attack()
             if player.knows_rage and player.bonus_action == 1 and player.raged == 0:
@@ -113,11 +109,6 @@ class do_offhand_attack(do_attack):
         player = self.player
         #This function does a offhand attack as BA
         if player.bonus_action == 1:
-            if player.knows_smite:
-                for i in range(0,5):
-                    if player.spell_slot_counter[4-i] > 0:  #here 0 - lv1 slot
-                        player.initiate_smite(4-i+1)   #here the actual level are important (1 - lv 1 slot)
-                        break
             if player.knows_reckless_attack:
                 player.rackless_attack()
             target = player.AI.choose_att_target(fight) #choose a target
@@ -146,7 +137,7 @@ class do_inspire(choice):
         if self.player.inspiration_counter == 0: return 0
         if self.player.knows_inspiration == False: return 0
         if self.player.bonus_action != 1: return 0
-        if random() > 0.5: Score = self.player.level*2
+        if random() > 0.2: Score = self.player.level*2
         if self.player.knows_cutting_words and self.player.inspiration_counter == 1:
             Score = Score/2 #keep last inspiration
         return Score
@@ -230,7 +221,7 @@ class do_spiritual_weapon(choice):
     
     def execute(self, fight):
         player = self.player
-        target = player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=player.SpiritualWeaponDmg, other_dmg_type='force')
+        target = player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=player.SpiritualWeaponDmg, other_dmg_type='force', is_silent=True)
         if target != False:
             player.SpellBook['SpiritualWeapon'].use_spiritual_weapon(target)
         else: player.bonus_action = 0

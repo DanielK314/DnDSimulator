@@ -9,5 +9,5 @@ import pstats
 file = open('formatted_profile.txt', 'w')
 profile = pstats.Stats('profile_results', stream=file)
 profile.sort_stats('cumulative') # Sorts the result according to the supplied criteria
-profile.print_stats(40) # Prints the first 15 lines of the sorted report
+profile.print_stats(200) # Prints the first 15 lines of the sorted report
 file.close()

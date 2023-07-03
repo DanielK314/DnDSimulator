@@ -61,7 +61,8 @@ class AI:
 
         #Choose new Hex
         if player.can_choose_new_hex: self.choose_new_hex(fight)
-        
+        if player.can_choose_new_hunters_mark: self.choose_new_hunters_mark(fight)
+
         #Use Second Wind
         if player.knows_second_wind and player.has_used_second_wind == False:
             if player.bonus_action == 1:
@@ -77,7 +78,7 @@ class AI:
             while (player.action == 1 or player.bonus_action == 1) and player.state == 1:
                 EnemiesConscious = [x for x in fight if x.state == 1 and x.team != player.team]
                 if len(EnemiesConscious) == 0:
-                    player.DM.say('All enemies defeated')
+                    player.DM.say('All enemies defeated', True)
                     return #nothing left to do
                 
                 ChoiceScores = [choice.score(fight) for choice in self.Choices] #get Scores
@@ -94,7 +95,7 @@ class AI:
                         player.attack_counter > 0,
                         len([x for x in fight if x.team != player.team and x.state == 1]) == 0]
                     if all(rules):
-                        player.DM.say(player.name + ' count not decide what to do!')
+                        player.DM.say(player.name + ' count not decide what to do!', True)
                         quit()
                     return
 
@@ -173,6 +174,18 @@ class AI:
         if dmgWithGWM >= dmgNoGWM : return True
         else: return False
 
+    def want_to_use_smite(self, target):
+        #This function is called if an attack hit
+        #It should return False or a spell slot to use smite
+
+        if self.player.dmg > target.CHP: return False #is enough
+        if 'radiant' in target.damage_immunity: return False
+        return self.choose_highest_slot(1,4) #over lv4 slot does not increase dmg
+
+    def want_to_use_favored_foe(self, target):
+        #more here pls
+        return True
+
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet
     #The chooser takes all enemies and chooses amoung those to hit with the area of effect
@@ -250,7 +263,9 @@ class AI:
         if player.restrained: #decreases Chance to hit
             dmg = dmg*0.8
         if player.is_hexing:
-            dmg += 3.5
+            dmg += 2+player.attacks
+        if player.is_hunters_marking:
+            dmg += 2+player.attacks
 
         #dmg score is about dmg times the attacks
         #This represents vs a test AC
@@ -277,7 +292,7 @@ class AI:
             Score = Score*np.sqrt(player.AC/(13 + player.level/3.5)) #Encourage player with high AC
         return Score
 
-    def choose_att_target(self, fight, AttackIsRanged = False, other_dmg = False, other_dmg_type = False):
+    def choose_att_target(self, fight, AttackIsRanged = False, other_dmg = False, other_dmg_type = False, is_silent = False):
         player = self.player
         if other_dmg == False:
             dmg = player.dmg
@@ -298,12 +313,15 @@ class AI:
                 return player.dash_target
 
         if len(EnemiesInReach) == 0:
-            player.DM.say('There are no Enemies in reach for ' + player.name + ' to attack')
-            player.move_position() #if no target in range, move a line forward
-            player.attack_counter = 0
+            if is_silent == False:
+                player.DM.say('There are no Enemies in reach for ' + player.name + ' to attack', True)
+                player.move_position() #if no target in range, move a line forward
+                player.attack_counter = 0
             return False  #return, there is no target
         else:
             target_list = EnemiesInReach
+            if self.player.strategy_level < 3:
+                return target_list[int(random()*len(target_list))] #if low strategy, attack random
             #This function is the intelligence behind choosing the best target to hit from a List of given Targets. It chooses reguarding lowest Enemy and AC and so on
             ThreatScore = np.zeros(len(target_list))
             for i in range(0, len(target_list)):
@@ -314,7 +332,11 @@ class AI:
         #This functions helps in decision on a att taget by assining a score
         player = self.player
         Score = 0
-        RandomWeight = 2 #random factor between 1 and the RandomWeight
+        RandomWeight = player.random_weight
+        #random factor between 1 and the RandomWeight
+        #Random Weight of 0 is no random, should not be 
+        #Random Weight around 2 is average 
+        
         TargetDPS = target.dps()
         PlayerDPS = player.dps()
 
@@ -329,12 +351,13 @@ class AI:
         Score += target.heal_given/player.DM.rounds_number*(random()*RandomWeight + 1)
 
         #Target is unconscious or can be One Shot
-        if target.state == 0:
-            Score += TargetDPS*2*(random()*RandomWeight + 1)
+        if player.strategy_level > 5:
+            if target.state == 0: #encourage only if strategic
+                Score += TargetDPS*2*(random()*RandomWeight + 1)
         elif target.CHP <= dmg: #kill is good, oneshot is better
             Score += TargetDPS*4*(random()*RandomWeight + 1)
         elif dmg > target.HP*2: #Can Instakill
-            Score += TargetDPS*10*(random()*RandomWeight + 1)
+            Score += TargetDPS*5*(random()*RandomWeight + 1)
 
         #Hit low ACs
         if (target.AC - player.tohit)/20 < 0.2:
@@ -345,30 +368,33 @@ class AI:
         if (target.AC - player.tohit)/20 > 0.8: #90% no hit prop
             Score -= TargetDPS*(random()*RandomWeight + 1)
 
-        #Attack player with your Vulnerability as dmg
-        if target.last_used_DMG_Type in player.damage_vulnerability:
-            Score += TargetDPS*(random()*RandomWeight + 1)
-        if dmg_type in target.damage_vulnerability:
-            Score += TargetDPS*(random()*RandomWeight + 1)
-        elif dmg_type in target.damage_resistances:
-            Score -= TargetDPS*2*(random()*RandomWeight + 1)
+        if player.strategy_level > 4:
+            #Attack player with your Vulnerability as dmg
+            if target.last_used_DMG_Type in player.damage_vulnerability:
+                Score += TargetDPS*(random()*RandomWeight + 1)
+            if dmg_type in target.damage_vulnerability:
+                Score += TargetDPS*(random()*RandomWeight + 1)
+            elif dmg_type in target.damage_resistances:
+                Score -= TargetDPS*2*(random()*RandomWeight + 1)
 
-        #Spells
-        if player.restrained:
-            for x in player.TM.TokenList:
-                if x.type == 'r' and x.origin == target:
-                    Score += PlayerDPS*2*(random()*RandomWeight + 1) #This player is entangling you 
-        if player.is_hexing: #Check for hexing
-            for x in player.TM.TokenList:
-                if x.subtype == 'hexn': #You are hexing
-                    for HexToken in x.links:
-                        if HexToken.TM.player == target:
-                            Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
-                    break
+            #Spells
+            if player.restrained:
+                for x in player.TM.TokenList:
+                    if x.type == 'r' and x.origin == target:
+                        Score += PlayerDPS*2*(random()*RandomWeight + 1) #This player is entangling you 
+            if player.is_hexing: #Check for hexing
+                for HexedToken in player.CurrentHexToken.links:
+                    if HexedToken.TM.player == target:
+                        Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+            if player.is_hunters_marking: #Check for hunters Mark
+                for Token in player.CurrentHuntersMarkToken.links:
+                    if Token.TM.player == target:
+                        Score += (TargetDPS + 3.5)*(random()*RandomWeight + 1) #Youre hexing this player
+
         if target.is_concentrating: Score += TargetDPS/3*(random()*RandomWeight + 1)
         if target.has_summons: Score += TargetDPS/2*(random()*RandomWeight + 1)
         if target.has_armor_of_agathys: Score -= PlayerDPS/3*(random()*RandomWeight + 1)
-        if target.restrained or target.prone or target.blinded:
+        if target.restrained or target.prone or target.is_blinded:
             Score += TargetDPS/4*(random()*RandomWeight + 1)
         if target.is_dodged: Score -= dmg/5*(random()*RandomWeight + 1)
 
@@ -378,38 +404,39 @@ class AI:
         if target.wild_shape_HP <= dmg: 
             Score = Score*1.4*(random()*RandomWeight + 1)
 
-        #Movement (this section takes a lot of time to run, check it)
-        NeedDash = player.need_dash(target, fight)
-        if NeedDash == 1 and player.knows_cunning_action == False:
-            Score -= PlayerDPS/1.3*(random()*RandomWeight + 1)
-            #Player cant attack this turn if dashed
-        elif NeedDash == 1 and player.knows_cunning_action:
-            Score -= dmg/2*(random()*RandomWeight + 1)
-        elif NeedDash == 1 and player.knows_eagle_totem:
-            Score -= dmg/2*(random()*RandomWeight + 1)
-            #With cunning action/eagle totem less of a Problem
-        if player.will_provoke_Attack(target, fight):
-            if player.knows_eagle_totem:
-                Score -= PlayerDPS/6*(random()*RandomWeight + 1)
-            elif player.CHP > player.HP/3: 
-                Score -= PlayerDPS/4*(random()*RandomWeight + 1)
-            else: 
-                Score -= PlayerDPS/2*(random()*RandomWeight + 1)
+        #this whole part took too long in performance
+        # NeedDash = player.need_dash(target, fight)
+        # if NeedDash == 1 and player.knows_cunning_action == False:
+        #     Score -= PlayerDPS/1.3*(random()*RandomWeight + 1)
+        #     #Player cant attack this turn if dashed
+        # elif NeedDash == 1 and player.knows_cunning_action:
+        #     Score -= dmg/2*(random()*RandomWeight + 1)
+        # elif NeedDash == 1 and player.knows_eagle_totem:
+        #     Score -= dmg/2*(random()*RandomWeight + 1)
+        #     #With cunning action/eagle totem less of a Problem
+        # if player.will_provoke_Attack(target, fight):
+        #     if player.knows_eagle_totem:
+        #         Score -= PlayerDPS/6*(random()*RandomWeight + 1)
+        #     elif player.CHP > player.HP/3: 
+        #         Score -= PlayerDPS/4*(random()*RandomWeight + 1)
+        #     else: 
+        #         Score -= PlayerDPS/2*(random()*RandomWeight + 1)
 
         #Line Score, Frontliner will go for front and mid mainly
         if player.position == 0: #front
-            if target.position == 0: Score = Score*1.2*(random()*RandomWeight + 1)
-            elif target.position == 1: Score = Score*1.1*(random()*RandomWeight + 1)
+            if target.position == 0: Score = Score*1.4
+            elif target.position == 1: Score = Score*1.2
+            elif target.position == 2: Score = Score*0.8
         elif player.position == 1: #Mid
-            if target.position == 0: Score = Score*1.3*(random()*RandomWeight + 1)
-            elif target.position == 1: Score = Score*1.2*(random()*RandomWeight + 1)
-            elif target.position == 2: Score = Score*1.1*(random()*RandomWeight + 1)
-            elif target.position == 3: Score = Score*1.1*(random()*RandomWeight + 1)
+            if target.position == 0: Score = Score*1.4
+            elif target.position == 1: Score = Score*1.3
+            elif target.position == 2: Score = Score*1.1
+            elif target.position == 3: Score = Score*1.1
         elif player.position == 2: #Back
-            if target.position == 2: Score = Score*1.2*(random()*RandomWeight + 1)
-            elif target.position == 3: Score = Score*1.3*(random()*RandomWeight + 1)
+            if target.position == 2: Score = Score*1.3
+            elif target.position == 3: Score = Score*1.4
         elif player.position == 3: #Airborn
-            if target.position == 2: Score = Score*1.2*(random()*RandomWeight + 1)
+            if target.position == 2: Score = Score*1.3
         
         if target.is_a_turned_undead:
             Score = Score/4 #almost no threat at the moment
@@ -468,6 +495,29 @@ class AI:
                 return False
         else:
             return False
+
+    def choose_smallest_slot(self, MinLevel, MaxLevel):
+        #Returns the smallest spellslot that is still available in the range
+        #MaxLevel is cast level, so MaxLevel = 4 means Level 4 Slot
+        #False, no Spell Slot available
+        if MaxLevel > 9: MaxLevel = 9
+        if MinLevel < 1: MinLevel = 1
+        for i in range(MinLevel-1, MaxLevel):
+            if self.player.spell_slot_counter[i]>0:  #i = 0 -> lv1 slot
+                return i+1
+        return False 
+
+    def choose_highest_slot(self, MinLevel, MaxLevel):
+        #Returns the highest spellslot that is still available in the range
+        #MinLevel is cast level, so MinLevel = 4 means Level 4 Slot
+        #False, no Spell Slot available
+        if MaxLevel > 9: MaxLevel = 9
+        if MinLevel < 1: MinLevel = 1
+        for i in reversed(range(MinLevel-1, MaxLevel)):
+            if self.player.spell_slot_counter[i]>0:
+                return i+1
+        return False 
+
 
 #---------Spells
 
@@ -608,8 +658,6 @@ class AI:
 
     def choose_heal_spellslot(self, MinLevel = 1):
         player = self.player
-        spells = spell(player)
-        #It has no meaning which spell is used, I only want to use the choose lowest/highest spell function
         SpellPower = sum([player.spell_slot_counter[i]*np.sqrt((i + 1)) for i in range(0,9)])
         MaxSlot = 0 # Which is the max spell slot left
         for i in reversed(range(0,9)):
@@ -623,17 +671,23 @@ class AI:
             TestLevel -= 1
         
         #Use the TestLevel Slot or the next best lower then it
-        LowLevel = spells.choose_highest_slot(1,TestLevel)
+        LowLevel = self.choose_highest_slot(1,TestLevel)
         if LowLevel != False:
             return LowLevel
         #if no low level left, try higher
-        HighLevel = spells.choose_smallest_slot(TestLevel+1,9)
+        HighLevel = self.choose_smallest_slot(TestLevel+1,9)
         if HighLevel != False:
             return HighLevel
         return False
 
     def choose_new_hex(self, fight):
         HexChoices = [x for x in fight if x.team != self.player.team and x.state == 1]
-        HexTarget = self.choose_att_target(HexChoices, AttackIsRanged=True, other_dmg=3.5)
-        if HexTarget != False:
+        HexTarget = self.choose_att_target(HexChoices, AttackIsRanged=True, other_dmg=3.5, is_silent=True)
+        if HexTarget != False and self.player.bonus_action == 1:
             self.player.SpellBook['Hex'].change_hex(HexTarget)
+
+    def choose_new_hunters_mark(self, fight):
+        HuntersMarkChoices = [x for x in fight if x.team != self.player.team and x.state == 1]
+        Target = self.choose_att_target(HuntersMarkChoices, AttackIsRanged=True, other_dmg=3.5, is_silent=True)
+        if Target != False:
+            self.player.SpellBook['HuntersMark'].change_hunters_mark(Target)

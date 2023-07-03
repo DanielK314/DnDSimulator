@@ -10,5 +10,5 @@ class ifstatements:
         else:
             for i in range(0,len(self.rules)):
                 if self.rules[i] == False:
-                    self.DM.say(self.errors[i])
+                    print(self.errors[i])
                     quit()

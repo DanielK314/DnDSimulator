@@ -21,14 +21,13 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
     DM = fighters_unsorted[0].DM
     DM.reset() #resets the DM at start of fighting
 
-    DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)))
+    DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)), True)
 
     while fight_ongoing_check(fight) == True:
         player = fight[Init_counter]
 
         if player.state != -1:
-            print_text = '_____________'
-            DM.say(print_text)
+            DM.say('_____________', True)
         if player.state == 1:                            #player is alive
             enemies_left_list = [x for x in fight if x.team != player.team and x.state == 1]
 
@@ -48,13 +47,13 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
         if Init_counter >= len(fight):
             Init_counter = 0
             DM.rounds_number += 1
-            DM.say('')
-            DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)))
+            DM.say('', True)
+            DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)), True)
 
 
     #Only one Team is left alive
-    DM.say('')
-    DM.say("Fight over")
+    DM.say('', True)
+    DM.say("Fight over", True)
     for x in fighters_unsorted:
         if x.CHP == 0:
             x.state = -1 #Everone who is unconscious in the loser Team is practically Dead now
@@ -63,17 +62,17 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
         x.TM.resolveAll()
         
 
-    DM.say('HP left:')
+    DM.say('HP left:', True)
     for i in fighters_unsorted:
-        DM.say(str(i.name) + " " + str(i.CHP))
-    DM.say('')
-    DM.say('Damage dealed:')
+        DM.say(str(i.name) + " " + str(i.CHP), True)
+    DM.say('', True)
+    DM.say('Damage dealed:', True)
     for i in fighters_unsorted:
-        DM.say(str(i.name) + " " + str(i.dmg_dealed))
-    DM.say('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-    DM.say('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-    DM.say('')
-    DM.say('')
+        DM.say(str(i.name) + " " + str(round(i.dmg_dealed,2)), True)
+    DM.say('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', True)
+    DM.say('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', True)
+    DM.say('', True)
+    DM.say('', True)
     
     winner_team = 0
     for i in fighters_unsorted:
@@ -171,11 +170,11 @@ def most_valuable_player(repetition, fighters):
             win_probability = wins/(wins + defeats)
             win_probability_without_player.append(win_probability)
 
-            DM.say('Win Probability = ' + str(win_probability) + '\n')
+            DM.say('Win Probability = ' + str(win_probability) + '\n', True)
             fighters_without_one_hero = copy(fighters)
     
     mvp_index = argmin(win_probability_without_player)
-    DM.say('Most valuable player: ' + str(player_name[mvp_index]))
+    DM.say('Most valuable player: ' + str(player_name[mvp_index]), True)
     return player_name, win_probability_without_player, player_name[mvp_index]
 
 def spell_cast_recap(repetition, fighters, text_result):  #only calls the objects data, simulation must be run beforehand

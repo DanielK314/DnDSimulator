@@ -24,6 +24,7 @@ class Controller(Frame):
         self.DM = DungeonMaster()
         self.Load_Entities()  #Loads the Entities from the files
         self.Load_Archive_Entities() #Loads from Archive
+        self.SelectedEntities = [] #List with names of Entities that have been selcted for sim
 
         #This is used multiple times, so it always calls master Controller
         self.DMG_Types = ['acid', 'cold', 'fire', 'force' , 'lightning', 'thunder', 'necrotic', 'poison', 'psychic' ,'radiant' ,'bludgeoning', 'piercing', 'slashing']
@@ -34,7 +35,8 @@ class Controller(Frame):
         'Archery', 'GreatWeaponFighting', 'Interception',
         'UncannyDodge', 'CunningAction', 'Assassinate', 'WailsFromTheGrave',
         'Rage', 'RecklessAttack', 'Frenzy', 'BearTotem', 'EagleTotem', 'WolfTotem',
-        'Smite', 'AuraOfProtection', 'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
+        'Smite', 'AuraOfProtection',
+        'QuickenedSpell', 'EmpoweredSpell', 'TwinnedSpell',
         'WildShape', 'CombatWildShape',
         'Inspiration', 'CuttingWords', 'CombatInspiration',
         'PrimalCompanion', 'BestialFury',
@@ -65,6 +67,7 @@ class Controller(Frame):
             'DruidCR':{'Text': 'Wild Shape CR', 'ClassName': 'Druid', 'AttributeName': 'DruidCR', 'IsFLoatStat': True},
             'ChannelDivinity':{'Text': 'Channel Divinity', 'ClassName': 'Cleric', 'AttributeName': 'channel_divinity_counter', 'IsFLoatStat': False},
             'DestroyUndeadCR':{'Text': 'Destroy Undead CR', 'ClassName': 'Cleric', 'AttributeName': 'destroy_undead_CR', 'IsFLoatStat': True},
+            'FavoredFoeDmg':{'Text': 'Favored Foe Dmg', 'ClassName': 'Ranger', 'AttributeName': 'favored_foe_dmg', 'IsFLoatStat': True},
             'StartOfTurnHeal':{'Text': 'Heal at start of Turn', 'ClassName': 'Monster', 'AttributeName': 'start_of_turn_heal', 'IsFLoatStat': False},
             'LegendaryResistances':{'Text': 'Legendary Resistances', 'ClassName': 'Monster', 'AttributeName': 'legendary_resistances', 'IsFLoatStat': False},
             'AOERechargeDmg':{'Text': 'Recharge AOE Dmg', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dmg', 'IsFLoatStat': True},
@@ -73,7 +76,7 @@ class Controller(Frame):
             'AOERechargePropability':{'Text': 'AOE Recharge Propability', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_propability', 'IsFLoatStat': True}
         }
 
-        self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct']
+        self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct', 'fiend']
 
         #Initialize the Pages, attention, Order matters
         self.ArchivePage = Archive(self)
@@ -161,6 +164,17 @@ class Controller(Frame):
             self.HomePage.tkraise()
     
     def change_to_HomePage_saved(self):
+        self.Load_Entities()
+        #destroy everything in the frame 
+        for widget in self.HomePage.winfo_children():
+           widget.destroy()
+        #and rebuild the page
+        self.HomePage.Build_Page()
+        self.HomePage.update_add_buttons()
+        self.root.update()
+        self.HomePage.tkraise()
+
+    def change_to_HomePage_deleted(self):
         self.Load_Entities()
         #destroy everything in the frame 
         for widget in self.HomePage.winfo_children():
@@ -269,9 +283,6 @@ class HomePage_cl(Frame):
         text_result = open(application_path + '/simulation_result.txt').read()
         open(application_path + '/simulation_result.txt', 'w').write('')
         self.open_message(text_result)
-
-#        old Message Box
-#        messagebox.showinfo('Simulation Info', text_result)
     
     def open_message(self, text):
         root = ttk.Toplevel()
@@ -307,21 +318,41 @@ class HomePage_cl(Frame):
         root.attributes('-topmost',True)
         root.mainloop()
 
-    def init_hero(self, Player):
-        if Player in self.master.Fighters:
-            self.master.Fighters.remove(Player)
+    def init_entity(self, Player):
+        self.master.Fighters.append(Player)
+        if Player in self.master.Heros:
+            self.buttons_heros[self.master.Heros.index(Player)].configure(bootstyle='success solid')
+        else:
+            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger solid')
+
+    def uninit_entity(self, Player):
+        self.master.Fighters.remove(Player)
+        if Player in self.master.Heros:
             self.buttons_heros[self.master.Heros.index(Player)].configure(bootstyle='success outline')
         else:
-            self.master.Fighters.append(Player)
-            self.buttons_heros[self.master.Heros.index(Player)].configure(bootstyle='success solid')
+            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger outline')
+
+    def init_hero(self, Player):
+        if Player in self.master.Fighters:
+            self.master.SelectedEntities.remove(Player.name)
+            self.uninit_entity(Player)
+        else:
+            self.master.SelectedEntities.append(Player.name)
+            self.init_entity(Player)
 
     def init_monster(self, Player):
         if Player in self.master.Fighters:
-            self.master.Fighters.remove(Player)
-            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger outline')
+            self.master.SelectedEntities.remove(Player.name)
+            self.uninit_entity(Player)
         else:
-            self.master.Fighters.append(Player)
-            self.buttons_monsters[self.master.MonsterManuel.index(Player)].configure(bootstyle='danger solid')
+            self.master.SelectedEntities.append(Player.name)
+            self.init_entity(Player)
+
+    def update_add_buttons(self):
+        entities = self.master.Heros + self.master.MonsterManuel
+        for Player in entities:
+            if Player.name in self.master.SelectedEntities:
+                self.init_entity(Player)
 
 class OtherAbilityEntry(Frame):
     def __init__(self, root, text, abilityName, className, attributeName, isFloatStat = False):
@@ -458,6 +489,11 @@ class EntityPage_cl(Frame):
             self.BasicStatLabels[i].grid(row=i+1, column=0, sticky="w")
             self.BasicStatEntries[i].grid(row=i+1, column=1, padx=5)
         self.BasicStatsFrame.grid(row=0, column=0, sticky='w')
+
+        Level_info = 'The level of character. Some functions and abilities are influenced by this level. For beasts and monsters this level is equal to the CR'        
+        ttk.Button(self.BasicStatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Level_info)).grid(row=4, column=2, sticky='e')
+        Hero_info = 'The characters are sorted in heros and villains according to this.'        
+        ttk.Button(self.BasicStatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Hero_info)).grid(row=5, column=2, sticky='e')
         #Type Frame
         self.TypeFrame = Frame(self.BasicFrame)
         Label(self.TypeFrame, text='Character Type:  ').grid(row=0, column=0)
@@ -524,9 +560,6 @@ class EntityPage_cl(Frame):
         ttk.Button(self.SpellFrame, text='Spell Book', bootstyle="outline", command= self.open_spell_book).grid(row=5, column=0, columnspan=6, sticky='w', pady=5)
         self.SpellFrame.grid(row=2, column=0, sticky='ew', pady=5)
 
-
-
-
         ##########Mid Frame
         #Attack Frame 
         self.AttackFrame = ttk.Labelframe(self.MidFrame, text='Attacks', padding = Framepadding)
@@ -545,9 +578,17 @@ class EntityPage_cl(Frame):
         self.OffHandEntry.grid(row=3, column=1, sticky='w', padx=5, pady=1)
         #Range
         self.Range_Attack_Value = IntVar()
-        ttk.Checkbutton(self.AttackFrame, text='Range Attacks',variable=self.Range_Attack_Value, onvalue=1, offvalue=0).grid(row=1,column=0, sticky='w', pady=5, padx=4)
+        ttk.Checkbutton(self.AttackFrame, text='Uses Range Attacks',variable=self.Range_Attack_Value, onvalue=1, offvalue=0).grid(row=1,column=0, sticky='w', pady=5, padx=4)
 
-        StatsFrame.grid(row=0, column=0, sticky='w')
+        Attack_Info = 'If a charater uses its attack to attack, it attacks with this to hit modifier, no Dex or Str is added. The Dmg is considered to be what is given here. (Smite, Sneack Attack, ... are implemented as other abilities). The number of attacks referres to the action attack, not offhand.'        
+        ttk.Button(StatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Attack_Info)).grid(row=0, column=2, sticky='e')
+        OffHand_Info = 'If a non 0 off hand dmg is given, the character can use its BA to attack offhand, if it attacked as action before. The to hit modifier is considered to be the same.'        
+        ttk.Button(StatsFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, OffHand_Info)).grid(row=3, column=2, sticky='e')
+        Range_Info = 'If a character attacks and has range attacks actived, it will attack with range. Keep that in mind for things like smite, or great weapon master.'        
+        ttk.Button(self.AttackFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Range_Info)).grid(row=1, column=2, sticky='w')
+
+
+        StatsFrame.grid(row=0, column=0, sticky='ew')
         self.AttackFrame.grid(row=0, column=0, sticky='ewn')
 
         #Position Management
@@ -566,6 +607,10 @@ class EntityPage_cl(Frame):
         ttk.Radiobutton(self.PositionButtonsFrame, text="Back", variable=self.PositionValue, value=2).grid(row=0, column=2)
         self.PositionButtonsFrame.grid(row=2,column=0, columnspan=3, sticky='w')
         self.PositionFrame.grid(row=1, column=0, pady=10, sticky='ew')
+
+        Position_Info = 'The characters are sorted in lines, front, mid and back. Frontliner will take the most attacks and will attack mainly the other front and mid. Backliner will attack with range if they can, they are protected by the Frontliner.'
+        ttk.Button(self.PositionFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, Position_Info)).grid(row=0, column=2, sticky='w')
+
 
         #Damage Type
         self.DMGTypes = []
@@ -615,12 +660,25 @@ class EntityPage_cl(Frame):
         self.AbilityDisplayList = StringVar(value=[])
         self.AbilityDisplay = Listbox(self.OtherFrame, listvariable=self.AbilityDisplayList, height=6)
         self.AbilityDisplay.grid(row=0, column=0, columnspan=2, sticky="w", pady=4)
+
+        #Strategy
+        self.StrategyFrame = ttk.Labelframe(self.RightFrame, text= 'Strategy', padding = Framepadding)
+        Label(self.StrategyFrame, text='Strategy Level (1-10)').grid(row=0, column=0, sticky='w')
+        self.StrategyEntry = Entry(self.StrategyFrame, bd=self.Entrybd, width=self.Entrywidth)
+        self.StrategyEntry.grid(row=0, column=1, sticky='w', padx=5, pady=1)
+        Label(self.StrategyFrame, text='Level 2 - Beast').grid(row=1, column=0, columnspan=1, sticky='w')
+        Label(self.StrategyFrame, text='Level 5 - Average Player').grid(row=2, column=0, columnspan=2, sticky='w')
+        Label(self.StrategyFrame, text='Level 8 - Evil Wizard').grid(row=3, column=0, columnspan=2, sticky='w', pady=3)
+        strategy_info = 'The strategy level of a player character should be 5, maybe 6 for smart player. Higher level are intendet for evil monsters that will kill player if they get a chance.'        
+        ttk.Button(self.StrategyFrame, text= '[ i ]', bootstyle='primary-link', command=partial(self.open_info, strategy_info)).grid(row= 1, column=1, sticky='e')
+
         #Scrollbar
         self.AbilityScrollbar = ttk.Scrollbar(self.OtherFrame, orient='vertical', command=self.AbilityDisplay.yview)
         self.AbilityDisplay['yscrollcommand'] = self.AbilityScrollbar.set
         self.AbilityScrollbar.grid(row=0, column=4, sticky='ns')
-        #SneakAttackDmg
+        #Other
         self.OtherFrame.grid(row=0, column=0,sticky='nw')
+        self.StrategyFrame.grid(row=1, column=0,sticky='enw', pady=5)
 
 
         #Align Left and Right Frame
@@ -773,7 +831,11 @@ class EntityPage_cl(Frame):
 
     def update_ability_mod(self, mod_number, *arg):
         #Updates the Mod Number displayed if the input changes
-        modifier = round((self.AbilityScoreValues[mod_number].get()-10)/2 -0.1)#calc Mod
+        try:
+            score = int(float(self.AbilityScoreEntries[mod_number].get())) #try to convert into int
+        except:
+            score = 0
+        modifier = round((score-10)/2 -0.1)#calc Mod
         if self.AbilityScoreProfList[mod_number].get() == 1:#if proficient
             Prof = self.BasicStatValues[self.BasicStatNames.index('Proficiency')].get()
             if Prof != '':
@@ -819,6 +881,7 @@ class EntityPage_cl(Frame):
         self.stats['Level'] = Player.level
         self.stats['Hero_or_Villain'] = Player.team
         self.stats['Type'] = Player.type
+        self.stats['StrategyLevel'] = Player.strategy_level
 
         self.stats['Str'] = Player.Str
         self.stats['Dex'] = Player.Dex
@@ -960,6 +1023,12 @@ class EntityPage_cl(Frame):
         self.stats['AOESaveType'] = self.AOESaveEntry.get()
         self.stats['AOERechargeType'] = self.RechagreType.get()
 
+        #Strategy
+        StrategyLevel = int(self.StrategyEntry.get())
+        if StrategyLevel < 1: StrategyLevel = 1
+        if StrategyLevel > 10: StrategyLevel = 10
+        self.stats['StrategyLevel'] = StrategyLevel
+
     def load_default_stats(self):
         #This is called when the #new character button is pressed, restore default stats 
         self.fetch_default_stats() #fetch default stats into dict 
@@ -1061,6 +1130,8 @@ class EntityPage_cl(Frame):
         self.AOESaveEntry.update()
         self.RechagreType.update()
 
+        #Strategy
+        self.update_Entry(self.StrategyEntry, self.stats['StrategyLevel'])
 
         #update the Modifier Labels
         self.update_all_ability_mod()
@@ -1068,7 +1139,7 @@ class EntityPage_cl(Frame):
         #save the Entity changes
 
     def save_Entity(self):
-        self.fetch_GUI_stats() #fetch current data im GUI into stats dict
+        self.fetch_GUI_stats() #fetch current data in GUI into stats dict
         self.save_stats_to_file() #write the data from dict to json file
         self.master.change_to_HomePage_saved() #return to homepage and reload
 
@@ -1095,10 +1166,27 @@ class EntityPage_cl(Frame):
             os.remove(application_path + '/Entities/' + self.name + '.json')
         else:    ## Show an error ##
             print("Error: Entity not found: " + self.name)
-        self.master.change_to_HomePage_saved()
+        self.master.change_to_HomePage_deleted()
 
     def abbort_delete(self, Open_Window):
         Open_Window.destroy()
+
+    #-----------Info Windows-----------
+
+    def open_info(self, text):
+        root = ttk.Toplevel()
+        root.geometry("300x180")
+        root.title('Info')
+        # Create A Main frame
+        MainFrame = Frame(root)
+        MainFrame.pack(fill=BOTH,expand=1, pady=10)
+        Label(MainFrame, text=text, wraplength = 250).pack(expand=True, fill=BOTH, padx=10)
+        ttk.Button(MainFrame, text='Back', bootstyle="outline", command=root.destroy).pack()
+
+
+        #Make the window jump above all
+        root.attributes('-topmost',True)
+        root.mainloop()
 
 class Archive(Frame):
     def __init__(self, root):

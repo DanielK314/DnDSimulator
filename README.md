@@ -121,7 +121,7 @@ Now it gets really interesting. In the following I will discuss the different sp
 
 **Totems** This is a Barbarian feature
 
-**Smite** Smite uses spell slots. If a player knows smite and hits a target, smite is activated via the 'initiate_smite' function and the smite dmg is added in the 'attack' function. The decision to smite comes in the 'smart_attack' function. If a player attacks and knows smite, currently, it will use the highest spell slot to smite.
+**Smite** Smite uses spell slots. If a player knows smite and hits a target, the player.AI.want_to_cast_smite is called and the smite dmg is added in the 'attack' function. The player will use its highest slot from 1-4.
 
 **Aura of Protection** Some of the allies are randomly choosen every round. They will revieve the bonus.
 

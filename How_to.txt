@@ -23,14 +23,12 @@ Legendary Action
 !!! If Team == 1 it is considered a Monster, every other tag like 0, 1, 2 is considered a PC for PvP for example
 Also, Statistical Recap might not work for teams other then 0 vs 1
 
-
 Creature Types:
 normal
 undead
 beast
 plant
 construct
-
 
 Damage Types:
 acid
@@ -46,6 +44,8 @@ psychic
 radiant
 slashing
 thunder
+heal
+true
 
 How To: 
 
@@ -53,57 +53,53 @@ New BeastForms:
 1.add Beast Entity to Archive
 2.add to Beast Forms in Entity Class
 
-New Other_Abilities: 
+New Abilities: 
 1.add Ability to Entity Class Init under special Abilites
-2.Implement the feature in the code
-3.Add Name to All_Abilities in GUI Controller Class
-4.Change it in the GUI build_ability_page, just change the Number for the added Class feature
+2.Implement the feature in the Entity class
+2.1 If it involves a decision maybe add it to AI class
+2.2 If it is something to do as action or bonus action, add it as a choice class
+
+Add to GUI:
+Bool Attributes:
+1.Add the Name of the Ability to Controller self.All_Abilities
+1.1 Attention: this list must be ordered in classes, so keep the right order
+2. The Ability page is build according to the Controller self.Class dict:
+2.1 Increse the Number value for the class you just added an Ability
+
+Entry Attributes:
+1.Add to Controller self.All_Other_Ability_Entries dict
+1.1 Add Name, add the Text that should be displayed in GUI, add ClassName (like Fighter, or Bard)
+1.2 Add 'AttributeName' which is the name of the Entities Attribute, like self.sorcery_points
+1.3 If it is a Float, set that to true, else it is a Int
 
 New Spells:
-1. Add Spell Stats to the Spell Calss __init__
-2. Add a Cast Function for the Spell
-2.1 remember empowered Spells 
-2.1 How to Handle Targtes
-2.3 make spell/cantrip check
-2.4 Add 1 to Cast Counter 
-2.5 Change Concentration if necessary, Break Concentration
-3. Add a Score Function for the Spell
-3.1 must return a dmg equal score, target and spelllevel
+1. Add a new Spell Class for the Spell
+1.1 Three types for spells are implemented: attack spells, save spells, and AOE spells. Use them as super classes for new spells if it makes sense
+2. Add a __init__ function with self.spell_name (the one listed in GUI/Entity), self.spell_text (the name that should be printed when casted), self.spell_level, as well as self.is_bonus_action_spell, self.is_concentration_spell, self.is_reaction_spell, self.is_cantrip, self.is_twin_castable, self.is_range_spell if any is true
+3. Add a score function, that will be called in the AI spell choice
+3.1 must return a dmg equal score, target and cast level
+3. Add a cast function
+3.1 Use Tokens for Concentration spells
+3.2 remember to rest counter or variables of the spell at end of turn or long rest, if used any
 4. Add Spell to Spell Name List in Entity Class
-4.1 Add cast Counter in Entity 
-5. If concentration Spell: check break concentration 
-5.1 in the upper line 'lost concentraation'
-5.2 Implement the break concentration in dead and unconscious function
-5.3 remember to rest counter or variables of the spell at end of turn or long rest
-6. The Spell should be listed automatically in GUI
-6.1. Add to Spellrecap
+4.1 Spell chould be listed automatically in GUI and used if AI 
 
 New Token relation:
 1. Create a Link Token, via the LinkToken class or via a subclass
 2. Initiate one or more Link Token
 3. Create a DockToken or a subclass of a DockToken
-3.1 wenn Initiateing the DockToken, give a List of the Link Dokens.
+3.1 wenn Initiateing the DockToken, give a List of the Link Tokens.
 3.2 The Link Tokens will be resolved if the Dock is, or vici verca if all links are resolved
 4. You can add resolve conditions to the Tokens
 5. You might add smt to the update function of the TM
-
-Add to GUI
-1.Spells must not be add manually, only in SpellNames in entity class
-2.Other Abilies must only be added in Controller __init__ and in the build abilites page, add the counter for the corresponding class
-
-3.Now how to add a Entry for a entity stat
-3.1 Add the Stat to the entity class, use python add_to_all_json
-3.2 Add a Label and Entry to the GUI and grid it
-3.2.1 For Other Abilies this is done in the build other abilities page 
-3.3 Add new stat to fetch_Entity_stats
-3.4 Add to fetch_GUI_stats
-3.5 Add to update_page
-3.6 Add to fetch_default_stats (if it was a entry ability)
-
-OR: Add to All_Other_Ability_Entries in Controller class
+6. You can add Trigger conditions that activate but not resolve the Token 
 
 New Chreature Type:
 1. Add to Controller __init__ as all types
+
+DM.say():
+1. If you want to print something use DM.say() (it will be disabled, if printing is disabled)
+2. If you want this print to start a new line use DM.say(string, True)
 
 Run Time Benchmark:
 1. Configure Benchmark in run_time_benchmark.py
@@ -112,5 +108,10 @@ Run Time Benchmark:
 
 Create a Exe File
 Use the program pyinstall
-'pyinstall --onefile StartSimulator.py'
+'pyinstaller --onefile StartSimulator.py'
+File is in dist foulder
 Add the rest of the Stuff and .zip it 
+
+
+Test ttkinter bootstrap
+python -m ttkbootstrap
