@@ -1,6 +1,6 @@
 {
     "simulation_parameters": {
-        "printing_on": 1,
+        "printing_on": 0,
         "repetitions": 100
     },
     "Entities": [
@@ -9,23 +9,7 @@
             "team": 0
         },
         {
-            "name": "Cleric Lv5",
-            "team": 0
-        },
-        {
-            "name": "Sorcerer Lv5",
-            "team": 0
-        },
-        {
-            "name": "Guard",
-            "team": 1
-        },
-        {
-            "name": "Giant Spider",
-            "team": 1
-        },
-        {
-            "name": "Fire Elemental",
+            "name": "Flameskull",
             "team": 1
         }
     ]

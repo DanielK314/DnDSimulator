@@ -476,6 +476,8 @@ class entity:                                          #A Character
         self.prone = 0
         self.is_blinded = False
         self.is_dodged = False    #is handled by the DodgedToken
+        self.is_stunned = False
+
 
         self.last_attacker = 0
         self.dmg_dealed = 0
@@ -1151,6 +1153,9 @@ class entity:                                          #A Character
         if self.is_blinded:
             advantage_disadvantage -= 1
             self.DM.say(self.name + ' blinded, ')
+        if target.is_stunned:
+            advantage_disadvantage += 1
+            self.DM.say(target.name + ' stunned, ')
         if target.prone == 1:
             if is_ranged:
                 advantage_disadvantage -=1 #disad for ranged against prone
@@ -1952,6 +1957,7 @@ class entity:                                          #A Character
         self.prone = 0
         self.is_blinded = False
         self.is_dodged = False
+        self.is_stunned = False
 
         self.dash_target = False
         self.has_dashed_this_round = False
