@@ -1,5 +1,3 @@
-from typing import Any
-from typing_extensions import Literal
 from Entity_class import *
 from Dm_class import *
 from tkinter import Frame, Canvas, IntVar, Label, Entry, Misc, StringVar, Listbox, BOTH, VERTICAL, RIGHT, LEFT, ALL, Y, X, HORIZONTAL, BOTTOM

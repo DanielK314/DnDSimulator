@@ -1985,7 +1985,7 @@ class entity:                                          #A Character
             self.DM.say(self.name + ' is shooting web', True)
             self.spider_web_is_charged = False
             target.last_attacker = self #remember last attacker
-            SpiderWebDC = 9 + self.Dex
+            SpiderWebDC = 9 + self.modifier[1] #Dex
             #Shoot Web at random Target
             if target.make_save(1, DC = SpiderWebDC) < SpiderWebDC:
                 self.DM.say(target.name + ' is caugth in the web and restrained', True)

@@ -55,9 +55,12 @@ New BeastForms:
 
 New Abilities: 
 1.add Ability to Entity Class Init under special Abilites
+1.1 If you using recources, reset them in long rest
+1.2 If you add a recource, use exception to ensure backwards compatability
 2.Implement the feature in the Entity class
 2.1 If it involves a decision maybe add it to AI class
 2.2 If it is something to do as action or bonus action, add it as a choice class
+
 
 Add to GUI:
 Bool Attributes:
