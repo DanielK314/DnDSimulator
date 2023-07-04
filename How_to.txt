@@ -55,9 +55,12 @@ New BeastForms:
 
 New Abilities: 
 1.add Ability to Entity Class Init under special Abilites
+1.1 If you using recources, reset them in long rest
+1.2 If you add a recource, use exception to ensure backwards compatability
 2.Implement the feature in the Entity class
 2.1 If it involves a decision maybe add it to AI class
 2.2 If it is something to do as action or bonus action, add it as a choice class
+
 
 Add to GUI:
 Bool Attributes:
@@ -71,6 +74,7 @@ Entry Attributes:
 1.1 Add Name, add the Text that should be displayed in GUI, add ClassName (like Fighter, or Bard)
 1.2 Add 'AttributeName' which is the name of the Entities Attribute, like self.sorcery_points
 1.3 If it is a Float, set that to true, else it is a Int
+2. Add the Key to New Character.json
 
 New Spells:
 1. Add a new Spell Class for the Spell
