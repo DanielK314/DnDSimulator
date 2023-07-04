@@ -363,7 +363,8 @@ class entity:                                          #A Character
             self.knows_twinned_spell = True
 
     # Ki Points
-        self.ki_points_base = int(data['Ki_Points'])
+        try: self.ki_points_base = int(data['Ki_Points'])
+        except: self.ki_points_base = 0
         self.ki_points = self.ki_points_base
         self.knows_deflect_missiles = False
         if 'DeflectMissiles' in self.other.abilities:
@@ -380,6 +381,9 @@ class entity:                                          #A Character
         self.knows_stunning_strike = False
         if 'StunningStrike' in self.other.abilities:
             self.knows_stunning_strike = True
+        self.knows_open_hand_technique = False
+        if 'OpenHandTechnique' in self.other.abilities:
+            self.knows_open_hand_technique = True
 
     #Monster Abilites
         self.knows_dragons_breath = False
@@ -1351,6 +1355,11 @@ class entity:                                          #A Character
             if self.knows_favored_foe:
                 if self.AI.want_to_use_favored_foe(target) and self.favored_foe_counter > 0 and self.is_concentrating == False:
                     self.use_favored_foe(target)
+        #Detect Missile
+            if target.knows_deflect_missiles and is_ranged:
+                if target.reaction == 1:
+                    target.use_deflect_missiles(self, Dmg)
+
         #Tokens
             target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
             self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
@@ -1759,6 +1768,23 @@ class entity:                                          #A Character
         FavFoeToken(self.TM, FavFoeMarkToken(target.TM, subtype='fm')) #mark target as fav foe
         self.favored_foe_counter -= 1
 
+    def use_deflect_missiles(self, target, Dmg):
+        rules = [
+            self.knows_deflect_missiles,
+            self.reaction == 1
+        ]
+        errors = [
+            self.name + ' tried to use deflect missiles without knowing it',
+            self.name + ' tried to use deflect missiles but already used their reaction'
+        ]
+        ifstatements(rules, errors, self.DM).check()
+        self.DM.say(''.join([self.name, ' deflected ', target.name, '\'s ranged attack']), True)
+        self.reaction = 0
+        Dmg.substract(5 + self.modifier[1] + self.ki_points_base)
+        if Dmg.abs_amount() < 1 and self.ki_points > 0:
+            self.attack(target, is_ranged=True)
+            self.ki_points -= 1
+
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
         #This function is called if a player is attacked and damaged in changeCHP
@@ -1878,6 +1904,7 @@ class entity:                                          #A Character
         self.rage_round_counter = 0
         self.lay_on_hands_counter = self.lay_on_hands
         self.sorcery_points = self.sorcery_points_base
+        self.ki_points = self.ki_points_base
         self.action_surge_counter = self.action_surges
         self.action_surge_used = False
         self.has_used_second_wind = False

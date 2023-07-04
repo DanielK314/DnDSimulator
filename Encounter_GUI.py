@@ -1,5 +1,3 @@
-from typing import Any
-from typing_extensions import Literal
 from Entity_class import *
 from Dm_class import *
 from tkinter import Frame, Canvas, IntVar, Label, Entry, Misc, StringVar, Listbox, BOTH, VERTICAL, RIGHT, LEFT, ALL, Y, X, HORIZONTAL, BOTTOM
@@ -41,6 +39,7 @@ class Controller(Frame):
         'Inspiration', 'CuttingWords', 'CombatInspiration',
         'PrimalCompanion', 'BestialFury',
         'AgonizingBlast','TurnUndead',
+        'DeflectMissiles',
         'GreatWeaponMaster', 'PolearmMaster',
         'DragonsBreath', 'SpiderWeb', 'PoisonBite', 'RechargeAOE']
 
@@ -55,8 +54,9 @@ class Controller(Frame):
                 8:{'name':'Ranger', 'Number':2},
                 9:{'name':'Warlock', 'Number':1},
                 10:{'name':'Cleric', 'Number':1},
-                11:{'name':'Feats', 'Number':2},
-                12:{'name':'Monster', 'Number':4}}
+                11:{'name':'Monk', 'Number':1}, #Increase Number when implement more abilities
+                12:{'name':'Feats', 'Number':2},
+                13:{'name':'Monster', 'Number':4}}
 
         self.All_Other_Ability_Entries = {
             'ActionSurges':{'Text': 'Action Surges', 'ClassName': 'Fighter', 'AttributeName': 'action_surges', 'IsFLoatStat': False},
@@ -73,7 +73,8 @@ class Controller(Frame):
             'AOERechargeDmg':{'Text': 'Recharge AOE Dmg', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dmg', 'IsFLoatStat': True},
             'AOERechargeDC':{'Text': 'Recharge AOE DC', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dc', 'IsFLoatStat': False},
             'AOERechargeArea':{'Text': 'Recharge AOE Area', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_area', 'IsFLoatStat': False},
-            'AOERechargePropability':{'Text': 'AOE Recharge Propability', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_propability', 'IsFLoatStat': True}
+            'AOERechargePropability':{'Text': 'AOE Recharge Propability', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_propability', 'IsFLoatStat': True},
+            'Ki_Points':{'Text': 'Ki Points', 'ClassName': 'Monk', 'AttributeName': 'ki_points_base', 'IsFLoatStat': False}
         }
 
         self.All_Types = ['normal', 'undead', 'beast', 'plant', 'construct', 'fiend']
