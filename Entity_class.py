@@ -367,22 +367,22 @@ class entity:                                          #A Character
         except: self.ki_points_base = 0
         self.ki_points = self.ki_points_base
         self.knows_deflect_missiles = False
-        if 'DeflectMissiles' in self.other.abilities:
+        if 'DeflectMissiles' in self.other_abilities:
             self.knows_deflect_missiles = True
         self.knows_flurry_of_blows = False
-        if 'FlurryOfBlows' in self.other.abilities:
+        if 'FlurryOfBlows' in self.other_abilities:
             self.knows_flurry_of_blows = True
         self.knows_patient_defense = False
-        if 'PatientDefense' in self.other.abilities:
+        if 'PatientDefense' in self.other_abilities:
             self.knows_patient_defense = True
         self.knows_step_of_the_wind = False
-        if 'StepOfTheWind' in self.other.abilities:
+        if 'StepOfTheWind' in self.other_abilities:
             self.knows_step_of_the_wind = True
         self.knows_stunning_strike = False
-        if 'StunningStrike' in self.other.abilities:
+        if 'StunningStrike' in self.other_abilities:
             self.knows_stunning_strike = True
         self.knows_open_hand_technique = False
-        if 'OpenHandTechnique' in self.other.abilities:
+        if 'OpenHandTechnique' in self.other_abilities:
             self.knows_open_hand_technique = True
 
     #Monster Abilites
