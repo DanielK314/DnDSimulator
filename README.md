@@ -7,7 +7,7 @@ I am still working to improve the simulation and to add more abilities to the sy
 # Quick Install
 The easiest way to install is to go to the releases and download the DNDSimulator.zip for either Windows10 or MacOS. Unpack the .zip and click on the StartSimulator.exe. After a moment the interface should pop up. Have fun.
 
-https://github.com/DanielK314/DnDSimulator/releases/tag/v1.0.1
+https://github.com/DanielK314/DnDSimulator/releases/tag/v1.2.1
 
 # Using Python to run
 
@@ -137,13 +137,33 @@ Now it gets really interesting. In the following I will discuss the different sp
 
 **Cutting Words** Might use a inspiration die to cutting words an attack
 
+**Primal Companion** The Character will summon one companion at the start of the fight, according to the ranger subclass rules. If it makes sense the Ranger will use its bonus action to make the companion attack, otherwise the companion will use the dodge action.
+
 **Aganizing Blast** Warlock invocation
 
 **Turn Undead** Choose if a character can Turn Undead, how often and at what CR (level) they destroy undead
 
+**Great Wapon Master** The can take a -5 to hit for +10 dmg on melee attacks. Make sure, that the character is not set on ranged attacks, or this feat is useless. The 'AI' calculates the expections value of the attack to hit with and without Great Weapon Master according to the characters to hit mod and the targets AC. The character will use the option that will result in the best damage average, also taking advantage into consideration
+
+**Polearm Master** If player try to attack this character melee, they trigger an attack of opportunity
+
+**Monster Abilities**
+<img src="/Documentation/Monster.png" width=40% height=40%>
+
 **DragonsBreath** This ability is charged at the start of a turn with a 5 or 6 on a d6 roll. If charged the monster will breath fire on multiple random targets via the 'use_drongs_breath' Entity function. Its dmg scales with the Con mod und level of the player using it (Save DC = 12 + int((Level-10)/3) , DMG = 20 + int(level*3.1). This corresponds pretty accurately to red dragons (young to ancient) but works in principle for all characters.
 
 **SpiderWeb** This ability is charged at the start of a turn with a 5 or 6 on a d6 roll. If charged the monster will shoot a spider web to restrain a target. The DC scales with Dex mod (9 + Dex). Works in principle for all characters.
+
+**Heal at start of turn** As long as this monster is conscious, it heals the amount at the start of the turn
+
+**Legendary Resistances** The monster can choose to succeed on a failed save. It will use the feature if it can.
+
+**Monster AEO** This feature allows you to cosumize a specific AEO effect. Choose the dmg type, the dmg amount, how often it recharged (propability at start of turn) and the save DC/Type. The Area correlates to how many characters are hit, for example, fireball, 20ft radius -> pi*20^2 = 1250ft^2. Remember to also check the button to activate this ability.
+
+## Strategy
+<img src="/Documentation/Strategy.png" width=40% height=40%>
+
+You can use the Strategy Setting to adjust how strategic the character behaves. This mainly affects the way a character chooses targets for attacks and spells. A player character should have a Strategy Level of 5, maybe 6 if they are more strategic. Use higher levels for evil necromancers or stuff like that, because a higher level results in focusing attacks and killing unconscious player if they can. Lower level are good for beasts, because then the attacks get more random. At strategy level 1-2 they basically attack a random enemy. If you do not want to deal with this, just let it set on 5, it is a fine setting for any character.
 
 # Spellcasting
 
