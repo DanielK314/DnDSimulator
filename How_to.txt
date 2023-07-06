@@ -116,6 +116,10 @@ Use the program pyinstall
 File is in dist foulder
 Add the rest of the Stuff and .zip it 
 
+Checkout Remote Repo:
+git remote add name git://path/to/coworkers/repo.git (only once)
+git fetch name
+git check remotes/name/branch
 
 Test ttkinter bootstrap
 python -m ttkbootstrap
