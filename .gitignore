@@ -4,3 +4,4 @@
 # Python
 *.pyc
 .spec
+simulation_parameters.json

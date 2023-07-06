@@ -20,6 +20,7 @@ if __name__ == '__main__':
 #gwa - great weapon attack token 
 #fav - favored foeing
 #fm - fav foe marked
+#st - stunned
 
 #All Token of a Entity are handled by its TM Token Manager
 #It has a list with all Token
@@ -69,13 +70,17 @@ class TokenManager():
         self.player.is_hunters_marked = False
         self.player.restrained = False
         self.player.is_blinded = False
+        self.player.is_stunned = False
         for x in self.TokenList:
             #--------------restrained----------------
             if x.subtype == 'r':
                 self.player.restrained = True #set player restrained
             #-------------blinded--------------
             if x.subtype == 'bl':
-                self.player.is_blinded = True #set player restrained
+                self.player.is_blinded = True #set player blinded
+            #-------------stunned--------------
+            if x.subtype == 'st':
+                self.player.is_stunned = True #set player stunned
             #--------------hasted------------
             if x.subtype == 'h':
                 self.player.is_hasted = True #set player haste
@@ -251,6 +256,7 @@ class DockToken(Token):
         if len(self.links) == 0:
             self.resolve() #resolve if no links left
 
+
 class ConcentrationToken(DockToken):
     #This is a token to give to a player when concentrating
     def __init__(self, TM, links):
@@ -273,6 +279,7 @@ class ConcentrationToken(DockToken):
             #If the dock token is resolved, it resolves all links, which in turn resolve the dock token
             self.TM.player.is_concentrating = False #No longer concentrated
             self.TM.player.DM.say(self.TM.player.name + ' no longer concentrated')
+
 
 #-------------Spell Tokens----------
 class EntangledToken(LinkToken):
@@ -545,4 +552,18 @@ class FavFoeToken(ConcentrationToken):
         self.TM.player.has_favored_foe = False
         return super().resolve()
 
+class StunningStrikedToken(LinkToken): #give this to target, Dock token will be done automatically
+    def __init__(self, TM):
+        super().__init__(TM, "st")
+        self.resolveWhenUnconcious = True
 
+    def resolve(self):
+        self.TM.player.DM.say(self.TM.player.name + ' is no longer Stunned, ', True)
+        return super().resolve()
+
+class StunningStrikeActive(DockToken):
+    # Is a Dock Token with a Timer, if resolved will also resolve the Linked Token
+    def __init__(self, TM, links):
+        super().__init__(TM, links)
+        self.hasATimer = True
+        self.timer = 2  # Till End of next Turn

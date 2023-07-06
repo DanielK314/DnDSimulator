@@ -5,35 +5,11 @@
     },
     "Entities": [
         {
-            "name": "Giant Spider",
-            "team": 1
-        },
-        {
-            "name": "Bard Lv5",
+            "name": "Monk Lv5",
             "team": 0
         },
         {
-            "name": "Paladin Lv5",
-            "team": 0
-        },
-        {
-            "name": "Wizard Lv5",
-            "team": 0
-        },
-        {
-            "name": "Barbarian Lv5",
-            "team": 0
-        },
-        {
-            "name": "Cleric Lv5",
-            "team": 0
-        },
-        {
-            "name": "Sorcerer Lv5",
-            "team": 0
-        },
-        {
-            "name": "Fire Elemental",
+            "name": "Flameskull",
             "team": 1
         }
     ]
