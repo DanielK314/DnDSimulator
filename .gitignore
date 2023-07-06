@@ -4,4 +4,9 @@
 # Python
 *.pyc
 .spec
+
+#Changing Files
 simulation_parameters.json
+formatted_profile.txt
+profile_results
+simulation_result.txt
