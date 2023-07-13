@@ -366,6 +366,7 @@ class entity:                                          #A Character
         try: self.ki_points_base = int(data['Ki_Points'])
         except: self.ki_points_base = 0
         self.ki_points = self.ki_points_base
+        self.ki_save_dc = 8 + self.proficiency + self.modifier[4]
         self.knows_deflect_missiles = False
         if 'DeflectMissiles' in self.other_abilities:
             self.knows_deflect_missiles = True
@@ -1360,11 +1361,10 @@ class entity:                                          #A Character
             if self.knows_favored_foe:
                 if self.AI.want_to_use_favored_foe(target) and self.favored_foe_counter > 0 and self.is_concentrating == False:
                     self.use_favored_foe(target)
-        #Detect Missile
-            if target.knows_deflect_missiles and is_ranged:
-                if target.reaction == 1:
-                    target.use_deflect_missiles(self, Dmg)
-
+        #Stunning Strike
+        if self.knows_stunning_strike and is_ranged == False:
+            if self.ki_points > 0:
+                self.use_stunning_strike(target)
         #Tokens
             target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
             self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
@@ -1390,6 +1390,11 @@ class entity:                                          #A Character
                 self.DM.say(' Attack was intercepted: -' + str(target.interception_amount))
                 Dmg.substract(target.interception_amount)
                 target.interception_amount = 0 #only once
+        #Detect Missile
+            if target.knows_deflect_missiles and is_ranged:
+                if target.reaction == 1:
+                    target.use_deflect_missiles(self, Dmg)
+
         else:
             Dmg = dmg(amount=0)   #0 dmg
             self.DM.say(''.join(['miss: ',str(d20),'+',str(tohit),'+',str(Modifier),'/',str(target.AC),'+',str(ACBonus)]))
@@ -1398,6 +1403,7 @@ class entity:                                          #A Character
         if self.knows_wolf_totem:
             target.has_wolf_mark = True #marked with wolf totem
         return Dmg.abs_amount()
+
 
 #-------------------Wild Shape---------------
     def wild_shape(self, ShapeIndex):
@@ -1787,8 +1793,30 @@ class entity:                                          #A Character
         self.reaction = 0
         Dmg.substract(5 + self.modifier[1] + self.ki_points_base)
         if Dmg.abs_amount() < 1 and self.ki_points > 0:
+            self.DM.say(''.join([self.name, ' catches and redirects ', target.name, '\'s missile back at them!']), True)
             self.attack(target, is_ranged=True)
             self.ki_points -= 1
+
+    def use_stunning_strike(self, target):
+        rules = [
+            self.knows_stunning_strike,
+            self.ki_points >= 1
+        ]
+        errors = [
+            self.name + ' tried to use stunning strike without knowing it.',
+            self.name + ' tried to use stunning strike but is out of ki points.'
+        ]
+        ifstatements(rules, errors, self.DM).check()
+        self.DM.say(''.join([self.name, ' used stunning strike, ', target.name]), True)
+        self.ki_points -= 1
+        if target.make_save(2, DC = self.ki_save_dc) < self.ki_save_dc:
+            LinkToken = StunningStrikedToken(target.TM)
+            StunningStrikeActive(self.TM, [LinkToken])
+            self.DM.say(''.join([target.name, ' failed their saving throw and is stunned.']), True)
+        else:
+            self.DM.say(''.join([target.name, ' passed their saving throw and avoided being stunned.']), True)
+
+
 
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
