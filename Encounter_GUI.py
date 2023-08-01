@@ -39,7 +39,7 @@ class Controller(Frame):
         'Inspiration', 'CuttingWords', 'CombatInspiration',
         'PrimalCompanion', 'BestialFury',
         'AgonizingBlast','TurnUndead',
-        'DeflectMissiles',
+        'DeflectMissiles', 'StunningStrike',
         'GreatWeaponMaster', 'PolearmMaster',
         'DragonsBreath', 'SpiderWeb', 'PoisonBite', 'RechargeAOE']
 
@@ -54,7 +54,7 @@ class Controller(Frame):
                 8:{'name':'Ranger', 'Number':2},
                 9:{'name':'Warlock', 'Number':1},
                 10:{'name':'Cleric', 'Number':1},
-                11:{'name':'Monk', 'Number':1}, #Increase Number when implement more abilities
+                11:{'name':'Monk', 'Number':2}, #Increase Number when implement more abilities
                 12:{'name':'Feats', 'Number':2},
                 13:{'name':'Monster', 'Number':4}}
 

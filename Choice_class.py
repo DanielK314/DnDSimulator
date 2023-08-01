@@ -279,6 +279,22 @@ class do_spellcasting(choice):
         if self.ChoosenSpell != False:
             self.ChoosenSpell() #cast choosen Spell
 
+class use_ki(choice):
+    def __init__(self, player):
+        super().__init__(player)
+
+    def score(self, fight):
+        player = self.player
+        if player.ki_points == 0: return 0
+        Score = 0
+
+        # if player.
+
+    def execute(self, fight):
+        player = self.player
+
+    #ki point priority in descending order of score/priority: stunning strike (prioritize strong enemy), flurry of blows (if have open hand technique, ++score, prob always before stunning strike), deflect missiles (conditional, see entity class), step of the wind, patient defense
+
 class do_monster_ability(choice):
     def __init__(self, player):
         super().__init__(player)
