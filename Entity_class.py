@@ -1362,9 +1362,9 @@ class entity:                                          #A Character
                 if self.AI.want_to_use_favored_foe(target) and self.favored_foe_counter > 0 and self.is_concentrating == False:
                     self.use_favored_foe(target)
         #Stunning Strike
-        if self.knows_stunning_strike and is_ranged == False:
-            if self.ki_points > 0:
-                self.use_stunning_strike(target)
+            if self.knows_stunning_strike and is_ranged == False:
+                if self.ki_points > 0:
+                    self.use_stunning_strike(target)
         #Tokens
             target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
             self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
