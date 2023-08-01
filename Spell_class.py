@@ -727,6 +727,7 @@ class entangle(save_spell):
         self.EntangleTokens = [] #List for entagle Tokens
         for target in targets:
             self.make_save(target, twinned)  #This triggeres the super class make save function, if failed the take_effect function is called
+            #Here self.EntangleTokens is filled with tokens if it takes effect
         if len(self.EntangleTokens) != 0:
             ConcentrationToken(self.TM, self.EntangleTokens)
             #player is concentrating on a Entagled Target or targets
