@@ -8,18 +8,6 @@ import time
 from random import random
 
 
-
-testdict = {0:{'name':'zero'},
-            1:{'name':'zero1'},
-            2:{'name':'zero2'},
-            3:{'name':'zero3'}
-            }
-for x in testdict:
-    if testdict[x]['name'] == 'zero3':
-        print(x)
-
-
-
 DM = DungeonMaster()
 DM.enable_print()
 Character = entity('Bard Lv5', 0, DM, archive=False)
@@ -36,13 +24,27 @@ Enemy4.name = 'Ogre4'
 fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
 
 Character.SpellBook = dict()
-for x in Character.Spell_classes:
-    spell_to_lern = x(Character)  #Initiate Spell
-    spell_to_lern.is_known = True #Spell is known
-    Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
+# for x in Character.Spell_classes:
+#     spell_to_lern = x(Character)  #Initiate Spell
+#     spell_to_lern.is_known = True #Spell is known
+#     Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
-Character.knows_agonizing_blast = True
-Character.SpellBook['EldritchBlast'].cast(Enemy)
+
+Character.knows_stunning_strike = True
+Character.ki_points = 5
+Character.tohit = 10
+Character.dmg = 10
+Character.has_range_attack = False
+Character.attack_counter = 1
+Character.action = 1
+
+print(Enemy.CHP)
+#Character.start_of_turn()
+#Character.AI.do_your_turn(fight)
+Character.make_normal_attack_on(Enemy, fight)
+
+DM.say('', True)
+print(Enemy.CHP)
 
 # from scipy.optimize import curve_fit
 # import matplotlib.pyplot as plt
