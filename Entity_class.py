@@ -1390,7 +1390,7 @@ class entity:                                          #A Character
                 self.DM.say(' Attack was intercepted: -' + str(target.interception_amount))
                 Dmg.substract(target.interception_amount)
                 target.interception_amount = 0 #only once
-        #Detect Missile
+        #Deflect Missile
             if target.knows_deflect_missiles and is_ranged:
                 if target.reaction == 1:
                     target.use_deflect_missiles(self, Dmg)
@@ -1865,6 +1865,12 @@ class entity:                                          #A Character
             self.action = 0
             self.attack_counter = 0
             self.bonus_action = 0
+
+        if self.is_stunned:
+            self.action = 0
+            self.attack_counter = 0
+            self.bonus_action = 0
+            self.reaction = 0
         
         if self.start_of_turn_heal != 0:
             self.use_start_of_turn_heal()
@@ -1876,8 +1882,9 @@ class entity:                                          #A Character
 
     def end_of_turn(self):    #resets all round counters
         self.bonus_action = 1
-        if self.is_a_turned_undead == False:
-            self.reaction = 1
+        self.reaction = 1
+        if self.is_a_turned_undead or self.is_stunned:
+            self.reaction = 0
         self.action = 1
         self.has_cast_left = True
         self.poison_bites = 1
