@@ -1813,6 +1813,7 @@ class entity:                                          #A Character
         self.favored_foe_counter -= 1
 
     def use_deflect_missiles(self, target, Dmg):
+        #Check if this is allowed
         rules = [
             self.knows_deflect_missiles,
             self.reaction == 1
@@ -1822,14 +1823,21 @@ class entity:                                          #A Character
             self.name + ' tried to use deflect missiles but already used their reaction'
         ]
         ifstatements(rules, errors, self.DM).check()
-        self.DM.say(''.join([self.name, ' deflected ', target.name, '\'s ranged attack']), True)
-        self.reaction = 0
-        Dmg.substract(5 + self.modifier[1] + self.ki_points_base)
-        if Dmg.abs_amount() < 1 and self.ki_points > 0:
-            if self.AI.want_to_use_deflect_missiles_attack(target, Dmg):
-                self.DM.say(''.join([self.name, ' catches and redirects ', target.name, '\'s missile back at them!']), True)
-                self.attack(target, is_ranged=True)
-                self.ki_points -= 1
+        #ask AI if player wants to reduce dmg with reaction
+        #and if so, it it also wants to return attack if possible
+        wants_to_reduce_dmg, wants_to_return_attack = self.AI.want_to_use_deflect_missiles(target, Dmg)
+
+        if wants_to_reduce_dmg:
+            #Reduce dmg
+            self.DM.say(''.join([self.name, ' deflected ', target.name, '\'s ranged attack']), True)
+            self.reaction = 0
+            Dmg.substract(5 + self.modifier[1] + self.ki_points_base) #this will reduce the dmg later when dmg is calculated and changed in changeCHP
+            #Wants to return Attack?
+            if wants_to_return_attack:
+                if Dmg.abs_amount() < 1 and self.ki_points > 0: #You can return attack
+                    self.DM.say(''.join([self.name, ' catches and redirects ', target.name, '\'s missile back at them!']), True)
+                    self.ki_points -= 1
+                    self.attack(target, is_ranged=True) #Make an ranged attack
 
     def use_stunning_strike(self, target):
         rules = [
