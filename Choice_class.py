@@ -42,7 +42,7 @@ class do_attack(choice):
         
         if player.knows_reckless_attack:
             dmg = dmg*1.2 #improved chance to hit
-        if player.restrained:
+        if player.restrained or player.is_blinded or player.is_poisoned:
             dmg = dmg*0.8
         if player.is_hexing:
             dmg += 3.5

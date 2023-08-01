@@ -472,12 +472,16 @@ class entity:                                          #A Character
         self.has_cast_left = True #if a spell is cast, hast_cast_left = False
         self.is_concentrating = False
 
+        #Conditions
         self.restrained = False            #will be ckeckt wenn attack/ed, !!!!!!!!! only handle via Tokens
         self.prone = 0
         self.is_blinded = False
         self.is_dodged = False    #is handled by the DodgedToken
         self.is_stunned = False
-
+        self.is_incapacitated = False
+        self.is_paralyzed = False
+        self.is_poisoned = False
+        self.is_invisible = False
 
         self.last_attacker = 0
         self.dmg_dealed = 0
@@ -691,14 +695,25 @@ class entity:                                          #A Character
         #It returns a current, roughly dmg equal score of the entity to compare how important it is for the team
         #Score that should be roughly a dmg per round equal value
         Score = self.dps() #see .dps() func, is dmg and heal*2 per turn
+        if self.is_invisible:
+            Score = Score*1.2
+        if self.is_hasted:
+            Score = Score*1.1
+
+        if self.prone == 1:
+            Score = Score*0.95
         if self.restrained == 1:
             Score = Score*0.9
         if self.is_blinded:
             Score = Score*0.9
-        if self.prone == 1:
+        if self.is_poisoned:
             Score = Score*0.95
-        if self.is_hasted:
-            Score = Score*1.1
+        if self.is_incapacitated:
+            Score = Score*0.2
+        if self.is_stunned:
+            Score = Score*0.15
+        if self.is_paralyzed:
+            Score = Score*0.1
         return Score
 
     def update_additional_resistances(self):
@@ -723,7 +738,8 @@ class entity:                                          #A Character
             text += 'restrained, '
         if self.is_dodged:
             saves_adv_dis[1] += 1  #dodge adv on dex save
-            text += 'restrained, '
+            text += 'dodged, '
+
         if self.raged == 1:   #str ad if raged
             saves_adv_dis[0] += 1
             text += 'raging, '
@@ -1128,6 +1144,7 @@ class entity:                                          #A Character
         if target.state == 0:
             advantage_disadvantage += 1 #advantage against unconscious
             self.DM.say(target.name + ' unconscious, ')
+
         if target.reckless == 1:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' reckless, ')
@@ -1138,6 +1155,16 @@ class entity:                                          #A Character
             advantage_disadvantage -= 1
             #disadvantage for opp. att against eagle totem
             self.DM.say('eagle totem, ')
+        if self.knows_assassinate:
+            if self.DM.rounds_number == 1 and self.initiative > target.initiative:
+                #Assassins have advantage against player that have not had a turn
+                advantage_disadvantage += 1
+                self.DM.say(self.name + ' assassinte, ')
+        if target.has_wolf_mark and is_ranged == False:
+            self.DM.say(target.name + ' has wolf totem, ')
+            advantage_disadvantage += 1
+
+        #Conditions
         if target.restrained == 1:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' restrained, ')
@@ -1156,6 +1183,19 @@ class entity:                                          #A Character
         if target.is_stunned:
             advantage_disadvantage += 1
             self.DM.say(target.name + ' stunned, ')
+        if self.is_invisible:
+            advantage_disadvantage += 1
+            self.DM.say(self.name + ' invisible')
+        if target.is_invisible:
+            advantage_disadvantage -= 1
+            self.DM.say(target.name + ' invisible')
+        if target.is_paralyzed:
+            advantage_disadvantage += 1
+            self.DM.say(target.name + ' paralyzed')
+        if self.is_poisoned:
+            advantage_disadvantage -= 1
+            self.DM.say(self.name + ' poisoned')
+
         if target.prone == 1:
             if is_ranged:
                 advantage_disadvantage -=1 #disad for ranged against prone
@@ -1165,14 +1205,6 @@ class entity:                                          #A Character
         if self.prone == 1:
             advantage_disadvantage -= 1
             self.DM.say(self.name + ' prone, ')
-        if self.knows_assassinate:
-            if self.DM.rounds_number == 1 and self.initiative > target.initiative:
-                #Assassins have advantage against player that have not had a turn
-                advantage_disadvantage += 1
-                self.DM.say(self.name + ' assassinte, ')
-        if target.has_wolf_mark and is_ranged == False:
-            self.DM.say(target.name + ' has wolf totem, ')
-            advantage_disadvantage += 1
         if target.is_guiding_bolted:
             #This is set by the guidingBolted Token triggered bevore
             self.DM.say('guiding bolt, ')
@@ -1958,6 +1990,11 @@ class entity:                                          #A Character
         self.is_blinded = False
         self.is_dodged = False
         self.is_stunned = False
+        self.is_incapacitated = False
+        self.is_paralyzed = False
+        self.is_poisoned = False
+        self.is_invisible = False
+
 
         self.dash_target = False
         self.has_dashed_this_round = False

@@ -48,7 +48,7 @@ class AI:
         self.dying_allies = [i for i in self.allies if i.state == 0]     #who is dying
 
         #stand up if prone
-        if player.prone == 1 and player.restrained == 0:
+        if player.prone == 1 and not (player.restrained or player.is_stunned or player.is_paralyzed):
             player.stand_up()
         
         #Summon Primal Companion if you have
@@ -260,7 +260,7 @@ class AI:
 
         if player.knows_reckless_attack:
             dmg = dmg*1.2 #improved chance to hit
-        if player.restrained: #decreases Chance to hit
+        if player.restrained or player.is_blinded or player.is_poisoned: #decreases Chance to hit
             dmg = dmg*0.8
         if player.is_hexing:
             dmg += 2+player.attacks
@@ -394,7 +394,8 @@ class AI:
         if target.is_concentrating: Score += TargetDPS/3*(random()*RandomWeight + 1)
         if target.has_summons: Score += TargetDPS/2*(random()*RandomWeight + 1)
         if target.has_armor_of_agathys: Score -= PlayerDPS/3*(random()*RandomWeight + 1)
-        if target.restrained or target.prone or target.is_blinded:
+
+        if target.restrained or target.prone or target.is_blinded or target.is_stunned or target.is_paralyzed: #Attack with advantage
             Score += TargetDPS/4*(random()*RandomWeight + 1)
         if target.is_dodged: Score -= dmg/5*(random()*RandomWeight + 1)
 
