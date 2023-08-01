@@ -1393,7 +1393,8 @@ class entity:                                          #A Character
         #Deflect Missile
             if target.knows_deflect_missiles and is_ranged:
                 if target.reaction == 1:
-                    target.use_deflect_missiles(self, Dmg)
+                    if target.AI.want_to_use_deflect_missiles(self, Dmg):
+                        target.use_deflect_missiles(self, Dmg)
 
         else:
             Dmg = dmg(amount=0)   #0 dmg
@@ -1793,9 +1794,10 @@ class entity:                                          #A Character
         self.reaction = 0
         Dmg.substract(5 + self.modifier[1] + self.ki_points_base)
         if Dmg.abs_amount() < 1 and self.ki_points > 0:
-            self.DM.say(''.join([self.name, ' catches and redirects ', target.name, '\'s missile back at them!']), True)
-            self.attack(target, is_ranged=True)
-            self.ki_points -= 1
+            if self.AI.want_to_use_deflect_missiles_attack(target, Dmg):
+                self.DM.say(''.join([self.name, ' catches and redirects ', target.name, '\'s missile back at them!']), True)
+                self.attack(target, is_ranged=True)
+                self.ki_points -= 1
 
     def use_stunning_strike(self, target):
         rules = [

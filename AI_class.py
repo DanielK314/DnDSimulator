@@ -186,6 +186,23 @@ class AI:
         #more here pls
         return True
 
+    def want_to_use_deflect_missiles(self, target, Dmg):
+        useAbilityScore = 5 + self.modifier[1] + self.ki_points_base
+        if Dmg >= self.CHP:
+            return True
+        x = self.CHP / self.HP
+        useAbilityScore = useAbilityScore * (3/(np.exp((x - 0.2)*10) + 1) + 1)
+        #We are scaling the likelihood of using reaction based on current HP vs max, making much more likely below 50% hp[add graph of function to docs]
+        if useAbilityScore > Dmg:
+            return True
+        return False
+
+    def want_to_use_deflect_missiles_attack(self, target):
+        #We want to call this within/with the above function, and return both boolean values to Entity at the same time
+        return True
+
+
+
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet
     #The chooser takes all enemies and chooses amoung those to hit with the area of effect
