@@ -34,7 +34,7 @@ def run_time_benchmark():
     }
 
     Fighters = [entity(Entities[i]['name'], Entities[i]['team'], DM) for i in range(0,len(Entities))]
-    print(full_statistical_recap(200, Fighters))  #Standard 1000 rep
+    print(full_statistical_recap(200, Fighters))  #Standard 200 rep
 
 if __name__ == '__main__':
     run_time_benchmark()

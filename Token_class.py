@@ -5,22 +5,29 @@ if __name__ == '__main__':
 #con - concentration
 #l - Link
 
-#subtypes
-#h - haste
-#r - restrained
-#hex - is hexed
-#hexn - is hexing
-#hm - is hunters marked
-#hmg - is hunters marking
-#ca - conjured Animals
-#aop - is in aura of protection
-#gb - guiding Bolt
-#prc - primal compantion
-#gw - great weapon master dock
-#gwa - great weapon attack token 
-#fav - favored foeing
-#fm - fav foe marked
-#st - stunned
+#subtypes that change an attribute
+    #r - restrained
+    #st - stunned
+    #ic - incapacitated
+    #pl - paralysed
+    #bl - blinded
+    #ps - poisoned
+    #iv - invisible
+    #h - haste
+    #hex - is hexed
+    #hexn - is hexing
+    #hm - is hunters marked
+    #hmg - is hunters marking
+
+#Subtypes that do not change an attribute
+    #ca - conjured Animals
+    #aop - is in aura of protection
+    #gb - guiding Bolt
+    #prc - primal compantion
+    #gw - great weapon master dock
+    #gwa - great weapon attack token 
+    #fav - favored foeing
+    #fm - fav foe marked
 
 #All Token of a Entity are handled by its TM Token Manager
 #It has a list with all Token
@@ -39,6 +46,19 @@ class TokenManager():
         if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactived
             self.player = entity('test', 0, 0)
         self.TokenList = []
+
+        self.subtype_dict = {'r' : ['restrained'],
+                            'bl' : ['is_blinded'],
+                            'st' : ['is_stunned', 'is_incapacitated'],
+                            'pl' : ['is_paralyzed', 'is_incapacitated'],
+                            'ps' : ['is_poisoned'],
+                            'iv' : ['is_invisible'],
+                            'h' : ['is_hasted'],
+                            'hex' : ['is_hexed'],
+                            'hexn' : ['is_hexing'],
+                            'hm' : ['is_hunters_marked'],
+                            'hmg' : ['is_hunters_marking']
+                            }
     
     def add(self, Token):
         self.TokenList.append(Token)
@@ -58,44 +78,34 @@ class TokenManager():
             x.identify()
     
     def update(self):
+        player = self.player
         #This is important for effects that could come from multiple sources
         #That is why this can not be handled via the tokens, because they would not know, if the effect come from more then one token
         #Concentration on the other hand is handled via the con token class
 
         #Got a new Token, Update Player Stats, like Concentration
-        self.player.is_hasted = False #preset to false
-        self.player.is_hexed = False
-        self.player.is_hexing = False
-        self.player.is_hunters_marking = False
-        self.player.is_hunters_marked = False
-        self.player.restrained = False
-        self.player.is_blinded = False
-        self.player.is_stunned = False
+        #First all attributes are set to false
+        #Then all tokens are looped and if they have a key the corresponding attribute is set to true
+        #Conditions
+        player.restrained = False
+        player.is_stunned = False
+        player.is_incapacitated = False
+        player.is_paralyzed = False
+        player.is_blinded = False
+        player.is_poisoned = False
+        player.is_invisible = False
+
+        player.is_hasted = False #preset to false
+        player.is_hexed = False
+        player.is_hexing = False
+        player.is_hunters_marked = False
+        player.is_hunters_marking = False
+
         for x in self.TokenList:
-            #--------------restrained----------------
-            if x.subtype == 'r':
-                self.player.restrained = True #set player restrained
-            #-------------blinded--------------
-            if x.subtype == 'bl':
-                self.player.is_blinded = True #set player blinded
-            #-------------stunned--------------
-            if x.subtype == 'st':
-                self.player.is_stunned = True #set player stunned
-            #--------------hasted------------
-            if x.subtype == 'h':
-                self.player.is_hasted = True #set player haste
-            #--------------hex---------
-            if x.subtype == 'hex':
-                self.player.is_hexed = True #set player hexed
-
-            if x.subtype == 'hexn':
-                self.player.is_hexing = True
-            #--------------hunters mark---------
-            if x.subtype == 'hm':
-                self.player.is_hunters_marked = True #set player hunters marked
-
-            if x.subtype == 'hmg':
-                self.player.is_hunters_marking = True
+            for key in list(self.subtype_dict.keys()):
+                if x.subtype == key:
+                    for player_att in self.subtype_dict[key]:
+                        setattr(player, player_att, True)
         
     def checkFor(self, subtype):
         #This Function tests for a Subtype String tag

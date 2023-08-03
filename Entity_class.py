@@ -476,13 +476,13 @@ class entity:                                          #A Character
         #Conditions
         self.restrained = False            #will be ckeckt wenn attack/ed, !!!!!!!!! only handle via Tokens
         self.prone = 0
-        self.is_blinded = False
+        self.is_blinded = False    #tokensubtype bl
         self.is_dodged = False    #is handled by the DodgedToken
-        self.is_stunned = False
-        self.is_incapacitated = False
-        self.is_paralyzed = False
-        self.is_poisoned = False
-        self.is_invisible = False
+        self.is_stunned = False   #tokensubtype st
+        self.is_incapacitated = False  #tokensubtype ic
+        self.is_paralyzed = False  #tokensubtype pl
+        self.is_poisoned = False   #tokensubtype ps
+        self.is_invisible = False   #tokensubtype iv
 
         self.last_attacker = 0
         self.dmg_dealed = 0
@@ -1904,11 +1904,13 @@ class entity:                                          #A Character
             self.AC += 2
 
         if self.is_a_turned_undead:
+            #they can also use dodge, so maybe implement 50/50
             self.action = 0
             self.attack_counter = 0
             self.bonus_action = 0
+            self.reaction = 0
 
-        if self.is_stunned:
+        if self.is_incapacitated:
             self.action = 0
             self.attack_counter = 0
             self.bonus_action = 0

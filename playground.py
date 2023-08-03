@@ -8,6 +8,7 @@ import time
 from random import random
 
 
+
 DM = DungeonMaster()
 DM.enable_print()
 Character = entity('Bard Lv5', 0, DM, archive=False)
@@ -22,6 +23,13 @@ Enemy4 = entity('Ogre', 1, DM, archive=True)
 Enemy4.name = 'Ogre4'
 
 fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
+
+TokenList = [LinkToken(Character.TM, subtype='hexn')]
+player = Character
+
+conditions = [player.restrained, player.is_blinded, player.is_stunned, player.is_incapacitated, player.is_paralyzed, player.is_poisoned, player.is_hexing]
+for x in conditions:
+    print(x)
 
 Character.SpellBook = dict()
 # for x in Character.Spell_classes:
