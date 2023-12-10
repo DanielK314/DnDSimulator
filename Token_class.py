@@ -47,6 +47,9 @@ class TokenManager():
             self.player = entity('test', 0, 0)
         self.TokenList = []
 
+        #This dict contains all the subtypes and
+        #what attribute of the player they set to True
+        #if such a Token is in the TM
         self.subtype_dict = {'r' : ['restrained'],
                             'bl' : ['is_blinded'],
                             'st' : ['is_stunned', 'is_incapacitated'],
@@ -101,10 +104,10 @@ class TokenManager():
         player.is_hunters_marked = False
         player.is_hunters_marking = False
 
-        for x in self.TokenList:
-            for key in list(self.subtype_dict.keys()):
-                if x.subtype == key:
-                    for player_att in self.subtype_dict[key]:
+        for x in self.TokenList: #Loop the List of all Tokens
+            for key in list(self.subtype_dict.keys()): #Loop the List of Subtype keys for each token
+                if x.subtype == key: #If the subtype of that token is the key
+                    for player_att in self.subtype_dict[key]: #Set all the sorresponding Attributes to true
                         setattr(player, player_att, True)
         
     def checkFor(self, subtype):

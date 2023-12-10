@@ -122,5 +122,16 @@ git remote add name git://path/to/coworkers/repo.git (only once)
 git fetch name
 git check remotes/name/branch
 
+Count the lines of code
+git ls-files | grep '\.py' | xargs wc -l
+
 Test ttkinter bootstrap
 python -m ttkbootstrap
+
+Uberspace Website
+ssh encosim@norma.uberspace.de
+https://encosim.uber.space
+
+restart fastAPI:
+supervisorctl stop all 
+supervisorctl start all 
