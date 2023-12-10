@@ -11,7 +11,7 @@ import os
 import sys
 
 class entity:                                          #A Character
-    def __init__(self, name, team, DM, archive = False):                  #Atk - Attack [+x to Hit, mean dmg]
+    def __init__(self, name, team, DM, archive = False, external_json = False):                  #Atk - Attack [+x to Hit, mean dmg]
 
         if getattr(sys, 'frozen', False):
             application_path = os.path.dirname(sys.executable)
@@ -22,9 +22,15 @@ class entity:                                          #A Character
             path = application_path + '/Entities/' + str(name) + '.json'
         else:
             path = application_path + '/Archive/' + str(name) + '.json'
-        file = open(path)
-        data = json.load(file)
-        file.close()
+
+        if external_json == False:
+            file = open(path)
+            data = json.load(file)
+            file.close()
+        else:
+            data = external_json
+
+
         self.data = data
         self.DM = DM
         self.TM = TokenManager(self)  #Token Manager
