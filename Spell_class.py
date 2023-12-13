@@ -68,7 +68,7 @@ class spell:
         self.was_cast += 1  #for spell recap
 
     def announce_cast(self):
-        text = ''.join([self.player.name,' casts ',self.spell_text,' at lv.',str(self.cast_level)])
+        text = ''.join([self.player.name,' casts ',self.spell_text,' at lv.', str(self.cast_level)])
         self.player.DM.say(text, True)
 
     def score(self, fight, twinned_cast = False):
@@ -261,10 +261,10 @@ class spell:
             prop = 1 - (1-prop)**2  #would have to miss twice
         return prop
 
-    def dmg_score(self, SpellTargets, SpellAttack=True, SpellSave=False):
+    def dmg_score(self, SpellTargets, CastLevel, SpellAttack=True, SpellSave=False):
         #This returns a dmg score for the score functions
         DMGScore = 0
-        dmg = self.spell_dmg() #is defined in the subclasses that need it
+        dmg = self.spell_dmg(CastLevel) #is defined in the subclasses that need it
         for target in SpellTargets:
             target_dmg = dmg
             if SpellSave: #Prop that target makes save
@@ -341,10 +341,10 @@ class attack_spell(spell):
     def cast(self, targets, cast_level=False, twinned=False):
         if type(targets) != list:
             targets = [targets]  #if a list, take first target
-        super().cast(targets, cast_level, twinned) #self.cast_level is not set
+        super().cast(targets, cast_level, twinned) #self.cast_level is set in spell super.cast
         #Cast is authorized, so make a spell attack
         tohit = self.player.spell_mod + self.player.proficiency
-        dmg = self.spell_dmg()
+        dmg = self.spell_dmg(cast_level)
 
         if self.player.empowered_spell:
             dmg = dmg*1.21
@@ -370,7 +370,7 @@ class attack_spell(spell):
                 target_counter = 0  #if all targets were attacked once, return to first
         return dmg_dealed
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         #This function will return the dmg according to Cast Level
         print('No dmg defined for spell: ' + self.spell_name)
 
@@ -382,14 +382,13 @@ class attack_spell(spell):
         else:
             CastLevel = self.choose_highest_slot(self.spell_level,9) #Choose highest Spell Slot
             if CastLevel == False: return self.return_0_score()
-        self.cast_level = CastLevel #do that the following dmg_score functions works prop
 
         #Find a suitable target/targts for this spell
         Choices = [x for x in fight if x.team != self.player.team]
         SpellTargets = []
         for i in range(0,self.number_of_attacks):
             #Append as many targets as attack numbers
-            SpellTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type, is_silent=True)
+            SpellTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(CastLevel), other_dmg_type=self.dmg_type, is_silent=True)
             if SpellTarget == False: #No target found
                 return self.return_0_score()
             else: SpellTargets.append(SpellTarget)
@@ -398,7 +397,7 @@ class attack_spell(spell):
         if twinned_cast:
             if all([self.is_twin_castable, self.number_of_attacks == 1]):
                 Choices.remove(SpellTargets[0]) #do not double twin cast
-                TwinTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(), other_dmg_type=self.dmg_type, is_silent=True)
+                TwinTarget = self.player.AI.choose_att_target(Choices, AttackIsRanged=self.is_range_spell, other_dmg = self.spell_dmg(CastLevel), other_dmg_type=self.dmg_type, is_silent=True)
                 if TwinTarget == False: return self.return_0_score()  #No Target found
                 SpellTargets.append(TwinTarget)
             else:
@@ -407,7 +406,7 @@ class attack_spell(spell):
 
         #DMG Score
         Score = 0
-        Score += self.dmg_score(SpellTargets, SpellAttack=True, SpellSave=False)
+        Score += self.dmg_score(SpellTargets, CastLevel, SpellAttack=True, SpellSave=False)
         if twinned_cast: Score = Score*2
 
         Score = Score*self.random_score_scale()  #a little random power
@@ -459,10 +458,10 @@ class aoe_dmg_spell(spell):
     def cast(self, targets, cast_level=False, twinned=False):
         #Multiple Targts
         if type(targets) != list: targets = [targets]
-        super().cast(targets, cast_level, twinned) #self.cast_level now set
+        super().cast(targets, cast_level, twinned) #self.cast_level now set in spell super cast
 
         #Damage and empowered Spell
-        damage = self.spell_dmg()
+        damage = self.spell_dmg(cast_level)
         if self.player.empowered_spell:
             damage = damage*1.21
             self.player.empowered_spell = False
@@ -485,7 +484,7 @@ class aoe_dmg_spell(spell):
         target.last_attacker = self.player
         target.changeCHP(dmg_to_apply, self.player, True)
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         #This function will return the dmg according to Cast Level
         print('No dmg defined for spell: ' + self.spell_name)
 
@@ -502,7 +501,7 @@ class aoe_dmg_spell(spell):
         SpellTargets = self.player.AI.area_of_effect_chooser(fight, self.aoe_area)
 
         #DMG Score
-        Score = self.dmg_score(SpellTargets, SpellAttack=False, SpellSave=True)
+        Score = self.dmg_score(SpellTargets, CastLevel, SpellAttack=False, SpellSave=True)
         Score = Score*self.random_score_scale()  #a little random power
         return Score, SpellTargets, CastLevel
 
@@ -510,15 +509,6 @@ class aoe_dmg_spell(spell):
 #Cantrips
 class firebolt(attack_spell):
     def __init__(self, player):
-        self.firebolt_dmg = 0
-        if player.level < 5:
-            self.firebolt_dmg = 5.5
-        elif player.level < 11:
-            self.firebolt_dmg = 5.5*2
-        elif player.level < 17:
-            self.firebolt_dmg = 5.5*3
-        else:
-            self.firebolt_dmg = 5.5*4
         dmg_type = 'fire'
         self.spell_name = 'FireBolt'
         super().__init__(player, dmg_type)
@@ -528,24 +518,22 @@ class firebolt(attack_spell):
         self.is_range_spell = True
         self.is_twin_castable = True
     
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
+        self.firebolt_dmg = 0
+        if self.player.level < 5:
+            self.firebolt_dmg = 5.5
+        elif self.player.level < 11:
+            self.firebolt_dmg = 5.5*2
+        elif self.player.level < 17:
+            self.firebolt_dmg = 5.5*3
+        else:
+            self.firebolt_dmg = 5.5*4
         return self.firebolt_dmg
 
 class chill_touch(attack_spell):
     def __init__(self, player):
         dmg_type = 'necrotic'
         self.spell_name = 'ChillTouch'
-
-        self.chill_touch_dmg = 0
-        #Calculate DMG
-        if player.level < 5:
-            self.chill_touch_dmg = 4.5
-        elif player.level < 11:
-            self.chill_touch_dmg = 4.5*2
-        elif player.level < 17:
-            self.chill_touch_dmg = 4.5*3
-        else:
-            self.chill_touch_dmg = 4.5*4
 
         super().__init__(player, dmg_type)
         self.spell_text = 'chill touch'
@@ -554,7 +542,17 @@ class chill_touch(attack_spell):
         self.is_range_spell = False
         self.is_twin_castable = True
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
+        self.chill_touch_dmg = 0
+        #Calculate DMG
+        if self.player.level < 5:
+            self.chill_touch_dmg = 4.5
+        elif self.player.level < 11:
+            self.chill_touch_dmg = 4.5*2
+        elif self.player.level < 17:
+            self.chill_touch_dmg = 4.5*3
+        else:
+            self.chill_touch_dmg = 4.5*4
         return self.chill_touch_dmg
     
     def cast(self, target, cast_level=0, twinned=False):
@@ -574,7 +572,6 @@ class chill_touch(attack_spell):
 
 class eldritch_blast(attack_spell):
     def __init__(self, player):
-        self.blast_dmg = 5.5
         dmg_type = 'force'
         self.spell_name = 'EldritchBlast'
         super().__init__(player, dmg_type)
@@ -595,12 +592,12 @@ class eldritch_blast(attack_spell):
         self.is_range_spell = True
         self.is_twin_castable = False
     
-    def spell_dmg(self):
-        spell_dmg = self.blast_dmg
+    def spell_dmg(self, cast_level):
+        damage = 5.5 #1d10
         #Aganizing Blast
         if self.player.knows_agonizing_blast:
-            spell_dmg += self.player.modifier[5] #Add Cha Mod
-        return spell_dmg
+            damage += self.player.modifier[5] #Add Cha Mod
+        return damage
 
     def announce_cast(self):
         super().announce_cast()
@@ -617,9 +614,9 @@ class burning_hands(aoe_dmg_spell):
         self.spell_level = 1
         self.is_range_spell = True
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         #Return the spell dmg
-        damage = 7 + 3.5*(self.cast_level)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 10.5 + 3.5*(cast_level-1)   #upcast dmg 3d6 + 1d6 per level over 2
         return damage
 
 class magic_missile(spell):
@@ -667,12 +664,12 @@ class magic_missile(spell):
             return self.return_0_score()
 
         #DMG Score
-        Score = self.dmg_score(SpellTargets, SpellAttack=False)
+        Score = self.dmg_score(SpellTargets, CastLevel, SpellAttack=False)
         Score += 2*CastLevel #a little extra for save hit
         Score = Score*self.random_score_scale() # +/-20% range to vary spells
         return Score, SpellTargets, CastLevel
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         return 3.5
 
 class guiding_bolt(attack_spell):
@@ -694,8 +691,8 @@ class guiding_bolt(attack_spell):
             LinkToken = GuidingBoltedToken(target.TM) #Target gets guiding bolted token
             GuidingBoltToken(self.TM, [LinkToken]) #Timer Dock Token for player
    
-    def spell_dmg(self):
-        return 11 + 5.5*self.cast_level #3d10 + 1d10/level > 1
+    def spell_dmg(self, cast_level):
+        return 14 + 3.5*(cast_level-1) #3d10 + 1d10/level > 1
 
     def score(self, fight, twinned_cast=False):
         Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
@@ -772,7 +769,7 @@ class cure_wounds(spell):
     
     def cast(self, target, cast_level=False, twinned=False):
         if type(target) == list: target = target[0]
-        super().cast(target, cast_level, twinned)
+        super().cast(target, cast_level, twinned) #self.cast_level now set
         heal = 4.5*self.cast_level + self.player.spell_mod
 #        self.DM.say(self.player.name + ' touches ' + target.name + ' with magic:')
         target.changeCHP(dmg(-heal, 'heal'), self.player, False)
@@ -789,7 +786,7 @@ class healing_word(spell):
     
     def cast(self, target, cast_level=False, twinned=False):
         if type(target) == list: target = target[0]
-        super().cast(target, cast_level, twinned)
+        super().cast(target, cast_level, twinned) #self.cast_level now set
         heal = 2.5*self.cast_level + self.player.spell_mod
         if heal < 0: heal = 1
 #        self.DM.say(self.player.name + ' speaks to ' + target.name)
@@ -999,8 +996,8 @@ class inflict_wounds(attack_spell):
         self.spell_level = 1
         self.is_twin_castable = True
     
-    def spell_dmg(self):
-        return 11 + 5.5*self.cast_level #3d10 + 1d10/level > 1
+    def spell_dmg(self, cast_level):
+        return 16.5 + 5.5*(cast_level-1) #3d10 + 1d10/level > 1
 
 #2-Level Spell
 
@@ -1013,7 +1010,7 @@ class scorching_ray(attack_spell):
         self.spell_level = 2
         self.is_range_spell = True
     
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         return 7 #2d6 dmg per ray
 
     def cast(self, targets, cast_level=False, twinned=False):
@@ -1031,9 +1028,9 @@ class aganazzars_sorcher(aoe_dmg_spell):
         self.spell_level = 2
         self.is_range_spell = True
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         #Return the spell dmg
-        damage = 13.5 + 4.5*(self.cast_level-2)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 13.5 + 4.5*(cast_level-2)   #upcast dmg 3d8 + 1d8 per level over 2
         return damage
 
 class shatter(aoe_dmg_spell):
@@ -1045,9 +1042,9 @@ class shatter(aoe_dmg_spell):
         self.spell_level = 2
         self.is_range_spell = True
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         #Return the spell dmg
-        damage = 13.5 + 4.5*(self.cast_level-2)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 13.5 + 4.5*(cast_level-2)   #upcast dmg 3d8 + 1d8 per level over 2
         return damage
 
 class spiritual_weapon(spell):
@@ -1096,8 +1093,8 @@ class spiritual_weapon(spell):
         self.player.attack(target, is_ranged=False, other_dmg=WeaponDmg, damage_type='force', tohit=WeaponTohit, is_spell=True)
         self.player.bonus_action = 0 #It uses the BA to attack
 
-    def spell_dmg(self):
-        return self.player.spell_mod + 4.5*(self.cast_level - 1)
+    def spell_dmg(self, cast_level):
+        return self.player.spell_mod + 4.5*(cast_level - 1)
 
     def score(self, fight, twinned_cast=False):
         player = self.player
@@ -1112,15 +1109,14 @@ class spiritual_weapon(spell):
             if CastLevel == False:
                 return self.return_0_score()
         else: return self.return_0_score()
-        self.cast_level = CastLevel #That the dmg_score for choose_att works prop
 
         #Choose Target for first attack
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=self.spell_dmg(), other_dmg_type=self.dmg_type, is_silent=True)]
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=self.spell_dmg(CastLevel), other_dmg_type=self.dmg_type, is_silent=True)]
         if SpellTargets[0] == False:
             return self.return_0_score()#no Enemy in reach
 
 
-        Score = self.dmg_score(SpellTargets, SpellAttack=True)
+        Score = self.dmg_score(SpellTargets, CastLevel, SpellAttack=True)
         Score = Score*(2 + 2*random()) #expecting to hit with it multiple times
         Score = Score*self.random_score_scale()
         return Score, SpellTargets, CastLevel
@@ -1135,9 +1131,9 @@ class fireball(aoe_dmg_spell):
         self.spell_level = 3
         self.is_range_spell = True
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         #Return the spell dmg
-        damage = 28 + 3.5*(self.cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 28 + 3.5*(cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
         return damage
 
 class lightningBolt(aoe_dmg_spell):
@@ -1149,9 +1145,9 @@ class lightningBolt(aoe_dmg_spell):
         self.spell_level = 3
         self.is_range_spell = True
 
-    def spell_dmg(self):
+    def spell_dmg(self, cast_level):
         #Return the spell dmg
-        damage = 28 + 3.5*(self.cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 28 + 3.5*(cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
         return damage
 
 class haste(spell):
@@ -1292,7 +1288,7 @@ class conjure_animals(spell):
             TotalCR = 6
         else: 
             TotalCR = 8
-        Score = TotalCR*6*(random()*2 + 1.5) #CR * 6dmg/CR * 1.5-3.5 Rounds
+        Score = TotalCR*6*(random()*2 + 1) #CR * 6dmg/CR * 1-3 Rounds
         return Score, SpellTargets, CastLevel
 
 #4-Level Spell
@@ -1335,10 +1331,9 @@ class blight(aoe_dmg_spell):
     def score(self, fight, twinned_cast=False):
         CastLevel = self.choose_highest_slot(4,9)
         if CastLevel == False: return self.return_0_score()
-        self.cast_level = CastLevel
 
         self.addedDmg = 0  #is later added for plants, undead and constructs
-        dmg = self.spell_dmg()
+        dmg = self.spell_dmg(CastLevel)
         Choices = [x for x in fight if x.team != self.player.team]
         SpellTargets = [self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type, is_silent=True)]
         if SpellTargets == [False]: #No Target
@@ -1354,7 +1349,8 @@ class blight(aoe_dmg_spell):
         
         #DMG Score
         Score = 0
-        Score += self.dmg_score(SpellTargets, SpellAttack=False, SpellSave=True)
+        Score += self.dmg_score(SpellTargets, CastLevel, SpellAttack=False, SpellSave=True)
+        Score = Score*1.2 #good to dead focused dmg
 
         #Creature Type 
         for x in SpellTargets:
@@ -1366,6 +1362,103 @@ class blight(aoe_dmg_spell):
         Score = Score*self.random_score_scale() # a little random power 
         return Score, SpellTargets, CastLevel
 
-    def spell_dmg(self):
-        dmg = 4.5*4 + 4.5*self.cast_level
+    def spell_dmg(self, cast_level):
+        dmg = 36 + 4.5*(cast_level-4) #8d8 + 1d8 for sl lv > 4
         return dmg
+    
+class sickeningRadiance(aoe_dmg_spell):
+    #Not done, recheck
+    def __init__(self, player):
+        spell_save_type = 2 #Con
+        self.spell_name = 'SickeningRadiance'
+        super().__init__(player, spell_save_type, dmg_type='poison', aoe_area=2800) #No AOE
+        self.spell_text = 'sickening radiance'
+        self.spell_level = 4
+        self.is_range_spell = True
+        self.is_concentration_spell = True
+        self.recast_damge = 0
+
+    def cast(self, targets, cast_level=False, twinned=False):
+        if cast_level != False: self.recast_damge = self.spell_dmg(cast_level) #set damage for later recast
+        else: self.recast_damge = self.spell_dmg(self.spell_level) #level 5 spell
+        #Empowered spell does not affect recast, so it checks out 
+        super().cast(targets, cast_level, twinned) #Cast Spell as simple AOE once
+        #Add Token for late recast
+        SickeningRadianceToken(self.TM, [], cast_level) #no links
+
+    def make_save_for(self, target, damage):
+        #Modified function to account for not taking half dmg on failed save
+        #This function is called for every target to make the save and apply the dmg
+        save = target.make_save(self.spell_save_type,DC = self.player.spell_dc)
+        if save < self.player.spell_dc:
+            self.apply_dmg(target, damage=damage)
+
+    def recast(self, targets, cast_level=False, twinned=False):
+        #Recast the spell laster, if still concentrated
+        rules = [self.is_known,
+                 self.player.is_concentrating,]
+        errors = [self.player.name + ' tried to recast ' + self.spell_name + ', without knowing the spell',
+                self.player.name + ' tried to recast ' + self.spell_name + 'but is no longer concentrated']
+        ifstatements(rules, errors, self.DM).check()
+        #Recast for targets
+        self.DM.say(self.player.name + 's sickening radiance is still on the field', True)
+        for target in targets:
+            self.make_save_for(target, damage=self.recast_damge) #lets targets make saves and applies dmg
+    
+    def spell_dmg(self, cast_level):
+        dmg = 22 #4d10 no upcast improvement
+        return dmg
+
+    def score(self, fight, twinned_cast=False):
+        #Modify super score function
+        Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
+        Score = Score*0.75 #Reduce score, as on save no dmg
+        Score = Score*(random()*2 + 1) #expecting the spell to last for 1-3 Rounds
+        return Score, SpellTargets, CastLevel
+
+
+#5-Level Spell
+
+class cloudkill(aoe_dmg_spell):
+    def __init__(self, player):
+        spell_save_type = 2 #Con
+        self.spell_name = 'Cloudkill'
+        super().__init__(player, spell_save_type, dmg_type='poison', aoe_area=1250) #No AOE
+        self.spell_text = 'cloudkill'
+        self.spell_level = 5
+        self.is_range_spell = True
+        self.is_concentration_spell = True
+        self.recast_damge = 0
+
+    def cast(self, targets, cast_level=False, twinned=False):
+        if cast_level != False: self.recast_damge = self.spell_dmg(cast_level) #set damage for later recast
+        else: self.recast_damge = self.spell_dmg(self.spell_level) #level 5 spell
+        #Empowered spell does not affect recast, so it checks out 
+        super().cast(targets, cast_level, twinned) #Cast Spell as simple AOE once
+        #Add Token for late recast
+        CloudkillToken(self.TM, [], cast_level) #no links
+
+    def recast(self, targets, cast_level=False, twinned=False):
+        #Recast the spell laster, if still concentrated
+        rules = [self.is_known,
+                 self.player.is_concentrating,]
+        errors = [self.player.name + ' tried to recast ' + self.spell_name + ', without knowing the spell',
+                self.player.name + ' tried to recast ' + self.spell_name + 'but is no longer concentrated']
+        ifstatements(rules, errors, self.DM).check()
+        #Recast for targets
+        self.DM.say(self.player.name + 's cloud kill is still on the field', True)
+        for target in targets:
+            self.make_save_for(target, damage=self.recast_damge) #lets targets make saves and applies dmg
+    
+    def spell_dmg(self, cast_level):
+        dmg = 22.5 + 4.5*(cast_level-5) #5d8 + 1d8 per lv over 5
+        return dmg
+
+    def score(self, fight, twinned_cast=False):
+        #Modify super score function
+        Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
+        Score = Score*(random()*2 + 1) #expecting the spell to last for 1-3 Rounds
+        return Score, SpellTargets, CastLevel
+
+
+

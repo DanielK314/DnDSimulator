@@ -694,7 +694,7 @@ class EntityPage_cl(Frame):
         self.SpellBookTopFrame.grid(row=0, column=0, pady=5)
 
         SpellColumnFrames = [Frame(self.SpellBook) for i in range(0,3)]
-        Spellframes = [ttk.Labelframe(SpellColumnFrames[int(i/2)], text = 'Level ' + str(i)) for i in range(0,5)]
+        Spellframes = [ttk.Labelframe(SpellColumnFrames[int(i/2)], text = 'Level ' + str(i)) for i in range(0,6)]
 
         self.SpellBookListFrame = Frame(self.SpellBook)
         self.SpellList = [IntVar() for i in self.master.All_Spells]

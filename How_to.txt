@@ -84,12 +84,13 @@ New Spells:
 3.1 must return a dmg equal score, target and cast level
 3. Add a cast function
 3.1 Use Tokens for Concentration spells
-3.2 remember to rest counter or variables of the spell at end of turn or long rest, if used any
+3.2 remember to reset counter or variables of the spell at end of turn or long rest, if used any
 4. Add Spell to Spell Name List in Entity Class
-4.1 Spell chould be listed automatically in GUI and used if AI 
+4.1 Spell should be listed automatically in GUI and used if AI 
 
 New Token relation:
 1. Create a Link Token, via the LinkToken class or via a subclass
+1.1 if the token should set an attribute of the player, then add it to the TMs subtype_dict
 2. Initiate one or more Link Token
 3. Create a DockToken or a subclass of a DockToken
 3.1 wenn Initiateing the DockToken, give a List of the Link Tokens.

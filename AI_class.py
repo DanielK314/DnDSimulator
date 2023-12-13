@@ -63,6 +63,10 @@ class AI:
         if player.can_choose_new_hex: self.choose_new_hex(fight)
         if player.can_choose_new_hunters_mark: self.choose_new_hunters_mark(fight)
 
+        #Concentration Spells
+        if player.is_concentrating:
+            self.do_concentration_spells(fight)
+
         #Use Second Wind
         if player.knows_second_wind and player.has_used_second_wind == False:
             if player.bonus_action == 1:
@@ -101,6 +105,29 @@ class AI:
 
         #------------Still in Wild Shape
         else: self.smart_in_wildshape(fight)
+
+    def do_concentration_spells(self, fight):
+        #This function is called at start of turn if the player has a concentration Spell up
+        player = self.player
+
+        #Cloud Kill
+        if player.is_cloud_killing:
+            #Choose new targets
+            targets = self.area_of_effect_chooser(fight, area=1250)
+            #What Spell Slot
+            for token in self.player.TM.TokenList:
+                if token.subtype == 'ck': #cloud kill
+                    castLevel = token.castLevel #find cast level
+                    break
+            #recast cloud kill
+            player.SpellBook['Cloudkill'].recast(targets, castLevel)
+
+        #Sickening Radiance
+        if player.is_using_sickening_radiance:
+            #Choose new targets
+            targets = self.area_of_effect_chooser(fight, area=2800)
+            #recast cloud kill
+            player.SpellBook['SickeningRadiance'].recast(targets)
 
 #-----------Smart Actions
     def smart_in_wildshape(self, fight):
@@ -538,7 +565,6 @@ class AI:
 
 
 #---------Spells
-
     def choose_quickened_cast(self):
         #This function is called once per trun to determine if player wants to use quickned cast this round
         player = self.player
@@ -596,7 +622,7 @@ class AI:
             Choice = Choices[i]
             Score = 0
 
-        #In the following all Options will get a score, that roughly resemlbes their dmg or equal dmg value
+        #In the following all Options will get a score, that roughly resembles their dmg or equal dmg value
         #This Score is assigned by a function of the spellcasting class 
         #This function also evalues if it is good to use a quickened or twin cast
         #The evaluation of quickened Cast is currently not handled by these functions

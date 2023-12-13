@@ -18,6 +18,8 @@ if __name__ == '__main__':
     #hexn - is hexing
     #hm - is hunters marked
     #hmg - is hunters marking
+    #ck - is cloud killing
+    #sr - sickening radiance
 
 #Subtypes that do not change an attribute
     #ca - conjured Animals
@@ -60,7 +62,9 @@ class TokenManager():
                             'hex' : ['is_hexed'],
                             'hexn' : ['is_hexing'],
                             'hm' : ['is_hunters_marked'],
-                            'hmg' : ['is_hunters_marking']
+                            'hmg' : ['is_hunters_marking'],
+                            'ck' : ['is_cloud_killing'],
+                            'sr' : ['is_using_sickening_radiance']
                             }
     
     def add(self, Token):
@@ -103,11 +107,14 @@ class TokenManager():
         player.is_hexing = False
         player.is_hunters_marked = False
         player.is_hunters_marking = False
+        player.is_cloud_killing = False
+        player.is_using_sickening_radiance = False
+
 
         for x in self.TokenList: #Loop the List of all Tokens
             for key in list(self.subtype_dict.keys()): #Loop the List of Subtype keys for each token
                 if x.subtype == key: #If the subtype of that token is the key
-                    for player_att in self.subtype_dict[key]: #Set all the sorresponding Attributes to true
+                    for player_att in self.subtype_dict[key]: #Set all the corresponding Attributes to true
                         setattr(player, player_att, True)
         
     def checkFor(self, subtype):
@@ -146,6 +153,7 @@ class TokenManager():
         #ONLY called if player.state == 1
         for x in self.TokenList:
             if x.resolveAtTurnStart: x.resolve()
+            if x.triggersWhenStartOfTurn: x.startOfTurnTrigger()
 
     def hasHitWithAttack(self, target, Dmg, is_ranged, is_spell):
         #This function triggers all Tokens with the Trigger
@@ -153,11 +161,11 @@ class TokenManager():
         for x in self.TokenList:
             if x.triggersWhenAttackHasHits: x.hasHitWithAttackTrigger(target, Dmg, is_ranged, is_spell)
 
-    def washitWithAttack(self, target, Dmg, is_ranged, is_spell):
+    def washitWithAttack(self, attacker, Dmg, is_ranged, is_spell):
         #This function triggers all Tokens with the Trigger
-        #Is called from the attack function if player was hit with an attack
+        #Is called from the attack function of player was hit with an attack
         for x in self.TokenList:
-            if x.triggersWhenHitWithAttack: x.wasHitWithAttackTrigger(target, Dmg, is_ranged, is_spell)
+            if x.triggersWhenHitWithAttack: x.wasHitWithAttackTrigger(attacker, Dmg, is_ranged, is_spell)
 
     def death(self):
         for x in self.TokenList:
@@ -165,10 +173,9 @@ class TokenManager():
                 x.resolve()
             if x.triggersWhenUnconscious: x.getUnconsciousTrigger()
 
-    def isAttacked(self):
+    def isAttacked(self, attacker, is_ranged, is_spell):
         for x in self.TokenList:
-            if x.resolveIfAttacked:
-                x.resolve()        
+            if x.triggersWhenAttacked: x.wasAttackedTrigger(attacker, is_ranged, is_spell)
 
 class Token():
     def __init__(self, TM):
@@ -182,7 +189,6 @@ class Token():
         self.resolveWhenDead = False
         self.resolveAtTurnStart = False
         self.resolveAtTurnEnd = False
-        self.resolveIfAttacked = False
         self.hasATimer = False
         self.timer = 0
 
@@ -190,6 +196,8 @@ class Token():
         self.triggersWhenHitWithAttack = False
         self.triggersWhenUnconscious = False
         self.triggersWhenEndOfTurn = False
+        self.triggersWhenStartOfTurn = False
+        self.triggersWhenAttacked = False
 
         self.TM.add(self) #add and update the Token to TM
     
@@ -198,6 +206,12 @@ class Token():
         #Is then removed from TM list
         #Should be run last
         self.TM.resolve(self)
+
+    def wasAttackedTrigger(self, attacker, is_ranged, is_spell):
+        #This is a function of a Token
+        #It is called if the Character at start of beeing attacked, before hit or miss check
+        #It is a function, that not automatically resolves the token
+        return
 
     def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
         #This is a function of a Token
@@ -216,6 +230,9 @@ class Token():
         return
 
     def endOfTurnTrigger(self):
+        return
+
+    def startOfTurnTrigger(self):
         return
 
     def identify(self):
@@ -269,7 +286,6 @@ class DockToken(Token):
         if len(self.links) == 0:
             self.resolve() #resolve if no links left
 
-
 class ConcentrationToken(DockToken):
     #This is a token to give to a player when concentrating
     def __init__(self, TM, links):
@@ -292,7 +308,6 @@ class ConcentrationToken(DockToken):
             #If the dock token is resolved, it resolves all links, which in turn resolve the dock token
             self.TM.player.is_concentrating = False #No longer concentrated
             self.TM.player.DM.say(self.TM.player.name + ' no longer concentrated')
-
 
 #-------------Spell Tokens----------
 class EntangledToken(LinkToken):
@@ -412,9 +427,9 @@ class GuidingBoltedToken(LinkToken):
     def __init__(self, TM):
         subtype = 'gb'
         super().__init__(TM, subtype)
-        self.resolveIfAttacked = True  #Guiding Bolt gives Advantage if attacked
+        self.triggersWhenAttacked = True  #Guiding Bolt gives Advantage if attacked
 
-    def resolve(self):
+    def wasAttackedTrigger(self, attacker, is_ranged, is_spell):
         self.TM.player.is_guiding_bolted = True
         #This is reset in the make_attack_roll function
         return super().resolve()
@@ -457,6 +472,20 @@ class SummenedToken(LinkToken):
         summon.CHP = 0
         summon.state = -1
         return super().resolve()
+
+class CloudkillToken(ConcentrationToken):
+    #Is Concentration Token, lets the caster recast spell
+    def __init__(self, TM, links, castLevel):
+        self.subtype = 'ck' #cloud kill (sets the self.is_cloud_killing = True)
+        super().__init__(TM, links)
+        self.castLevel = castLevel
+
+class SickeningRadianceToken(ConcentrationToken):
+    #Is Concentration Token, lets the caster recast spell
+    def __init__(self, TM, links, castLevel):
+        self.subtype = 'sr' #sickening radiance (sets the self.is_using_sickening_radiance = True)
+        super().__init__(TM, links)
+        self.castLevel = castLevel
 
 #--------------Other Ability Tokens-----------------
 class EmittingProtectionAuraToken(DockToken):

@@ -38,11 +38,19 @@ ToDoList:
 112. Move to GitHub
 113. Better Documentation
 114. Executable for all OS
+115. Idea: Tokens could have danger ratings and that could factor into the decision making
+116. The DM should have the fight, instead of giving the fight to the functions on every move
+116.1 Redo sim structure, so that the DM simulates the fight, so do_the_fighting should be a DM class function
+116.2 If called, the DM gets the fight, and sets it as a object variables, so all Entities of this DM can then Acess the fight at all points through the DM
+117. Fixed, but might need rechecking: Big Problems with Cast Level in Spell and Spell Score, Cast level not yet set in Spell Score function
+118. Exhaustion implement, then add to Sickening Ray
 
 Spells to do
 -Ray of Frost, could be interesting with movement
 -think about spike growth
 -Web, could be interesting
+-Polymorph
+-Call lightning
 
 Game Test:
 1. You should be testing if the position management and attack choosing is sensable
