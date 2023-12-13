@@ -135,14 +135,14 @@ class entity:                                          #A Character
                            'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds', 'HuntersMark',
                            'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
                            'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals',
-                           'Blight', 'SickeningRadiance',
+                           'Blight', 'SickeningRadiance', 'WallOfFire',
                            'Cloudkill']
         #Add here all Spell classes that are impemented
         self.Spell_classes = [firebolt, chill_touch, eldritch_blast,
                          burning_hands, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds, hunters_mark,
                          aganazzars_sorcher, scorching_ray, shatter, spiritual_weapon,
                          fireball, lightningBolt, haste, conjure_animals,
-                         blight, sickeningRadiance,
+                         blight, sickeningRadiance, wallOfFire,
                          cloudkill]
         #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
         self.SpellBook = dict()
@@ -805,7 +805,7 @@ class entity:                                          #A Character
             #Just display text 
             roll_text = str(int(d20_roll)) + ' + ' + str(int(modifier))
             if AuraBonus != 0: roll_text += ' + ' + str(int(AuraBonus))
-            if DC != False: roll_text += ' / ' + str(DC)
+            if DC != False: roll_text += ' / ' + str(DC) + ' '
             self.DM.say(roll_text)
             return result
 
@@ -844,7 +844,7 @@ class entity:                                          #A Character
     def make_concentration_check(self, damage):
         if self.is_concentrating:
             saveDC = 10
-            if damage/2 > 10: saveDC = damage/2
+            if damage/2 > 10: saveDC = int(damage/2)
             save_res = self.make_save(2, DC=saveDC)
             if save_res >= saveDC:   #concentration is con save
                 return 
@@ -1366,15 +1366,14 @@ class entity:                                          #A Character
 
         #check if other to hit is passsed, like for a spell
         if tohit == False: tohit = self.tohit
-        if self.state != 1: return 0   #maybe already dead because of attack of opp
+        target.TM.isAttacked(self, is_ranged, is_spell)     #Triggers All Tokens, that trigger if target is attacked
+        if self.state != 1: return 0   #maybe already dead because of attack of opp or token
 
         self.DM.say(self.name + " -> " + target.name + ', ', True)
 
         if is_ranged: self.DM.say('ranged, ')
         else: self.DM.say('melee, ')
         if is_offhand: self.DM.say('off hand, ')
-
-        target.TM.isAttacked(self, is_ranged, is_spell)     #Triggers All Tokens, that trigger if target is attacked
 
         #Advantage still important for sneak attack
         d20, advantage_disadvantage = self.make_attack_roll(target, is_ranged, is_opportunity_attack)

@@ -344,7 +344,7 @@ class attack_spell(spell):
         super().cast(targets, cast_level, twinned) #self.cast_level is set in spell super.cast
         #Cast is authorized, so make a spell attack
         tohit = self.player.spell_mod + self.player.proficiency
-        dmg = self.spell_dmg(cast_level)
+        dmg = self.spell_dmg(self.cast_level)
 
         if self.player.empowered_spell:
             dmg = dmg*1.21
@@ -461,7 +461,7 @@ class aoe_dmg_spell(spell):
         super().cast(targets, cast_level, twinned) #self.cast_level now set in spell super cast
 
         #Damage and empowered Spell
-        damage = self.spell_dmg(cast_level)
+        damage = self.spell_dmg(self.cast_level)
         if self.player.empowered_spell:
             damage = damage*1.21
             self.player.empowered_spell = False
@@ -1416,6 +1416,41 @@ class sickeningRadiance(aoe_dmg_spell):
         Score = Score*(random()*2 + 1) #expecting the spell to last for 1-3 Rounds
         return Score, SpellTargets, CastLevel
 
+class wallOfFire(aoe_dmg_spell):
+    def __init__(self, player):
+        spell_save_type = 1 #Dex
+        dmg_type = 'fire'
+        aoe_area = 1000 #Higher then it is, but you can shape it to hit many targets
+        self.spell_name = 'WallOfFire'
+        super().__init__(player, spell_save_type, dmg_type, aoe_area)
+        self.spell_text = 'wall of fire'
+        self.spell_level = 4
+        self.is_range_spell = True
+        self.is_concentration_spell = True
+    
+    def cast(self, targets, cast_level=False, twinned=False):
+        #makes all the checks and saves and dmg
+        super().cast(targets, cast_level, twinned)
+        protectTarget = self
+        dmg = self.spell_dmg(self.cast_level)
+        #Protect yourself and one other with W.o.F.
+        protectTokenSelf = WallOfFireProtectedToken(protectTarget.TM, 'wf', dmg)
+        #Find another player to protect
+        #self.player.AI.choose_player_to_protect(fight)
+        #Problem here, cant get access to the fight list
+        #Fix later
+        #protectTokenOther = WallOfFireProtectedToken(protectTarget.TM, 'wf', dmg)
+        spellConToken = ConcentrationToken(self.TM, [protectTokenSelf])
+        self.DM.say(self.player.name + ' is protected by the wall of fire', True)
+
+    def spell_dmg(self, cast_level):
+        dmg = 22.5 + 4.5*(cast_level-4) #5d8 + 1d8/lv > 4
+        return dmg
+    
+    def score(self, fight, twinned_cast=False):
+        Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
+        Score = Score + self.spell_dmg(CastLevel)*(1.5*random()+1) #1-3 add hits while concentrated
+        return Score, SpellTargets, CastLevel
 
 #5-Level Spell
 

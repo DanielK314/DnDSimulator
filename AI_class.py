@@ -563,6 +563,34 @@ class AI:
                 return i+1
         return False 
 
+    def choose_player_to_protect(self, fight):
+        #Chooses one other allies, that is not self, which might be unconsious
+        player = self.player
+        allies = [x for x in fight if x.team == player.team and x.state != -1 and x != player]       #which allies left alive
+        if len(allies) == 0: return False #no allies
+
+        AllyScore = []
+        for ally in allies:
+            AllyScore.append(self.ally_score(ally)) #get score
+
+        #Return Ally with lowest SCore        
+        return allies[np.argmin(AllyScore)]
+
+    def ally_score(self, fight, ally):
+        #The higher the score, the less likely this player needs protection
+        Score = 0
+        Score += ally.AC #Low AC?
+        Score += ally.AC*ally.CHP/ally.HP #Low on HP?
+        Score += ally.HP/10
+        if ally.state == 0: Score = Score*0.5
+        conditions = [
+            ally.is_blinded, ally.is_stunned, ally.is_incapacitated, ally.is_paralyzed
+        ]
+        if any(conditions): Score*0.5
+        if ally.wild_shape_HP != 0: Score = Score*3
+        if ally.is_concentrating: Score = (Score- 5)/2
+        Score = Score*(1 + random()*(10/self.player.strategy_level - 1)/3) #randomness from strategy
+        return Score
 
 #---------Spells
     def choose_quickened_cast(self):

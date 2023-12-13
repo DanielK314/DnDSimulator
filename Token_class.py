@@ -1,6 +1,7 @@
 if __name__ == '__main__':
     from Entity_class import entity
 
+from Dmg_class import *
 #Types:
 #con - concentration
 #l - Link
@@ -30,6 +31,7 @@ if __name__ == '__main__':
     #gwa - great weapon attack token 
     #fav - favored foeing
     #fm - fav foe marked
+    #wf - Wall of Fire
 
 #All Token of a Entity are handled by its TM Token Manager
 #It has a list with all Token
@@ -472,6 +474,22 @@ class SummenedToken(LinkToken):
         summon.CHP = 0
         summon.state = -1
         return super().resolve()
+
+class WallOfFireProtectedToken(LinkToken):
+    def __init__(self, TM, subtype, damage):
+        super().__init__(TM, subtype)
+        self.damage = damage
+        self.triggersWhenAttacked = True #protect one player from attacks
+
+    def wasAttackedTrigger(self, attacker, is_ranged, is_spell):
+        #The protected player was attacked
+        #dmg the attacker
+        self.TM.player.DM.say(attacker.name + ' must go trough the wall of fire ', True)
+        dmg_to_apply = dmg(self.damage, 'fire')
+        original_caster = self.origin.TM.player #caster of wall of fire
+        attacker.last_attacker = original_caster
+        #apply dmg to the attacker
+        attacker.changeCHP(dmg_to_apply, original_caster, True)
 
 class CloudkillToken(ConcentrationToken):
     #Is Concentration Token, lets the caster recast spell

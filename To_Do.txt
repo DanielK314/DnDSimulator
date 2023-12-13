@@ -44,6 +44,8 @@ ToDoList:
 116.2 If called, the DM gets the fight, and sets it as a object variables, so all Entities of this DM can then Acess the fight at all points through the DM
 117. Fixed, but might need rechecking: Big Problems with Cast Level in Spell and Spell Score, Cast level not yet set in Spell Score function
 118. Exhaustion implement, then add to Sickening Ray
+119. Give the Concentration Tokens the Score, so that later the AI could decide to break concentration for something else
+120. improve choose_player_to_protect
 
 Spells to do
 -Ray of Frost, could be interesting with movement
