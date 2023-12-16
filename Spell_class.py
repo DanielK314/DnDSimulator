@@ -85,7 +85,7 @@ class spell:
                 self.player.raged == 0,
                 cast_level >= self.spell_level, 
                 self.player.spell_slot_counter[cast_level -1] > 0,
-                self.player.wild_shape_HP == 0,
+                self.player.is_shape_changed == False,
                 self.is_concentration_spell == False or self.player.is_concentrating==False]
         errors = [self.player.name + ' tried to cast ' + self.spell_name + ', without knowing the spell',
                 self.player.name + ' tried to cast ' + self.spell_name + ' but is raging',

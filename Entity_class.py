@@ -442,7 +442,11 @@ class entity:                                          #A Character
         except: self.legendary_resistances = 0
         self.legendary_resistances_counter = self.legendary_resistances
 
-    #Wild Shape
+    #Wild Shape / New Shapes
+        self.shape_name = ' '
+        self.shape_remark = ''
+        self.is_shape_changed = False
+        self.is_in_wild_shape = False
 
         self.BeastForms = {
             0:{'Name': 'Wolf', 'Level': 0.25},
@@ -464,9 +468,8 @@ class entity:                                          #A Character
         self.knows_combat_wild_shape = False
         if 'CombatWildShape' in self.other_abilities:
             self.knows_combat_wild_shape = True
-        self.wild_shape_HP = 0                    #temp HP of wild shape
+        self.shape_HP = 0                       #temp HP of the current (different) shape
         self.wild_shape_uses = 2
-        self.wild_shape_name = ' '
 
     #Fight Counter
         self.state = 1                       # 1 - alive, 0 - uncouncious, -1 dead
@@ -620,8 +623,8 @@ class entity:                                          #A Character
             if self.is_a_turned_undead:
                 self.end_turned_undead()
             self.make_concentration_check(damage) #Make Concentration Check for the dmg
-            if self.wild_shape_HP > 0:
-                self.change_wild_shape_HP(damage, attacker, was_ranged)
+            if self.is_shape_changed:
+                self.change_shape_HP(damage, attacker, was_ranged)
                 #Not checking resistances anymore, already done 
             else:
                 if self.THP > 0:     #Temporary Hitpoints
@@ -646,7 +649,7 @@ class entity:                                          #A Character
             attacker.changeCHP(AgathysDmg, self, was_ranged=False)
 
         #---------Heal
-        if damage < 0:               #neg. damage is heal
+        if damage < 0:               #neg. damage is heal Currently Heal is always applied to CHP never to shape HP
             if self.state == -1:
                 print('This is stupid, dead cant be healed', True)
                 quit()
@@ -662,16 +665,16 @@ class entity:                                          #A Character
 
         self.check_new_state(was_ranged)
 
-    def change_wild_shape_HP(self, damage, attacker, was_ranged):
-        if damage < self.wild_shape_HP:     #damage hits the wild shape
-            self.wild_shape_HP -= damage
-            self.DM.say(str(self.name) + ' takes damage in wild shape: ' + str(round(damage,2)) + ' now: ' + str(round(self.wild_shape_HP,2)), True)
+    def change_shape_HP(self, damage, attacker, was_ranged):
+        if damage < self.shape_HP:     #damage hits the wild shape
+            self.shape_HP -= damage
+            self.DM.say(str(self.name) + ' takes damage in' + self.shape_remark + ' shape: ' + str(round(damage,2)) + ' now: ' + str(round(self.shape_HP,2)), True)
         else:                  #wild shape breakes, overhang goes to changeCHP
-            overhang_damage = abs(self.wild_shape_HP - damage)
+            overhang_damage = abs(self.shape_HP - damage)
             
             #reshape after critical damage
-            self.wild_shape_drop()  #function that resets the players stats
-            self.DM.say(str(self.name) + ' wild shape breaks', True)
+            self.drop_shape()  #function that resets the players stats
+            self.DM.say(str(self.name) + self.shape_remark + ' shape breaks', True)
             #Remember, this function is called in ChangeCHP, so resistances and stuff has already been handled
             #For this reason a 'true' dmg type is passed here
             Dmg = dmg(overhang_damage, 'true')
@@ -1448,70 +1451,52 @@ class entity:                                          #A Character
             target.has_wolf_mark = True #marked with wolf totem
         return Dmg.abs_amount()
 
-
-#-------------------Wild Shape---------------
-    def wild_shape(self, ShapeIndex):
-        #ShapeIndex is Index in BeastFroms from entity __init__
-        #Wild shape needs an action or a bonus action if you know combat_wild_shape
-        rules = [
-            self.knows_wild_shape,
-            self.wild_shape_uses > 0,
-            self.wild_shape_HP == 0,
-            self.DruidCR >= self.BeastForms[ShapeIndex]['Level'],
-
-        ]
-        errors = [
-                self.name + ' tried to go into wild shape without knowing how',
-                self.name + ' cant go into wild shape anymore',
-                self.name + ' cant go into wild shape while in wildshape',
-                self.name + ' tried to go into a too high CR shape: ' + str(self.BeastForms[ShapeIndex]['Level'])
-        ]
-        ifstatements(rules, errors, self.DM)
-
-        if self.bonus_action == 1 and self.knows_combat_wild_shape:
-            player_can_wild_shape = True
-            self.bonus_action = 0
-        elif self.action == 1:
-            player_can_wild_shape = True
-            self.action = 0
-        else:
-            print('no action left for wildshape')
-            quit()
-
-        #A Shape form is choosen and then initiated as entity to use their stats
-        ShapeName = self.BeastForms[ShapeIndex]['Name']
-        NewShape = entity(ShapeName, self.team, self.DM, archive=True)
-        #Wild Shape Properties
+#-------------------Shape Changing, Wild Shape--------------
+    def assume_new_shape(self, ShapeName, ShapeDict, Remark = ''):
+        #Takes a dict as input for the shape properties
+        #Shape Properties
+        self.is_shape_changed = True
         self.name = self.orignial_name + '(' + ShapeName + ')'
-        self.shape_AC = NewShape.AC
-        self.wild_shape_HP = NewShape.HP
-        self.tohit = NewShape.tohit
-        self.attacks = NewShape.attacks
-        self.type = NewShape.type
-        #number auf Attacks
-        self.attack_counter = self.attacks
-        self.dmg = NewShape.dmg
-        self.wild_shape_name = ShapeName
+        self.shape_name = ShapeName
+        self.shape_remark = Remark
+        self.AC = ShapeDict['AC']
+        self.shape_AC = ShapeDict['AC']
+        self.shape_HP = ShapeDict['HP']
+        self.tohit = ShapeDict['To_Hit']
+        self.type = ShapeDict['Type']
 
-        #new modifier
-        self.stats_list = NewShape.stats_list
-        self.modifier = NewShape.modifier
+        #number auf Attacks
+        self.attacks = ShapeDict['Attacks']
+        self.attack_counter = self.attacks
+        self.dmg = ShapeDict['DMG']
+
+        #new Stats/Modifier
+        ShapeStatList = [
+            ShapeDict['Str'],
+            ShapeDict['Dex'],
+            ShapeDict['Con'],
+            ShapeDict['Int'],
+            ShapeDict['Wis'],
+            ShapeDict['Cha']
+        ]
+        ShapeModList = [round((self.stats_list[i] -10)/2 -0.1, 0) for i in range(0,6)]  #calculate the shape mod
+        self.stats_list = ShapeStatList
+        self.modifier = ShapeModList
 
         #new dmg types
-        self.damage_type = NewShape.damage_type
-        self.damage_resistances = NewShape.damage_resistances
-        self.damage_immunity = NewShape.damage_immunity
-        self.damage_vulnerability = NewShape.damage_vulnerability
+        self.damage_type = ShapeDict['Damage_Type']
+        self.damage_resistances = ShapeDict['Damage_Resistance']
+        self.damage_immunity = ShapeDict['Damage_Immunity']
+        self.damage_vulnerability = ShapeDict['Damage_Vulnerabilities']
 
-        self.DM.say(self.name + ' goes into wild shape ' + ShapeName, True)
-        self.wild_shape_uses -= 1
-
-    def wild_shape_drop(self):
-        if self.wild_shape_HP != 0:
+    def drop_shape(self):
+        #If Shape Changed, reset all the changed attributes back to base
+        if self.is_shape_changed:
             self.name = self.orignial_name
+            self.shape_remark = ''
             self.shape_AC = self.base_AC  #set the shape AC of Entity back to base AC (for more see __init__)
             self.AC = self.shape_AC #set current AC back
-            self.wild_shape_HP = 0
+            self.shape_HP = 0
             self.tohit = self.base_tohit
             self.attacks = self.base_attacks
             self.attack_counter = self.attacks
@@ -1526,15 +1511,71 @@ class entity:                                          #A Character
             self.damage_vulnerability = self.base_damage_vulnerability
             self.damage_type = self.base_damage_type
 
-            self.wild_shape_name = ' '
+            self.is_shape_changed = False  #no longer shape changed
+            self.is_in_wild_shape = False  #definately no longer in wild shape
+            self.shape_name = ' '            
+
+#-------------------Wild Shape---------------
+    def wild_shape(self, ShapeIndex):
+        #ShapeIndex is Index in BeastFroms from entity __init__
+        #Wild shape needs an action or a bonus action if you know combat_wild_shape
+        rules = [
+            self.knows_wild_shape,
+            self.wild_shape_uses > 0,
+            self.is_shape_changed == False,
+            self.DruidCR >= self.BeastForms[ShapeIndex]['Level']
+        ]
+        errors = [
+                self.name + ' tried to go into wild shape without knowing how',
+                self.name + ' cant go into wild shape anymore',
+                self.name + ' cant go into wild shape while chape changed',
+                self.name + ' tried to go into a too high CR shape: ' + str(self.BeastForms[ShapeIndex]['Level'])
+        ]
+        ifstatements(rules, errors, self.DM)
+
+        if self.bonus_action == 1 and self.knows_combat_wild_shape:
+            self.bonus_action = 0
+        elif self.action == 1:
+            self.action = 0
+        else:
+            print('no action left for wildshape')
+            quit()
+
+        #A Shape form is choosen and then initiated as entity to use their stats
+        ShapeName = self.BeastForms[ShapeIndex]['Name']
+        NewShape = entity(ShapeName, self.team, self.DM, archive=True)
+        #Use Stats to create dict for shape change function
+        ShapeDict = {
+            'AC' : NewShape.AC, 
+            'HP' : NewShape.HP,
+            'To_Hit' : NewShape.tohit,
+            'Type' : NewShape.type,
+            'Attacks' : NewShape.attacks,
+            'DMG' : NewShape.dmg,
+            'Str' : NewShape.Str,
+            'Dex' : NewShape.Dex,
+            'Con' : NewShape.Con,
+            'Int' : NewShape.Int,
+            'Wis' : NewShape.Wis,
+            'Cha' : NewShape.Cha,
+            'Damage_Type' : NewShape.damage_type,
+            'Damage_Resistance' : NewShape.damage_resistances, 
+            'Damage_Immunity' : NewShape.damage_immunity,
+            'Damage_Vulnerabilities' : NewShape.damage_vulnerability
+        }
+        self.assume_new_shape(ShapeName, ShapeDict, Remark= ' wild')
+
+        self.is_in_wild_shape = True
+        self.DM.say(self.name + ' goes into wild shape ' + ShapeName, True)
+        self.wild_shape_uses -= 1
 
     def wild_reshape(self):
-        if self.bonus_action == 1 and self.wild_shape_HP != 0:
+        if self.bonus_action == 1 and self.is_in_wild_shape:
             self.bonus_action = 0
-            self.wild_shape_drop()
+            self.drop_shape() #resets all shape prop. to base
             self.DM.say(self.name + ' drops wild shape', True)
         else:
-            if self.wild_shape_HP == 0:
+            if self.is_in_wild_shape == False:
                 print(self.name + ' tried to drop wild shape, but is not in wild shape')
                 quit()
             else:
@@ -1543,7 +1584,7 @@ class entity:                                          #A Character
 
     def use_combat_wild_shape_heal(self, spell_level=1):
         rules = [self.knows_combat_wild_shape,
-                self.wild_shape_HP > 0,
+                self.is_in_wild_shape,
                 self.spell_slot_counter[spell_level -1] > 0,
                 self.bonus_action == 1]
         errors = [self.name + ' tried to heal by combat wild shape but does not know how',
@@ -1554,6 +1595,7 @@ class entity:                                          #A Character
 
         heal = spell_level*4.5
         self.changeCHP(dmg(-heal, 'heal'), self, was_ranged=False)
+        #HEal is currently always applied to CHP not Shape HP 
         self.spell_slot_counter[spell_level -1] -= 1
         self.bonus_action -= 1
 
@@ -1869,8 +1911,6 @@ class entity:                                          #A Character
         else:
             self.DM.say(''.join([target.name, ' passed their saving throw and avoided being stunned.']), True)
 
-
-
 #---------------Spells---------------
     def check_for_armor_of_agathys(self):
         #This function is called if a player is attacked and damaged in changeCHP
@@ -2015,7 +2055,9 @@ class entity:                                          #A Character
         self.poison_bites = 1 #restore Poison bite 
         self.legendary_resistances_counter = self.legendary_resistances #regain leg. res.
 
-        self.wild_shape_HP = 0
+        self.drop_shape()
+        self.is_shape_changed = False
+        self.is_in_wild_shape = False
         self.wild_shape_uses = 2
         self.inspired = 0
         self.is_combat_inspired = False

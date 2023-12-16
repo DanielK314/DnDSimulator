@@ -76,8 +76,8 @@ class AI:
         if player.knows_interception:
             self.allies[int(random()*len(self.allies))].interception_amount = 5.5 + player.proficiency
 
-        #------------Not in WildShape
-        if player.wild_shape_HP == 0:
+        #------------Not in alternate Shape
+        if player.is_shape_changed == False:
         #--------Evaluate Choices
             while (player.action == 1 or player.bonus_action == 1) and player.state == 1:
                 EnemiesConscious = [x for x in fight if x.state == 1 and x.team != player.team]
@@ -104,7 +104,8 @@ class AI:
                     return
 
         #------------Still in Wild Shape
-        else: self.smart_in_wildshape(fight)
+        elif player.is_in_wild_shape: self.smart_in_wildshape(fight) #Do wild shape stuff
+        else: self.smart_in_changed_shape(fight) #Just use your shapes attacks
 
     def do_concentration_spells(self, fight):
         #This function is called at start of turn if the player has a concentration Spell up
@@ -155,11 +156,20 @@ class AI:
         player = self.player
         if player.knows_combat_wild_shape and player.bonus_action == 1:
             #if wild shape is low < 1/4
-            if 0 < player.wild_shape_HP < player.wild_shape_HP/4:
+            if player.is_in_wild_shape and player.shape_HP < 10:
                 #Still have spell slots?
-                for i in range(0,7):
-                    if player.spell_slot_counter[6-i] > 0: #try all spell slots, starting at 6
-                        player.use_combat_wild_shape_heal(spell_level=6-i+1) #spelllevel is 1+i
+                MaxSlot = self.choose_highest_slot(1,9)
+                if MaxSlot == False: return
+                SpellSlot = self.choose_highest_slot(1, MaxSlot - 2) #Dont use high spell slots
+                if SpellSlot == False: return #no low slots left
+                player.use_combat_wild_shape_heal(spell_level=SpellSlot)
+
+    def smart_in_changed_shape(self, fight):
+        player = self.player
+        #This function is called in do_your_turn if the player is still in alternate shape
+        if player.action == 1:
+            ch.do_attack(player).execute(fight)
+
 
 #---------Reaction and choices
     def do_opportunity_attack(self,target):
@@ -174,7 +184,7 @@ class AI:
 
     def want_to_cast_shield(self, attacker, damage):
         #This function is called in the attack function as a reaction, if Shild spell is known
-        if all([self.player.CHP < damage.abs_amount(), self.player.raged == False, self.player.wild_shape_HP == 0]):
+        if all([self.player.CHP < damage.abs_amount(), self.player.raged == False, self.player.is_shape_changed == False]):
             for i in range(9):
                 if self.player.spell_slot_counter[i] > 0:
                     self.player.SpellBook['Shield'].cast(target=False, cast_level=i+1)   #spell level is i + 1
@@ -444,9 +454,9 @@ class AI:
         if target.is_dodged: Score -= dmg/5*(random()*RandomWeight + 1)
 
         #Wild shape, it is less useful to attack wildshape forms
-        if target.wild_shape_HP > 0 and target.knows_combat_wild_shape == False:
+        if target.is_shape_changed and target.knows_combat_wild_shape == False:
             Score = Score*0.8*(random()*RandomWeight + 1)
-        if target.wild_shape_HP <= dmg: 
+        if target.shape_HP <= dmg:
             Score = Score*1.4*(random()*RandomWeight + 1)
 
         #this whole part took too long in performance
@@ -503,7 +513,7 @@ class AI:
         
         if player.raged:
             return False
-        if player.wild_shape_HP > 0:
+        if player.is_in_wild_shape:
             return False
         elif spell.is_concentration_spell and player.is_concentrating:
             return False
@@ -587,7 +597,7 @@ class AI:
             ally.is_blinded, ally.is_stunned, ally.is_incapacitated, ally.is_paralyzed
         ]
         if any(conditions): Score*0.5
-        if ally.wild_shape_HP != 0: Score = Score*3
+        if ally.is_shape_changed: Score = Score*3
         if ally.is_concentrating: Score = (Score- 5)/2
         Score = Score*(1 + random()*(10/self.player.strategy_level - 1)/3) #randomness from strategy
         return Score

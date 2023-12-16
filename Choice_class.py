@@ -157,7 +157,7 @@ class go_wildshape(choice):
     def score(self, fight):
         player = self.player
         if player.knows_wild_shape == False: return 0
-        if player.wild_shape_HP != 0: return 0
+        if player.is_shape_changed: return 0
         if player.wild_shape_uses < 1: return 0
         if player.action == 1 or (player.bonus_action == 1 and player.knows_combat_wild_shape):
             Score = player.DruidCR*6*2.5 #CR * about 6 dmg/CR * 2-3 Rounds
@@ -172,7 +172,7 @@ class go_wildshape(choice):
         player =self.player 
         rules = [player.knows_wild_shape,
                 player.wild_shape_uses > 0,
-                player.wild_shape_HP == 0,
+                player.is_shape_changed == False,
                 player.action == 1 or (player.bonus_action == 1 and player.knows_combat_wild_shape)]
         if all(rules):
             #Check smaller and smaller Margins until you find a suitable but still High Creature

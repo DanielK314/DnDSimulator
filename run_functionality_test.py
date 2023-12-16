@@ -300,6 +300,54 @@ def GreatWeaponMasterTest(Character, Character2, Character3, Enemy, Enemy2, Enem
         quit()
     print('great weapon master test')
 
+def WildShapeTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
+    Character.knows_wild_shape = True
+    Character.DruidCR = 2
+    Character.wild_shape_uses = 1
+    Character.wild_shape(1) #go into wild shape
+    #Should be Brown Bear
+
+    if Character.wild_shape_uses != 0: 
+        print('No wild shape uses expended')
+        quit()
+
+    if Character.AC != 11:
+        print('Wild Shape AC wrong')
+        quit()
+
+    if Character.shape_HP == 0: 
+        print('No in wild Shape hp')
+        quit()
+
+    if Character.is_in_wild_shape == False: 
+        print('No in wild Shape')
+        quit()
+
+    if Character.stats_list[0] != 19: 
+        print('No in wild Shape str')
+        quit()
+
+    if Character.dmg != 9.75: 
+        print('No in wild Shape dmg')
+        quit()
+
+    if Character.type != 'normal': 
+        print('No in wild Shape type')
+        quit()
+
+    if Character.damage_resistances != 'none': 
+        print('No in wild Shape res')
+        quit()
+
+    DMG = dmg(40, type='true')
+    Character.changeCHP(DMG, Enemy, False)
+
+    if Character.is_in_wild_shape: 
+        print('Still in Wild Shape')
+        quit()
+
+    print('Wild Shape Test')
+
 if __name__ == '__main__':
     DM = DungeonMaster()
     DM.enable_print()
@@ -334,7 +382,8 @@ if __name__ == '__main__':
         PrimalCompanionTest,
         DodgeTest,
         SmiteTest,
-        GreatWeaponMasterTest
+        GreatWeaponMasterTest,
+        WildShapeTest
     ]
 
     for test in tests:

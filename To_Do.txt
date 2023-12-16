@@ -46,6 +46,11 @@ ToDoList:
 118. Exhaustion implement, then add to Sickening Ray
 119. Give the Concentration Tokens the Score, so that later the AI could decide to break concentration for something else
 120. improve choose_player_to_protect
+121. Choice handling in alternativ Choices, like choices in wildshape
+122. What happens if attacker in changed shape drops to 0 while attacking, will attack counter be reset and it can attack again? Maybe Problem
+123. smarter try_wild_shape_heal, in general shape HP heal?
+123.1 Currently heal is always applied to CHP, never to shape HP
+124. Add the possibility to disable choices
 
 Spells to do
 -Ray of Frost, could be interesting with movement
