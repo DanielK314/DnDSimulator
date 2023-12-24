@@ -21,6 +21,8 @@ from Dmg_class import *
     #hmg - is hunters marking
     #ck - is cloud killing
     #sr - sickening radiance
+    #pm -polymorph
+    #cl - call lightning
 
 #Subtypes that do not change an attribute
     #ca - conjured Animals
@@ -179,6 +181,11 @@ class TokenManager():
         for x in self.TokenList:
             if x.triggersWhenAttacked: x.wasAttackedTrigger(attacker, is_ranged, is_spell)
 
+    def hasDroppedShape(self):
+        #called in drop_shape Entity function
+        for x in self.TokenList:
+            if x.triggersWhenShapeIsDropped: x.dropShapeTrigger()
+
 class Token():
     def __init__(self, TM):
         self.TM = TM
@@ -200,6 +207,7 @@ class Token():
         self.triggersWhenEndOfTurn = False
         self.triggersWhenStartOfTurn = False
         self.triggersWhenAttacked = False
+        self.triggersWhenShapeIsDropped = False
 
         self.TM.add(self) #add and update the Token to TM
     
@@ -235,6 +243,9 @@ class Token():
         return
 
     def startOfTurnTrigger(self):
+        return
+
+    def dropShapeTrigger(self):
         return
 
     def identify(self):
@@ -504,6 +515,39 @@ class SickeningRadianceToken(ConcentrationToken):
         self.subtype = 'sr' #sickening radiance (sets the self.is_using_sickening_radiance = True)
         super().__init__(TM, links)
         self.castLevel = castLevel
+
+class PolymorphedToken(LinkToken):
+    def __init__(self, TM, subtype):
+        super().__init__(TM, subtype)
+        self.triggersWhenShapeIsDropped = True #To resolve when shape drops
+        #It does not handle the reshaping if drop to 0, because this is handled for all alternate shapes in ChangeCHP function of entity
+
+    def dropShapeTrigger(self):
+        super().dropShapeTrigger()
+        #Shape was dropped, now resolve Token
+        self.resolve()
+
+    def resolve(self):
+        if self.TM.player.is_shape_changed: #only drop shape if still shape changed
+            self.TM.player.drop_shape() #this drops the polymorph shape
+            self.TM.player.DM.say(self.TM.player.name + ' no longer polymorphed ', True)
+        if self.origin != False:
+            super().resolve()
+
+class CallLightningToken(ConcentrationToken):
+    #Is Concentration Token, lets the caster recast spell
+    def __init__(self, TM, links, castLevel):
+        self.subtype = 'cl' #cloud kill (sets the self.is_cloud_killing = True)
+        super().__init__(TM, links)
+        self.castLevel = castLevel
+        #Add the call lightning choice to player AI
+        self.player.AI.add_choice(self.player.AI.callLightningChoice)
+
+    def resolve(self):
+        #When this token resolves it removes the call lightning choice from Choices again
+        self.player.AI.remove_choice(self.player.AI.callLightningChoice)
+        super().resolve()
+
 
 #--------------Other Ability Tokens-----------------
 class EmittingProtectionAuraToken(DockToken):

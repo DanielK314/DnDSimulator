@@ -40,7 +40,10 @@ class AI:
         #Conditional Choices        
         self.spiritualWeaponChoice = ch.do_spiritual_weapon(player) #This will be later added to the Choices list, if a Character casts spiritual weapon
         self.primalCompanionChoice = ch.attack_with_primal_companion(player) #This Choice is added if a primal companion is summoned
-        self.dodgeChoice = ch.do_dodge(player)
+        self.callLightningChoice = ch.do_call_lightning(player) #This Choice is added (and removed later) by the call lightning spell token
+        self.dodgeChoice = ch.do_dodge(player) #Is needed as choice for primal companion
+
+        self.conditionalChoicesList = [self.callLightningChoice]
 
     def do_your_turn(self,fight):
         player = self.player
@@ -130,6 +133,30 @@ class AI:
             #recast cloud kill
             player.SpellBook['SickeningRadiance'].recast(targets)
 
+    def add_choice(self, newChoice):
+        #This function is intended to add choices, which are conditional
+        #This can happen for spells that enable a choice, via their token mybe
+        #It checks for a list of Choices that are expected to be added and removed, does not work for others
+        if newChoice not in self.conditionalChoicesList:
+            print(self.player + ' tried to add a choice (' + str(newChoice) + ') from AI that is not conditional')
+            quit()
+        if newChoice in self.Choices:
+            print(self.player + ' tried to add a choice (' + str(newChoice) + ') to AI that is already in Choices')
+            quit()
+        self.Choices.append(newChoice)
+
+    def remove_choice(self, oldChoice):
+        #This function is intended to remove choices, which are no longer needed
+        #This can happen for spells that enable a choice, if their token is resolved
+        #It checks for a list of Choices that are expected to be added and removed, does not work for others
+        if oldChoice not in self.conditionalChoicesList:
+            print(self.player + ' tried to remove a choice (' + str(oldChoice) + ') from AI that is not conditional')
+            quit()
+        if oldChoice not in self.Choices:
+            print(self.player + ' tried to remove a choice (' + str(oldChoice) + ') from AI that is not in Choices')
+            quit()
+        self.Choices.remove(oldChoice)
+
 #-----------Smart Actions
     def smart_in_wildshape(self, fight):
         player = self.player
@@ -169,7 +196,6 @@ class AI:
         #This function is called in do_your_turn if the player is still in alternate shape
         if player.action == 1:
             ch.do_attack(player).execute(fight)
-
 
 #---------Reaction and choices
     def do_opportunity_attack(self,target):

@@ -134,15 +134,15 @@ class entity:                                          #A Character
         self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
                            'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds', 'HuntersMark',
                            'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
-                           'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals',
-                           'Blight', 'SickeningRadiance', 'WallOfFire',
+                           'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals', 'CallLightning',
+                           'Blight', 'SickeningRadiance', 'WallOfFire', 'Polymorph',
                            'Cloudkill']
         #Add here all Spell classes that are impemented
         self.Spell_classes = [firebolt, chill_touch, eldritch_blast,
                          burning_hands, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds, hunters_mark,
                          aganazzars_sorcher, scorching_ray, shatter, spiritual_weapon,
-                         fireball, lightningBolt, haste, conjure_animals,
-                         blight, sickeningRadiance, wallOfFire,
+                         fireball, lightningBolt, haste, conjure_animals, call_lightning,
+                         blight, sickeningRadiance, wallOfFire, polymorph,
                          cloudkill]
         #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
         self.SpellBook = dict()
@@ -443,7 +443,7 @@ class entity:                                          #A Character
         self.legendary_resistances_counter = self.legendary_resistances
 
     #Wild Shape / New Shapes
-        self.shape_name = ' '
+        self.shape_name = ''
         self.shape_remark = ''
         self.is_shape_changed = False
         self.is_in_wild_shape = False
@@ -623,6 +623,7 @@ class entity:                                          #A Character
             if self.is_a_turned_undead:
                 self.end_turned_undead()
             self.make_concentration_check(damage) #Make Concentration Check for the dmg
+            #Concentration Checks are done in and outside of wild shape/other shapes
             if self.is_shape_changed:
                 self.change_shape_HP(damage, attacker, was_ranged)
                 #Not checking resistances anymore, already done 
@@ -668,13 +669,12 @@ class entity:                                          #A Character
     def change_shape_HP(self, damage, attacker, was_ranged):
         if damage < self.shape_HP:     #damage hits the wild shape
             self.shape_HP -= damage
-            self.DM.say(str(self.name) + ' takes damage in' + self.shape_remark + ' shape: ' + str(round(damage,2)) + ' now: ' + str(round(self.shape_HP,2)), True)
+            self.DM.say(str(self.name) + ' takes damage in ' + self.shape_remark + ' shape: ' + str(round(damage,2)) + ' now: ' + str(round(self.shape_HP,2)), True)
         else:                  #wild shape breakes, overhang goes to changeCHP
             overhang_damage = abs(self.shape_HP - damage)
-            
             #reshape after critical damage
+            self.DM.say(str(self.name) + ' ' + self.shape_remark + ' shape breaks ', True)
             self.drop_shape()  #function that resets the players stats
-            self.DM.say(str(self.name) + self.shape_remark + ' shape breaks', True)
             #Remember, this function is called in ChangeCHP, so resistances and stuff has already been handled
             #For this reason a 'true' dmg type is passed here
             Dmg = dmg(overhang_damage, 'true')
@@ -1499,7 +1499,7 @@ class entity:                                          #A Character
             self.shape_HP = 0
             self.tohit = self.base_tohit
             self.attacks = self.base_attacks
-            self.attack_counter = self.attacks
+            self.attack_counter = 0 #is set to zero, so no attacks can occure in new form, until start of new turn, where they will be reset
             self.dmg = self.base_dmg
             self.type = self.base_type
             
@@ -1513,9 +1513,9 @@ class entity:                                          #A Character
 
             self.is_shape_changed = False  #no longer shape changed
             self.is_in_wild_shape = False  #definately no longer in wild shape
-            self.shape_name = ' '            
+            self.shape_name = ''            
+            self.TM.hasDroppedShape() #some Tokens trigger here, like polymorph
 
-#-------------------Wild Shape---------------
     def wild_shape(self, ShapeIndex):
         #ShapeIndex is Index in BeastFroms from entity __init__
         #Wild shape needs an action or a bonus action if you know combat_wild_shape
@@ -1563,7 +1563,7 @@ class entity:                                          #A Character
             'Damage_Immunity' : NewShape.damage_immunity,
             'Damage_Vulnerabilities' : NewShape.damage_vulnerability
         }
-        self.assume_new_shape(ShapeName, ShapeDict, Remark= ' wild')
+        self.assume_new_shape(ShapeName, ShapeDict, Remark= 'wild')
 
         self.is_in_wild_shape = True
         self.DM.say(self.name + ' goes into wild shape ' + ShapeName, True)
@@ -1934,7 +1934,7 @@ class entity:                                          #A Character
         #ONLY called if player state = 1
         self.reckless = 0
         self.stepcounter=0 
-        self.attack_counter = self.attacks #must be on start of turn, as in the round an attack of opportunity could have happened 
+        self.attack_counter = self.attacks #must be on start of turn, as in the round an attack of opportunity could have happened, also maybe shape was dropped
         self.AC = self.shape_AC  #reset AC to the AC of the shape (maybe wild shape)
         self.TM.startOfTurn() 
 

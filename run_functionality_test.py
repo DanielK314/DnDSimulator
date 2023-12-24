@@ -4,6 +4,16 @@ from Dmg_class import *
 from Token_class import *
 import numpy
 
+def test_conditions(rules, errors):
+    if all(rules):
+        return
+    else:
+        for i in range(0,len(rules)):
+            if rules[i] == False:
+                print(errors[i])
+                quit()
+
+
 def reset(fight):
     for x in fight:
         x.long_rest()
@@ -348,6 +358,48 @@ def WildShapeTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
 
     print('Wild Shape Test')
 
+def PolymorphTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
+    Character.spell_slot_counter[3] = 1
+    Character.SpellBook['Polymorph'].cast(Character2)
+    rules = [
+        Character2.is_shape_changed,
+        Character.is_concentrating,
+    ]
+    errors = [
+        'Not in polymorph',
+        'Not Concentrated'
+    ]
+    test_conditions(rules, errors)
+    DM.say('Con Save ', True)
+    Character.break_concentration()
+    rules = [
+        Character2.is_shape_changed == False,
+        Character.is_concentrating == False
+    ]
+    errors = [
+        'Still in polymorph',
+        'Still Concentrated'
+    ]
+    test_conditions(rules, errors)
+
+    Character.end_of_turn()
+    Character.spell_slot_counter[3] = 1
+    Character.SpellBook['Polymorph'].cast(Character2)
+    damage = dmg(2, 'true')
+    Character2.shape_HP = 1
+    Character2.changeCHP(damage, Enemy, True)
+    rules = [
+        Character2.is_shape_changed == False,
+        Character.is_concentrating == False
+    ]
+    errors = [
+        'Still in polymorph',
+        'Still Concentrated'
+    ]
+    test_conditions(rules, errors)    
+    print('Polymorph Test')
+
+
 if __name__ == '__main__':
     DM = DungeonMaster()
     DM.enable_print()
@@ -383,9 +435,12 @@ if __name__ == '__main__':
         DodgeTest,
         SmiteTest,
         GreatWeaponMasterTest,
-        WildShapeTest
+        WildShapeTest,
+        PolymorphTest
     ]
 
     for test in tests:
         reset(fight)
         test(Character, Character2, Character3, Enemy, Enemy2, Enemy3)
+    
+    DM.say(' ', True)  #to make sure everyting was said

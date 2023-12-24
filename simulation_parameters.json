@@ -1,19 +1,43 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 2
+        "repetitions": 1
     },
     "Entities": [
         {
-            "name": "Monk Lv5",
+            "name": "Skairipa",
             "team": 0
         },
         {
-            "name": "Archer",
+            "name": "Rodric",
+            "team": 0
+        },
+        {
+            "name": "Heggy",
+            "team": 0
+        },
+        {
+            "name": "Hidan",
+            "team": 0
+        },
+        {
+            "name": "Displayer Beast",
             "team": 1
         },
         {
-            "name": "Archer2",
+            "name": "Flameskull",
+            "team": 1
+        },
+        {
+            "name": "Ogre",
+            "team": 1
+        },
+        {
+            "name": "Thoran",
+            "team": 1
+        },
+        {
+            "name": "Vampire",
             "team": 1
         }
     ]

@@ -5,7 +5,6 @@ from Token_class import *
 from numpy import argmax
 from Dmg_class import dmg
 
-
 class spell:
     def __init__(self, player):
         #this class is initiated at the entity for spellcasting
@@ -119,7 +118,7 @@ class spell:
     def make_cantrip_check(self):
         rules = [self.is_known,
                 self.player.raged == 0,
-                self.player.wild_shape_HP == 0,
+                self.player.is_shape_changed == False,
                 self.is_concentration_spell == False or self.player.is_concentrating==False]
         errors = [self.player.name + ' tried to cast ' + self.spell_name + ', without knowing the spell',
                 self.player.name + ' tried to cast ' + self.spell_name + ' but is raging',
@@ -756,6 +755,7 @@ class entangle(save_spell):
             #Add dmg for the other players
             Score += self.player.spell_dc - 10 - x.modifier[0] #good against weak enemies
             if x.restrained: Score = 0 #Do not cast on restrained targets
+        if self.player.knows_wild_shape: Score = Score*1.2 #good to cast before wild shape
         Score = Score*self.random_score_scale()
         return Score, SpellTargets, CastLevel
 
@@ -982,6 +982,7 @@ class shield(spell):
     def cast(self, target=False, cast_level=False, twinned=False):
         super().cast(target, cast_level, twinned)
         self.player.AC += 5
+        #Shield does not ware of when unconscious, but I think that is actually correct
 
     def announce_cast(self):
         super().announce_cast()
@@ -1133,7 +1134,7 @@ class fireball(aoe_dmg_spell):
 
     def spell_dmg(self, cast_level):
         #Return the spell dmg
-        damage = 28 + 3.5*(cast_level-3)   #upcast dmg 3d6 + 1d6 per level over 2
+        damage = 28 + 3.5*(cast_level-3)   #upcast dmg 8d6 + 1d6 per level over 2
         return damage
 
 class lightningBolt(aoe_dmg_spell):
@@ -1289,6 +1290,56 @@ class conjure_animals(spell):
         else: 
             TotalCR = 8
         Score = TotalCR*6*(random()*2 + 1) #CR * 6dmg/CR * 1-3 Rounds
+        if self.player.knows_wild_shape: Score = Score*1.3 #good to cast before wild shape
+        return Score, SpellTargets, CastLevel
+
+class call_lightning(aoe_dmg_spell):
+    def __init__(self, player):
+        spell_save_type = 1 #Dex
+        self.spell_name = 'CallLightning'
+        super().__init__(player, spell_save_type, dmg_type='lightning', aoe_area=315) #Are 5ft Radius, but 
+        self.spell_text = 'call lightning'
+        self.spell_level = 3
+        self.is_range_spell = True
+        self.is_concentration_spell = True
+        self.recast_damge = 0
+
+    def cast(self, targets, cast_level=False, twinned=False):
+        if cast_level != False: self.recast_damge = self.spell_dmg(cast_level) #set damage for later recast
+        else: self.recast_damge = self.spell_dmg(self.spell_level) #level 3 spell
+        #Empowered spell does not affect recast, so it checks out 
+        super().cast(targets, cast_level, twinned) #Cast Spell as simple AOE once
+        #Add Token for late recast
+        CallLightningToken(self.TM, [], cast_level) #no links
+        #Okay so this has some layers:
+        #1. The ClalLightningToken adds the callLightningChoice to the AI (and removes it aswell, when resolved)
+        #2. The AI then can use the CallLighntingChoice for score and use the Choice to call lighning as recast
+        #3. The Choice then uses the players call_lightning spell to recast, which brings it back to this call here
+        #Okay not thaaaat many layers, but still
+
+    def recast(self, targets, cast_level=False, twinned=False):
+        #Recast the spell laster, if still concentrated
+        rules = [self.is_known,
+                 self.player.action == 1,
+                 self.player.is_concentrating,]
+        errors = [self.player.name + ' tried to recast ' + self.spell_name + ', without knowing the spell',
+                self.player.name + ' tried to recast ' + self.spell_name + 'but has no action left',
+                self.player.name + ' tried to recast ' + self.spell_name + 'but is no longer concentrated']
+        ifstatements(rules, errors, self.DM).check()
+        #Recast for targets
+        self.player.action = 0 #uses action
+        self.DM.say(self.player.name + ' recasts call lighning', True)
+        for target in targets:
+            self.make_save_for(target, damage=self.recast_damge) #lets targets make saves and applies dmg
+    
+    def spell_dmg(self, cast_level):
+        dmg = 16.5 + 5.5*(cast_level-3) #3d10 + 1d10 per lv over 3
+        return dmg
+
+    def score(self, fight, twinned_cast=False):
+        #Modify super score function
+        Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
+        Score = Score*(random()*2 + 1) #expecting the spell to last for 1-3 Rounds
         return Score, SpellTargets, CastLevel
 
 #4-Level Spell
@@ -1450,7 +1501,97 @@ class wallOfFire(aoe_dmg_spell):
     def score(self, fight, twinned_cast=False):
         Score, SpellTargets, CastLevel = super().score(fight, twinned_cast)
         Score = Score + self.spell_dmg(CastLevel)*(1.5*random()+1) #1-3 add hits while concentrated
+        if self.player.knows_wild_shape: Score = Score*1.3 #good to cast before wild shape
         return Score, SpellTargets, CastLevel
+
+class polymorph(spell):
+    def __init__(self, player):
+        self.spell_name = 'Polymorph'
+        super().__init__(player)
+        self.spell_text = 'polymorph'
+        self.spell_level = 4
+        self.is_range_spell = True
+        self.is_concentration_spell = True
+        self.is_twin_castable = True
+
+    def cast(self, targets, cast_level=False, twinned=False):
+        if type(targets) != list: targets = [targets]
+        if len(targets) > 2 or len(targets) == 2 and twinned == False:
+            print('Too many polymorph targets')
+            quit()
+        super().cast(targets, cast_level, twinned)
+
+        #!!!!!!!!!!!!!!!!Still to do:
+        ShapeName = 'TRex'
+        ShapeDict = {
+            'AC' : 13, 
+            'HP' : 136,
+            'To_Hit' : 10,
+            'Type' : 'beast',
+            'Attacks' : 2,
+            'DMG' : 26.5,
+            'Str' : 25,
+            'Dex' : 10,
+            'Con' : 19,
+            'Int' : 2,
+            'Wis' : 12,
+            'Cha' : 9,
+            'Damage_Type' : 'piercing',
+            'Damage_Resistance' : 'none', 
+            'Damage_Immunity' : 'none',
+            'Damage_Vulnerabilities' : 'none'
+        }
+
+        PolymorphTokens = []
+        for target in targets:
+            PolymorphToken = PolymorphedToken(target.TM, subtype='pm')
+            PolymorphTokens.append(PolymorphToken)
+            self.DM.say(self.player.name + ' polymorphs ' + target.name + ' into ' + ShapeName, True)
+            target.assume_new_shape(ShapeName, ShapeDict, Remark = 'polymorph') #make them assume new shape
+            #Reshaping is handled via th ChangeCHP Function or the Concentration Token
+
+        ConcentrationToken(self.TM, PolymorphTokens)
+        #Player is now concentrated on 1-2 Polymoph Tokens
+
+    def score(self, fight, twinned_cast=False):
+        CastLevel = self.choose_smallest_slot(4,7) #Try to use low slot, higher does not make sense as polymorph does not scale
+        if CastLevel == False: return self.return_0_score()
+
+        #target must be conscious, your team and not shape changing
+        potentialTargetList = [target for target in fight if target.state == 1 and target.team == self.player.team and target.is_shape_changed == False]
+        if len(potentialTargetList) == 0 or (len(potentialTargetList) == 1 and twinned_cast):
+            return self.return_0_score() #not enough targets
+        
+        SpellTargets = [self.choose_polymorph_target(potentialTargetList)]
+        if twinned_cast: #choose second target
+            potentialTargetList.remove(SpellTargets[0]) #remove the already choosen
+            SpellTargets.append(self.choose_polymorph_target(potentialTargetList))
+
+        Score = 0
+        Score += 26.5*2*0.7*(random()*2 + 1) #dmg*2 attack + 0.7 projected hit prop. *1-3 rounds
+        Score += 50*(1-self.player.CHP/self.player.HP) #add bonus for absorped damage, increases as CHP lower
+        if self.player in SpellTargets: Score = Score*1.3 #prefer self to polymorph
+        if twinned_cast: Score = Score*2 #twin cast
+        if self.player.knows_wild_shape: Score = Score*1.2 #good to cast before wild shape
+
+        Score = Score*self.random_score_scale()
+        return Score, SpellTargets, CastLevel
+
+    def choose_polymorph_target(self, target_list):
+        scoreList = [self.polymorph_target_score(target) for target in target_list]
+        #evaluate what target is the best to polymorph
+        return target_list[argmax(scoreList)]
+
+    def polymorph_target_score(self, target):
+        #This Score here is not dmg euqal, becaus I did not know how to gauge it
+        Score = 0
+        if target.is_shape_changed: return 0
+        Score += 100*(1-target.CHP/target.HP) #higher for low HP
+        if target == self.player:
+            if self.player.CHP < self.player.HP/3:
+                Score = Score*1.5 #Cast on self preferably
+        if target.heal_given > 0: Score*0.75 #rather dont polymorph healer
+        return Score*self.random_score_scale()
 
 #5-Level Spell
 

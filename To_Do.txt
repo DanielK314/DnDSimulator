@@ -4,9 +4,6 @@ ToDoList:
 40. Make it possible to simulate 2 or more encounters after one another, mybe short rest
 41. Maybe one day, the Entities are Initiated with Items, which then are their own class
 
-44. ttk use multiprocessing and progressbars for calculating encounters
-48. Documentation FLow Chart verbessern 
-
 61. implement better Smart Heal, is already pretty good I think
 61.1 Think about how to handle healing potion
 62. are unconscious Players attacked too often
@@ -17,26 +14,16 @@ ToDoList:
 89. make a Benchmark, meaning a variety of fight Situations for the Attacking Player to do their turn
 89.1 make an analysis of their choices, an analysis of their Attack targets
 
-92. twin cast for heal
 93. Add a python script that checks the current entity and archive and updates the json files
 94. automate spell cast recap 
-95. redo spells as subclasses
 96. improve inspiration choice class score
-97. Spellcasting draws a lot of time (about 4s in Benchmark)
+97. Spellcasting draws a lot of time
 98. heal takes some time also
-99. greatweapon fighting
-103. added chilled touch, check this
-103.1 Add chill touch to heal choice AI
-105. Polymorph
 106. target_attack_score takes a lot of time
-107. Make Spells as subclasses
 108. Maybe give Scores to Tokens, so that Choices and Score Functions can loop a Characters Tokens instead of a long if else list
 109. Check Combat Inspiration, maybe Token?
 110. Make Poison Bite Costimizable
 
-111. Install Helper for dummies
-112. Move to GitHub
-113. Better Documentation
 114. Executable for all OS
 115. Idea: Tokens could have danger ratings and that could factor into the decision making
 116. The DM should have the fight, instead of giving the fight to the functions on every move
@@ -47,17 +34,27 @@ ToDoList:
 119. Give the Concentration Tokens the Score, so that later the AI could decide to break concentration for something else
 120. improve choose_player_to_protect
 121. Choice handling in alternativ Choices, like choices in wildshape
-122. What happens if attacker in changed shape drops to 0 while attacking, will attack counter be reset and it can attack again? Maybe Problem
 123. smarter try_wild_shape_heal, in general shape HP heal?
-123.1 Currently heal is always applied to CHP, never to shape HP
+123.1 Currently heal is always applied to CHP, never to shape HP, maybe actually fine for now
 124. Add the possibility to disable choices
+125. Polymorph
+125.1 Polymorph against unwilling Creatures
+125.2 Polymorph other then TRex
+125.3 maybe improve the score system in polymorph a bit more
+125.4 Polymorph Wis save for unwilling creatures
+126. Make random spell score value dependent on the strategy level of caster
+127. Just quick Idea, Characters could also have something of a self evalued Score. They could calculate at the end of thier turn, how good they are holding up, if they need help and how thier recources are depleated and save that in a score. Other AIs could then use this score for thier decision making. Would be more time efficient then letting the AI calculate it for every singe decision. But on the other hand, things change between turns
+129. Magic Missile adds a death save fail for each individual missile
+130. Cast Con Spell before going into wild shape would be good
+131. Characters are hit with wall of fire too often, maybe rework that, are they even hit that often
+
 
 Spells to do
 -Ray of Frost, could be interesting with movement
 -think about spike growth
 -Web, could be interesting
--Polymorph
 -Call lightning
+-Hold Person
 
 Game Test:
 1. You should be testing if the position management and attack choosing is sensable

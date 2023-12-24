@@ -160,11 +160,12 @@ class go_wildshape(choice):
         if player.is_shape_changed: return 0
         if player.wild_shape_uses < 1: return 0
         if player.action == 1 or (player.bonus_action == 1 and player.knows_combat_wild_shape):
-            Score = player.DruidCR*6*2.5 #CR * about 6 dmg/CR * 2-3 Rounds
+            Score = player.DruidCR*6*(2 + random()) #CR * about 6 dmg/CR * 2-3 Rounds
             Score += player.HP/(player.CHP + player.HP/4)*Score   #if low on HP go wild shape
             #Up to 4 times the score if very low
             if player.knows_combat_wild_shape:
                 Score = Score*1.2  #if you know combat wild shape freaking go
+            if player.is_concentrating: Score = Score*1.3 #is really good to go into wild shape with a con spell
             return Score
         else: return 0
     
@@ -427,6 +428,7 @@ class do_heal(choice):
                 Score = ally.dps()*ally.death_counter #High Score for a high death_counter
                 Score += ally.value()
                 Score = Score*0.7*(0.8+random()*0.4) #little random power
+                if ally.chill_touched: Score = 0 #can not be healed
                 #The Score will be returned as a Score for the Choices in do_your_turn too
                 DyingScore.append(Score)
             MaxIndex = np.argmax(DyingScore)
@@ -488,3 +490,29 @@ class do_heal(choice):
             #This should not happen
             print('This is stupid, no Heal in AI, check do_heal class')
             quit() 
+
+#Still work to do:
+class do_call_lightning(choice):
+    def __init__(self, player):
+        super().__init__(player)
+
+    def score(self, fight):
+        #This Score only apllies to the re-casting of the Spell, not the initial cast
+        #Tis is the reason why this score is rather generously calculated, to encourage using this
+        if self.player.action == 0: return 0
+        recastDmg = self.player.SpellBook['CallLightning'].recast_damge  #recast dmg saved in spell at the last cast
+        Score = 0
+        Score = recastDmg*(1.5+random()) #dmg*1.5-2.5 targets
+        Score += 10 #a little bonus to encourage recasting this, because it does not cost extra cast
+        return Score
+    
+    def execute(self, fight):
+        #Use action to recast spell
+        player = self.player
+        area = self.player.SpellBook['CallLightning'].aoe_area
+        #Choose Targets
+        targets = self.player.AI.area_of_effect_chooser(fight, area=area)
+
+        self.player.SpellBook['CallLightning'].recast(targets) #recast, sets action = 0
+
+

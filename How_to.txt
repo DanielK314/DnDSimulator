@@ -103,6 +103,15 @@ New Token relation:
 New Chreature Type:
 1. Add to Controller __init__ as all types
 
+New Conditional Choice
+Conditional Choices are Choices that are added to the Choices list of the AI if a spell or ability is used that should be removed later, like with a token
+1. Create the new Choice
+2. Add Choice to AI and the self.conditionalChoicesList
+3. Add Choice via a function, or preferably a token (which later removes it aswell) to AI with AI.add_choice()
+3.1 Remember, the conditional Choices do not remove themselfs
+4. Use AI.remove_choice() to remove Choice
+4.1 remember, this function throws an error if Choice is not in Choices or not in conditional choices
+
 DM.say():
 1. If you want to print something use DM.say() (it will be disabled, if printing is disabled)
 2. If you want this print to start a new line use DM.say(string, True)
