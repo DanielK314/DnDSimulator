@@ -491,9 +491,15 @@ class WallOfFireProtectedToken(LinkToken):
         super().__init__(TM, subtype)
         self.damage = damage
         self.triggersWhenAttacked = True #protect one player from attacks
+        self.last_target = None #Will not trigger on same player in a row
+        self.hit_counter = 3 #will only trigger 3 times
 
     def wasAttackedTrigger(self, attacker, is_ranged, is_spell):
         #The protected player was attacked
+        #Only trigger a limited number of times
+        if self.hit_counter < 1: return
+        #check if it was the same attacker as last time
+        if attacker == self.last_target: return
         #dmg the attacker
         self.TM.player.DM.say(attacker.name + ' must go trough the wall of fire ', True)
         dmg_to_apply = dmg(self.damage, 'fire')
@@ -502,6 +508,21 @@ class WallOfFireProtectedToken(LinkToken):
         #apply dmg to the attacker
         attacker.changeCHP(dmg_to_apply, original_caster, True)
 
+        #Now handle the walls own logic:
+        #Remember the last hit target, that went in the wall
+        self.last_target = attacker
+        #lower the hit counter by one
+        self.hit_counter -= 1
+        if self.hit_counter < 1:
+            #Wall got useless
+            self.TM.player.DM.say(self.TM.player.name + 's wall of fire got strategically useless and was dropped, ', True)
+            self.resolve()
+    
+    def resolve(self):
+        self.TM.player.DM.say(self.TM.player.name + 's wall of fire vanishes ')
+        return super().resolve()
+
+
 class CloudkillToken(ConcentrationToken):
     #Is Concentration Token, lets the caster recast spell
     def __init__(self, TM, links, castLevel):
@@ -509,12 +530,20 @@ class CloudkillToken(ConcentrationToken):
         super().__init__(TM, links)
         self.castLevel = castLevel
 
+    def resolve(self):
+        self.TM.player.DM.say(self.TM.player.name + 's cloudkill vanishes ')
+        super().resolve()
+
 class SickeningRadianceToken(ConcentrationToken):
     #Is Concentration Token, lets the caster recast spell
     def __init__(self, TM, links, castLevel):
         self.subtype = 'sr' #sickening radiance (sets the self.is_using_sickening_radiance = True)
         super().__init__(TM, links)
         self.castLevel = castLevel
+    
+    def resolve(self):
+        self.TM.player.DM.say(self.TM.player.name + 's sickening radiance vanishes ')
+        super().resolve()
 
 class PolymorphedToken(LinkToken):
     def __init__(self, TM, subtype):
@@ -540,14 +569,16 @@ class CallLightningToken(ConcentrationToken):
         self.subtype = 'cl' #cloud kill (sets the self.is_cloud_killing = True)
         super().__init__(TM, links)
         self.castLevel = castLevel
+        playerAI = self.TM.player.AI
         #Add the call lightning choice to player AI
-        self.player.AI.add_choice(self.player.AI.callLightningChoice)
+        playerAI.add_choice(playerAI.callLightningChoice)
 
     def resolve(self):
+        playerAI = self.TM.player.AI
         #When this token resolves it removes the call lightning choice from Choices again
-        self.player.AI.remove_choice(self.player.AI.callLightningChoice)
+        playerAI.remove_choice(playerAI.callLightningChoice)
+        self.TM.player.DM.say(self.TM.player.name + 's called lightning vanishes ')
         super().resolve()
-
 
 #--------------Other Ability Tokens-----------------
 class EmittingProtectionAuraToken(DockToken):

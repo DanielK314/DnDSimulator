@@ -1313,7 +1313,7 @@ class call_lightning(aoe_dmg_spell):
         CallLightningToken(self.TM, [], cast_level) #no links
         #Okay so this has some layers:
         #1. The ClalLightningToken adds the callLightningChoice to the AI (and removes it aswell, when resolved)
-        #2. The AI then can use the CallLighntingChoice for score and use the Choice to call lighning as recast
+        #2. The AI then can use the CallLightningChoice for score and use the Choice to call lighning as recast
         #3. The Choice then uses the players call_lightning spell to recast, which brings it back to this call here
         #Okay not thaaaat many layers, but still
 
@@ -1480,6 +1480,8 @@ class wallOfFire(aoe_dmg_spell):
         self.is_concentration_spell = True
     
     def cast(self, targets, cast_level=False, twinned=False):
+        #The wall of fire token is designed to that it will not hit the same target twice in a row
+        #It will only hit 3 times
         #makes all the checks and saves and dmg
         super().cast(targets, cast_level, twinned)
         protectTarget = self

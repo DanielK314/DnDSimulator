@@ -1,15 +1,11 @@
 {
     "simulation_parameters": {
         "printing_on": 1,
-        "repetitions": 1
+        "repetitions": 10
     },
     "Entities": [
         {
-            "name": "Skairipa",
-            "team": 0
-        },
-        {
-            "name": "Rodric",
+            "name": "Monk Lv5",
             "team": 0
         },
         {
@@ -21,7 +17,23 @@
             "team": 0
         },
         {
-            "name": "Displayer Beast",
+            "name": "Rodric",
+            "team": 0
+        },
+        {
+            "name": "Varitia",
+            "team": 0
+        },
+        {
+            "name": "Arock",
+            "team": 1
+        },
+        {
+            "name": "Denbarr",
+            "team": 1
+        },
+        {
+            "name": "Kuldur Wizard",
             "team": 1
         },
         {
@@ -29,15 +41,7 @@
             "team": 1
         },
         {
-            "name": "Ogre",
-            "team": 1
-        },
-        {
-            "name": "Thoran",
-            "team": 1
-        },
-        {
-            "name": "Vampire",
+            "name": "Displayer Beast",
             "team": 1
         }
     ]

@@ -1,6 +1,6 @@
 {
     "AC": 19,
-    "HP": 91,
+    "HP": 95,
     "Proficiency": 4,
     "To_Hit": 6.0,
     "Attacks": 1.0,
@@ -18,7 +18,7 @@
     "Damage_Resistance": "none",
     "Damage_Immunity": "none",
     "Damage_Vulnerabilities": "none",
-    "Spell_DC": 17,
+    "Spell_DC": 18,
     "Spell_Mod": 6,
     "Spell_Slot_1": 4,
     "Spell_Slot_2": 3,

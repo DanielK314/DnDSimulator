@@ -48,15 +48,16 @@ Character.has_range_attack = False
 Character.attack_counter = 1
 Character.action = 1
 
-Character.spell_slot_counter[3] = 1
+Character.spell_slot_counter[2] = 1
 
-Character.SpellBook['WallOfFire'].cast(fight)
+Character.SpellBook['CallLightning'].cast([Enemy, Enemy2])
 #Character.end_of_turn()
 #Character.TM.resolveAll()
 #Character.start_of_turn()
 #Character.AI.do_your_turn(fight)
 Character.end_of_turn()
-Enemy.make_normal_attack_on(Character, fight)
+Character.start_of_turn()
+Character.AI.do_your_turn(fight)
 
 DM.say(' ', True)
 

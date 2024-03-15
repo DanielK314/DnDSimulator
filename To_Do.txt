@@ -45,18 +45,19 @@ ToDoList:
 126. Make random spell score value dependent on the strategy level of caster
 127. Just quick Idea, Characters could also have something of a self evalued Score. They could calculate at the end of thier turn, how good they are holding up, if they need help and how thier recources are depleated and save that in a score. Other AIs could then use this score for thier decision making. Would be more time efficient then letting the AI calculate it for every singe decision. But on the other hand, things change between turns
 129. Magic Missile adds a death save fail for each individual missile
-130. Cast Con Spell before going into wild shape would be good
-131. Characters are hit with wall of fire too often, maybe rework that, are they even hit that often
-
+130. Cast Con Spell before going into wild shape would be good, did some imporvement here to AI
+131. Wall of Fire fixed, but could be smarter, and protect more player
+132. Choices in Wild shape. The current way how player behave in wild shape is deeply suboptimal
+133. Monk uses Stunning strike to oten and on already stunned targets
 
 Spells to do
 -Ray of Frost, could be interesting with movement
 -think about spike growth
 -Web, could be interesting
--Call lightning
 -Hold Person
 
 Game Test:
 1. You should be testing if the position management and attack choosing is sensable
 2. The Choose Att Target Function was been redone and need checking
 5. Test driven programming, pytest
+6. Are unconscious player attacked to often?

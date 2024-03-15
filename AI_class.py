@@ -251,18 +251,18 @@ class AI:
 
     def want_to_use_deflect_missiles(self, target, Dmg):
         #determines if player wants to reduce dmg with reaction
-        #and if so, it it also wants to return attack if possible
+        #and if so, if it also wants to return attack if possible
         #Must return two boolean in that order
-        wants_to_reduce_dmg = False
+        wants_to_reduce_dmg = True
         wants_to_return_attack = False
 
-        useAbilityScore = 5 + self.modifier[1] + self.ki_points_base #Baseline is the amount of reduction dmg
-        x = self.CHP / self.HP
-        useAbilityScore = useAbilityScore * (3/(np.exp((x - 0.2)*10) + 1) + 1) #This factor starts at 1, at about 0.4 to 0 CHP/HP it goes steeply to about 3.5
+        Score = 5 + self.player.modifier[1] + self.player.ki_points_base #Baseline is the amount of reduction dmg
+        x = self.player.CHP / self.player.HP
+        Score = Score * (3/(np.exp((x - 0.2)*10) + 1) + 1) #This factor starts at 1, at about 0.4 to 0 CHP/HP it goes steeply to about 3.5
         #We are scaling the likelihood of using reaction based on current HP vs max, making much more likely below 50% hp[add graph of function to docs]
-        if useAbilityScore > self.player.dmg: #compare score to player.dmg as dmg would be dealed at opp.attack
+        if Score > self.player.dmg: #compare score to player.dmg as dmg would be dealed at opp.attack
             wants_to_return_attack = True
-        if Dmg >= self.CHP:
+        if Dmg >= self.player.CHP:
             wants_to_return_attack = True #If you would die, always use the feature
         return wants_to_reduce_dmg, wants_to_return_attack #return two boolean
 

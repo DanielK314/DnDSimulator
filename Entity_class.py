@@ -1410,7 +1410,8 @@ class entity:                                          #A Character
         #Stunning Strike
             if self.knows_stunning_strike and is_ranged == False:
                 if self.ki_points > 0:
-                    self.use_stunning_strike(target)
+                    if target.is_stunned == False: #don't double stunn
+                        self.use_stunning_strike(target)
         #Tokens
             target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
             self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
@@ -1439,8 +1440,11 @@ class entity:                                          #A Character
         #Deflect Missile
             if target.knows_deflect_missiles and is_ranged:
                 if target.reaction == 1:
-                    if target.AI.want_to_use_deflect_missiles(self, Dmg):
-                        target.use_deflect_missiles(self, Dmg)
+                    #ask AI if player wants to reduce dmg with reaction
+                    #and if so, if it also wants to return attack if possible
+                    wants_to_reduce_dmg, wants_to_return_attack = target.AI.want_to_use_deflect_missiles(self, Dmg)
+                    if wants_to_reduce_dmg:
+                        target.use_deflect_missiles(self, Dmg, wants_to_return_attack)
 
         else:
             Dmg = dmg(amount=0)   #0 dmg
@@ -1865,7 +1869,7 @@ class entity:                                          #A Character
         FavFoeToken(self.TM, FavFoeMarkToken(target.TM, subtype='fm')) #mark target as fav foe
         self.favored_foe_counter -= 1
 
-    def use_deflect_missiles(self, target, Dmg):
+    def use_deflect_missiles(self, target, Dmg, wants_to_return_attack):
         #Check if this is allowed
         rules = [
             self.knows_deflect_missiles,
@@ -1876,21 +1880,17 @@ class entity:                                          #A Character
             self.name + ' tried to use deflect missiles but already used their reaction'
         ]
         ifstatements(rules, errors, self.DM).check()
-        #ask AI if player wants to reduce dmg with reaction
-        #and if so, it it also wants to return attack if possible
-        wants_to_reduce_dmg, wants_to_return_attack = self.AI.want_to_use_deflect_missiles(target, Dmg)
 
-        if wants_to_reduce_dmg:
-            #Reduce dmg
-            self.DM.say(''.join([self.name, ' deflected ', target.name, '\'s ranged attack']), True)
-            self.reaction = 0
-            Dmg.substract(5 + self.modifier[1] + self.ki_points_base) #this will reduce the dmg later when dmg is calculated and changed in changeCHP
-            #Wants to return Attack?
-            if wants_to_return_attack:
-                if Dmg.abs_amount() < 1 and self.ki_points > 0: #You can return attack
-                    self.DM.say(''.join([self.name, ' catches and redirects ', target.name, '\'s missile back at them!']), True)
-                    self.ki_points -= 1
-                    self.attack(target, is_ranged=True) #Make an ranged attack
+        #Reduce dmg
+        self.DM.say(''.join([self.name, ' deflected ', target.name, '\'s ranged attack']), True)
+        self.reaction = 0
+        Dmg.substract(5 + self.modifier[1] + self.ki_points_base) #this will reduce the dmg later when dmg is calculated and changed in changeCHP
+        #Wants to return Attack?
+        if wants_to_return_attack:
+            if Dmg.abs_amount() < 1 and self.ki_points > 0: #You can return attack
+                self.DM.say(''.join([self.name, ' catches and redirects ', target.name, '\'s missile back at them!']), True)
+                self.ki_points -= 1
+                self.attack(target, is_ranged=True) #Make an ranged attack
 
     def use_stunning_strike(self, target):
         rules = [

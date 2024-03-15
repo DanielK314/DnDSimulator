@@ -399,6 +399,32 @@ def PolymorphTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
     test_conditions(rules, errors)    
     print('Polymorph Test')
 
+def CallLightningTest(Character, Character2, Character3, Enemy, Enemy2, Enemy3):
+    Character.spell_slot_counter[2] = 1 #lv3
+    Character.SpellBook['CallLightning'].cast(Character2)
+    rules = [
+        Character.is_concentrating,
+        Character.AI.callLightningChoice in Character.AI.Choices
+    ]
+    errors = [
+        'Not Concentrated',
+        'Call lighnting Choice not in Choices'
+    ]
+    test_conditions(rules, errors)
+    DM.say('Con Save ', True)
+    Character.break_concentration()
+    rules = [
+        Character.is_concentrating == False,
+        Character.AI.callLightningChoice not in Character.AI.Choices
+    ]
+    errors = [
+        'Still Concentrated',
+        'Still has the call lightning choice'
+    ]
+    test_conditions(rules, errors)
+
+    print('Call Lighnting Test')
+
 
 if __name__ == '__main__':
     DM = DungeonMaster()
@@ -436,7 +462,8 @@ if __name__ == '__main__':
         SmiteTest,
         GreatWeaponMasterTest,
         WildShapeTest,
-        PolymorphTest
+        PolymorphTest,
+        CallLightningTest
     ]
 
     for test in tests:
