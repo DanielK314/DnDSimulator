@@ -14,6 +14,7 @@ from Dmg_class import *
     #bl - blinded
     #ps - poisoned
     #iv - invisible
+
     #h - haste
     #hex - is hexed
     #hexn - is hexing
@@ -521,7 +522,6 @@ class WallOfFireProtectedToken(LinkToken):
     def resolve(self):
         self.TM.player.DM.say(self.TM.player.name + 's wall of fire vanishes ')
         return super().resolve()
-
 
 class CloudkillToken(ConcentrationToken):
     #Is Concentration Token, lets the caster recast spell

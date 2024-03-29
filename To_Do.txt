@@ -24,13 +24,12 @@ ToDoList:
 109. Check Combat Inspiration, maybe Token?
 110. Make Poison Bite Costimizable
 
-114. Executable for all OS
 115. Idea: Tokens could have danger ratings and that could factor into the decision making
 116. The DM should have the fight, instead of giving the fight to the functions on every move
 116.1 Redo sim structure, so that the DM simulates the fight, so do_the_fighting should be a DM class function
 116.2 If called, the DM gets the fight, and sets it as a object variables, so all Entities of this DM can then Acess the fight at all points through the DM
 117. Fixed, but might need rechecking: Big Problems with Cast Level in Spell and Spell Score, Cast level not yet set in Spell Score function
-118. Exhaustion implement, then add to Sickening Ray
+118. Exhaustion implement, then add to Sickening Ray, Exhaustion is quite tricky to implement, as it goes into deep levels of game structure
 119. Give the Concentration Tokens the Score, so that later the AI could decide to break concentration for something else
 120. improve choose_player_to_protect
 121. Choice handling in alternativ Choices, like choices in wildshape
@@ -44,11 +43,11 @@ ToDoList:
 125.4 Polymorph Wis save for unwilling creatures
 126. Make random spell score value dependent on the strategy level of caster
 127. Just quick Idea, Characters could also have something of a self evalued Score. They could calculate at the end of thier turn, how good they are holding up, if they need help and how thier recources are depleated and save that in a score. Other AIs could then use this score for thier decision making. Would be more time efficient then letting the AI calculate it for every singe decision. But on the other hand, things change between turns
-129. Magic Missile adds a death save fail for each individual missile
+129. Magic Missile adds a death save fail for each individual missile (seems hard/unfixable for now)
 130. Cast Con Spell before going into wild shape would be good, did some imporvement here to AI
 131. Wall of Fire fixed, but could be smarter, and protect more player
 132. Choices in Wild shape. The current way how player behave in wild shape is deeply suboptimal
-133. Monk uses Stunning strike to oten and on already stunned targets
+133. I think some of the conditions do not apply to saves yet
 
 Spells to do
 -Ray of Frost, could be interesting with movement

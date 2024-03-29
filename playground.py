@@ -11,7 +11,7 @@ from random import random
 
 DM = DungeonMaster()
 DM.enable_print()
-Character = entity('Bard Lv5', 0, DM, archive=False)
+Character = entity('Bard Lv5', 0, DM, archive=True)
 Character2 = entity('Druid Lv5', 0, DM, archive=True)
 Character3 = entity('Druid Lv5', 0, DM, archive=True)
 Enemy = entity('Ogre', 1, DM, archive=True)
@@ -22,44 +22,48 @@ Enemy3.name = 'Ogre3'
 Enemy4 = entity('Ogre', 1, DM, archive=True)
 Enemy4.name = 'Ogre4'
 
-fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4]
+Kek = entity('Karheg', 0, DM, archive=False)
+
+fight = [Character, Character2, Character3, Enemy2, Enemy, Enemy3, Enemy4, Kek]
 #fight = [Character, Character2, Character3, Enemy]
+
+print(Kek.AI.choose_spell(fight))
 
 #Enemy.type = 'plant'
 player = Character
 
-conditions = [player.restrained, player.is_blinded, player.is_stunned, player.is_incapacitated, player.is_paralyzed, player.is_poisoned]
-for x in conditions:
-    print(x)
+# conditions = [player.restrained, player.is_blinded, player.is_stunned, player.is_incapacitated, player.is_paralyzed, player.is_poisoned]
+# for x in conditions:
+#     print(x)
 
-#lear all spells
-Character.SpellBook = dict()
-for x in Character.Spell_classes:
-    spell_to_lern = x(Character)  #Initiate Spell
-    spell_to_lern.is_known = True #Spell is known
-    Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
+# #lear all spells
+# Character.SpellBook = dict()
+# for x in Character.Spell_classes:
+#     spell_to_lern = x(Character)  #Initiate Spell
+#     spell_to_lern.is_known = True #Spell is known
+#     Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
 
 
-Character.knows_stunning_strike = True
-Character.ki_points = 5
-Character.tohit = 10
-Character.dmg = 10
-Character.has_range_attack = False
-Character.attack_counter = 1
-Character.action = 1
+# Character.knows_stunning_strike = True
+# Character.ki_points = 5
+# Character.tohit = 10
+# Character.dmg = 10
+# Character.has_range_attack = False
+# Character.attack_counter = 1
+# Character.action = 1
 
-Character.spell_slot_counter[2] = 1
+# Character.spell_slot_counter[2] = 1
 
-Character.SpellBook['CallLightning'].cast([Enemy, Enemy2])
-#Character.end_of_turn()
-#Character.TM.resolveAll()
-#Character.start_of_turn()
-#Character.AI.do_your_turn(fight)
-Character.end_of_turn()
-Character.start_of_turn()
-Character.AI.do_your_turn(fight)
+# Character.SpellBook['CallLightning'].cast([Enemy, Enemy2])
+# #Character.end_of_turn()
+# #Character.TM.resolveAll()
+# #Character.start_of_turn()
+# #Character.AI.do_your_turn(fight)
+# Character.end_of_turn()
+# Character.start_of_turn()
+# Character.AI.do_your_turn(fight)
 
-DM.say(' ', True)
+# DM.say(' ', True)
 
 # from scipy.optimize import curve_fit
 # import matplotlib.pyplot as plt

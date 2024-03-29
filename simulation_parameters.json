@@ -5,43 +5,31 @@
     },
     "Entities": [
         {
-            "name": "Monk Lv5",
+            "name": "Ideefix",
             "team": 0
         },
         {
-            "name": "Heggy",
+            "name": "Niebard Steinbiss",
             "team": 0
         },
         {
-            "name": "Hidan",
+            "name": "Tinuviel",
             "team": 0
         },
         {
-            "name": "Rodric",
+            "name": "Elavaria",
             "team": 0
         },
         {
-            "name": "Varitia",
+            "name": "Karheg",
             "team": 0
         },
         {
-            "name": "Arock",
-            "team": 1
+            "name": "Pantaleon Fenrir",
+            "team": 0
         },
         {
-            "name": "Denbarr",
-            "team": 1
-        },
-        {
-            "name": "Kuldur Wizard",
-            "team": 1
-        },
-        {
-            "name": "Flameskull",
-            "team": 1
-        },
-        {
-            "name": "Displayer Beast",
+            "name": "Helmed Horror",
             "team": 1
         }
     ]

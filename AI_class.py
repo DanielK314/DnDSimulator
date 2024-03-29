@@ -262,7 +262,7 @@ class AI:
         #We are scaling the likelihood of using reaction based on current HP vs max, making much more likely below 50% hp[add graph of function to docs]
         if Score > self.player.dmg: #compare score to player.dmg as dmg would be dealed at opp.attack
             wants_to_return_attack = True
-        if Dmg >= self.player.CHP:
+        if Dmg.abs_amount() >= self.player.CHP:
             wants_to_return_attack = True #If you would die, always use the feature
         return wants_to_reduce_dmg, wants_to_return_attack #return two boolean
 
@@ -713,8 +713,8 @@ class AI:
         #This part gives a Value of the possible alternatives and assignes a dmg equal value to compare with
         #This is the Score that will be compared for the action Spell, so assume an action is left
         if player.action == 1:
-            #If the player has still its action, compete with this alternative score
-            if np.max(ChoiceScores) > player.dmg:
+            #If the player has still its action, compete with this alternative score of just attacking
+            if np.max(ChoiceScores) > player.dmg/4:
                 SpellChoice = partial(Choices[ChoiceIndex],TargetList[ChoiceIndex],LevelList[ChoiceIndex])
                 return SpellChoice, ChoiceScores[ChoiceIndex]
             else:

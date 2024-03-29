@@ -124,8 +124,8 @@ Run Time Benchmark:
 Create a Exe File
 Use the program pyinstall
 'pyinstaller --onefile StartSimulator.py'
-File is in dist foulder
-Add the rest of the Stuff and .zip it 
+File is in dist folder
+Add the rest of the Stuff and .zip it
 
 Checkout Remote Repo:
 git remote add name git://path/to/coworkers/repo.git (only once)
