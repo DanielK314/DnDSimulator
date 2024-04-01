@@ -48,12 +48,21 @@ ToDoList:
 131. Wall of Fire fixed, but could be smarter, and protect more player
 132. Choices in Wild shape. The current way how player behave in wild shape is deeply suboptimal
 133. I think some of the conditions do not apply to saves yet
+134. Streamline the creation of Summons, make it via the entity.summon_entity() function
+
 
 Spells to do
 -Ray of Frost, could be interesting with movement
 -think about spike growth
 -Web, could be interesting
 -Hold Person
+
+Artificer:
+Infusions:
+-Homunculus Servant
+-Mind Sharpener (succ. on Con saves)
+-Eldritch Cannon
+-
 
 Game Test:
 1. You should be testing if the position management and attack choosing is sensable

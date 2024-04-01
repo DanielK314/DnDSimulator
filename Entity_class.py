@@ -1928,6 +1928,8 @@ class entity:                                          #A Character
         summon = entity(Name, self.team, self.DM, archive=True)
         return summon
 
+
+
 #---------------Round Handling------------
     def start_of_turn(self):
         #Attention, is called in the do the fighting function
