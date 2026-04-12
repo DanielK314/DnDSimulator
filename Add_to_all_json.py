@@ -1,7 +1,7 @@
 import json
 import os
 
-#This script can be used to add to all json files in the Entity folder and Archive folder
+#This script can be used to add to all json files in the Entities folder and Archive folder
 
 if __name__ == '__main__':
     Entities_File_List = os.listdir('./Entities') #list all files in Entities
@@ -19,10 +19,10 @@ if __name__ == '__main__':
 
 
     for path in File_List:
-        file = open(path)#load new file
+        file = open(path) #load new file
         data = json.load(file)
         file.close()
-        data['RageDmg'] = "0"  #This to add a line
-#        data.pop('test') #this to remove the line
+        data['RageDmg'] = "0"  #This adds a line
+#        data.pop('test') #this removes the line
         with open(path, "w") as f:  #write to json file
             json.dump(data, f, indent=4)

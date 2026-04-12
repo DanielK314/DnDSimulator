@@ -15,7 +15,7 @@ class dmg:
     def add(self, amount, type):
         for x in self.types:
             if x in type:
-                #Check if maybe alredy in
+                #Check if maybe already in
                 for i in range(0,len(self.dmg_type_list)):
                     if x == self.dmg_type_list[i]:
                         self.dmg_amount_list[i] += amount
@@ -51,14 +51,14 @@ class dmg:
                     self.dmg_amount_list[i] = 0
                     DMGTotal += 0
                 elif DMGType in player.damage_vulnerability:
-                    player.DM.say(str(player.name) + ' is vulnarable against ' + DMGType, True)
+                    player.DM.say(str(player.name) + ' is vulnerable against ' + DMGType, True)
                     self.dmg_amount_list[i] = self.dmg_amount_list[i]*2
                     DMGTotal += self.dmg_amount_list[i]
                 else:
                     DMGTotal += self.dmg_amount_list[i]
             if DMGTotal < 0: return DMGTotal  #It is heal, so return, do not substract from heal
 
-            #If dmg was substracted from this amount, do it now, if < 0, do not heal
+            #If dmg was substracted from this amount, do it now; if < 0, do not heal
             if self.DMGSubstract > DMGTotal: return 0
             else:
                 DMGTotal -= self.DMGSubstract

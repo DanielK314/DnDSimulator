@@ -5,7 +5,7 @@ from datetime import datetime
 
 from Entity_class import *
 
-def fight_ongoing_check(fight): #this function takes the fighters and checks if more then one team is still alive
+def fight_ongoing_check(fight): #this function takes the fighters and checks if more than one team is still alive
     fighter_tag_list = []
     for i in range(0, len(fight)):
         if fight[i].CHP > 0 and fight[i].team not in fighter_tag_list:
@@ -21,7 +21,7 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
     DM = fighters_unsorted[0].DM
     DM.reset() #resets the DM at start of fighting
 
-    DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)), True)
+    DM.say('Round ' + str(DM.rounds_number) + ' - Heroes Team Health: ' + str(teamhealth(fight, 0)), True)
 
     while fight_ongoing_check(fight) == True:
         player = fight[Init_counter]
@@ -41,14 +41,14 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
             player.make_death_save()
 
         #End of the Turn
-        player.end_of_turn()   #after turn, reset counter, haste, stuff, all that happends at end of turn
+        player.end_of_turn()   #after turn, reset counter, haste, stuff, all that happens at end of turn
 
-        Init_counter += 1                                #set Init counter, reset round counter if ness.
+        Init_counter += 1                                #set init counter, reset round counter if needed
         if Init_counter >= len(fight):
             Init_counter = 0
             DM.rounds_number += 1
             DM.say('', True)
-            DM.say('Runde ' + str(DM.rounds_number) + ' - Heros Teamhealth: ' + str(teamhealth(fight, 0)), True)
+            DM.say('Round ' + str(DM.rounds_number) + ' - Heroes Team Health: ' + str(teamhealth(fight, 0)), True)
 
 
     #Only one Team is left alive
@@ -56,8 +56,8 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
     DM.say("Fight over", True)
     for x in fighters_unsorted:
         if x.CHP == 0:
-            x.state = -1 #Everone who is unconscious in the loser Team is practically Dead now
-        if x.is_summoned:  #let summend characters vanish after dead
+            x.state = -1 #Everyone who is unconscious in the losing team is practically dead now
+        if x.is_summoned:  #let summoned characters vanish after death
             fight.remove(x)
         x.TM.resolveAll()
         
@@ -66,7 +66,7 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
     for i in fighters_unsorted:
         DM.say(str(i.name) + " " + str(i.CHP), True)
     DM.say('', True)
-    DM.say('Damage dealed:', True)
+    DM.say('Damage dealt:', True)
     for i in fighters_unsorted:
         DM.say(str(i.name) + " " + str(round(i.dmg_dealed,2)), True)
     DM.say('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', True)
@@ -114,7 +114,7 @@ def run_simulation(repetition, fighters, progress = False):
         if progress == True:
             print('Progress : ' + percent +'%')
         simulation_results = do_the_fighting(fighters)
-        winner.append(simulation_results[0])         # do the fight and get the winner, list of 0 (heros) or 1 (enemies)
+        winner.append(simulation_results[0])         # do the fight and get the winner, list of 0 (heroes) or 1 (enemies)
         rounds_number.append(simulation_results[1])         # do the fight and get the rounds number
         damage_statistic.append([k.dmg_dealed for k in fighters])  #get dmg statistic
 
@@ -214,7 +214,7 @@ def full_statistical_recap(repetition, fighters):
         DM.enable_print()
 
 
-    # Calaculate death rates  (if they loose, they all die obviously)
+    # Calculate death rates  (if they lose, they all die obviously)
     DeathProbabilities = []
     Deaths_text_result = ''
     for i in fighters:
@@ -237,9 +237,9 @@ def full_statistical_recap(repetition, fighters):
     'Brutal', 'Insane', 'Death', 'Hell', 'How Dare You?']
 
     Difficulty_Meaning = ['0',
-    'No chance of failure and the heroes will still have most of their recources',
+    'No chance of failure and the heroes will still have most of their resources',
     'A low risk fight, that will leave but a scratch.',
-    'This might take some efford. Death will only come to those who take it lightly.',
+    'This might take some effort. Death will only come to those who take it lightly.',
     'Finally, a worthy fight that will force the heroes to show what they are made of.',
     'Death is a real danger now, fatal for those how are not prepared.',
     'Some might not survive this fight, it is deadly and unforgiving.',
@@ -265,7 +265,7 @@ def full_statistical_recap(repetition, fighters):
         text_result += '----PLAYER PERFORMANCE----\n'
 
     #calculating the performance of the Players
-        #Perfprmance as the part of Dmg done:
+        #Performance as the part of dmg done:
         player = [x for x in fighters if x.team == 0]
         damage_list = []
         for i in range(0, len(fighters)):
@@ -305,9 +305,9 @@ def calculate_difficulty(TPKChance, Length, DeathProbabilities, Unconscious, Dea
     #This function tries to estimate how difficult the encounter would be
     #1 - Insignificant, no chance of fail
     #2 - Easy, no death chance, easy fight    
-    #3 - Medium, will take some efford, minimal death chance
+    #3 - Medium, will take some effort, minimal death chance
     #4 - Challenging, some fight, chane of fail, flee maybe
-    #5 - Hard, will take efford, chance of death
+    #5 - Hard, will take effort, chance of death
     #6 - Brutal, will propably lead to some deaths, maybe TPK
     #7 - Insane, real chance of TPK
     #8 - Death, a TPK is likely
@@ -338,7 +338,7 @@ def calculate_difficulty(TPKChance, Length, DeathProbabilities, Unconscious, Dea
         Level = [lv1,lv2, lv3, lv4, lv5, lv6]
         Diff = 0
         while Diff < 6: #Is right, because Diff starts at 0
-            #This Loop iterates the Boundries of the Level
+            #This loop iterates the boundaries of the level
             #If one Value is higher then the Boundry, the Difficulty Level is risen
             #else the current Diff is returned
             if TPKChance > Level[Diff][0]:

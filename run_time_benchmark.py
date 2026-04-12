@@ -2,16 +2,16 @@ from Entity_class import *
 from Encounter_Simulator import *
 from Dm_class import *
 
-#run this as Time Benchmark
+#run this as time benchmark
 
 def run_time_benchmark():
-    #initiate the DM and check the printing#
+    #initiate the DM and check the printing
     DM = DungeonMaster()
     DM.block_print()
 #    DM.enable_print()
 
-    #load the Entities for the fight
-    Entities =  {
+    #load the entities for the fight
+    entities =  {
         0:{"name": "Bard Lv5", "team": 0},
         1:{"name": "Barbarian Lv5", "team": 0},
         2:{"name": "Cleric Lv8", "team": 0},
@@ -33,8 +33,8 @@ def run_time_benchmark():
         18:{"name": "Displayer Beast", "team": 1}
     }
 
-    Fighters = [entity(Entities[i]['name'], Entities[i]['team'], DM) for i in range(0,len(Entities))]
-    print(full_statistical_recap(200, Fighters))  #Standard 200 rep
+    fighters = [entity(entities[i]['name'], entities[i]['team'], DM) for i in range(0,len(entities))]
+    print(full_statistical_recap(200, fighters))  #Standard 200 rep
 
 if __name__ == '__main__':
     run_time_benchmark()

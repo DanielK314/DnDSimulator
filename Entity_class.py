@@ -37,7 +37,7 @@ class entity:                                          #A Character
 
     #Base Properties
         self.name = str(name)
-        self.orignial_name = str(name)        #restore name after zB WildShape
+        self.orignial_name = str(name)        #restore name after wild shape
         self.team = team                                      #which Team they fight for
         self.type = str(data['Type'])
         self.base_type = self.type
@@ -50,15 +50,15 @@ class entity:                                          #A Character
         self.tohit = int(data['To_Hit'])
         self.base_tohit = int(data['To_Hit'])
 
-        self.base_attacks = int(data['Attacks'])    #attacks of original form   #number auf Attacks
+        self.base_attacks = int(data['Attacks'])    #attacks of original form   #number of attacks
         self.attacks = self.base_attacks  #at end_of_turn attack_counter reset to self.attack
         self.dmg = float(data['DMG'])           #dmg per attack
         self.base_dmg = float(data['DMG'])
         self.offhand_dmg = float(data['OffHand']) #If 0, no Offhand dmg
 
-        self.level = float(data['Level'])           #It is not fully implementet yet, but level is used in some functions already, Level is used as CR for wildshape and co
-        try: self.strategy_level = int(data['StrategyLevel']) #Value 1-10, how strategig a player is, 10 means min. randomness
-        except: self.strategy_level = 5 #Medium startegy
+        self.level = float(data['Level'])           #It is not fully implemented yet, but level is used in some functions already; level is used as CR for wild shape and co
+        try: self.strategy_level = int(data['StrategyLevel']) #Value 1-10, how strategic a player is; 10 means min. randomness
+        except: self.strategy_level = 5 #Medium strategy
         if self.strategy_level < 1: self.strategy_level = 1
         if self.strategy_level > 10: self.strategy_level = 10
 
@@ -99,7 +99,7 @@ class entity:                                          #A Character
         self.base_modifier = self.modifier
 
         #actually only the modifier are currently ever used
-        self.saves_prof = data['Saves_Proficiency']        #Already in Entity, not implementet in fight functions tho
+        self.saves_prof = data['Saves_Proficiency']        #Already in Entity, not implemented in fight functions though
         #list for saves of all kind. if = 0, no advantage 
         #if > 0 has advantage
         #if < 0 has disadvantage
@@ -147,9 +147,9 @@ class entity:                                          #A Character
         #A Spell Class will only be added to the spellbook, if the Spell name is in self.spell_list
         self.SpellBook = dict()
         for x in self.Spell_classes:
-            spell_to_lern = x(self)  #Initiate Spell
-            if spell_to_lern.is_known: #If Spell is known, append to SpellBook
-                self.SpellBook[spell_to_lern.spell_name] = spell_to_lern
+            spell_to_learn = x(self)  #Initiate spell
+            if spell_to_learn.is_known: #If spell is known, append to SpellBook
+                self.SpellBook[spell_to_learn.spell_name] = spell_to_learn
 
         #Haste
         self.is_hasted = False
@@ -309,7 +309,7 @@ class entity:                                          #A Character
             self.knows_cutting_words = True
         else: self.knows_cutting_words = False
 
-        #ChannelDevinity
+        #ChannelDivinity
         self.channel_divinity_counter = int(data['ChannelDivinity'])
         if self.channel_divinity_counter > 0:
             self.knows_channel_divinity = True
@@ -369,7 +369,7 @@ class entity:                                          #A Character
         self.knows_empowered_spell = False
         if 'EmpoweredSpell' in self.other_abilities:
             self.knows_empowered_spell = True
-        self.empowered_spell = False #if True, the next Spell will ne empowered (20% mehr dmg)
+        self.empowered_spell = False #if True, the next spell will be empowered (20% more dmg)
         self.knows_twinned_spell = False
         if 'TwinnedSpell' in self.other_abilities:
             self.knows_twinned_spell = True
@@ -398,7 +398,7 @@ class entity:                                          #A Character
         if 'OpenHandTechnique' in self.other_abilities:
             self.knows_open_hand_technique = True
 
-    #Monster Abilites
+    #Monster Abilities
         self.knows_dragons_breath = False
         if 'DragonsBreath' in self.other_abilities:
             self.knows_dragons_breath = True
@@ -476,7 +476,7 @@ class entity:                                          #A Character
         self.death_counter = 0
         self.heal_counter = 0
         self.CHP = self.HP                                 #CHP - current HP
-        self.THP = 0         #Temporary HitPoints (dont stack)
+        self.THP = 0         #Temporary hit points (don't stack)
         self.initiative = 0
         self.attack_counter = self.attacks           #will be reset to attack at start of turn
         self.is_attacking = False #Is set true if player has used acktion to attack
@@ -489,7 +489,7 @@ class entity:                                          #A Character
         self.is_concentrating = False
 
         #Conditions
-        self.restrained = False            #will be ckeckt wenn attack/ed, !!!!!!!!! only handle via Tokens
+        self.restrained = False            #will be checked when attacked, !!!!!!!!! only handle via Tokens
         self.prone = 0
         self.is_blinded = False    #tokensubtype bl
         self.is_dodged = False    #is handled by the DodgedToken
@@ -632,17 +632,17 @@ class entity:                                          #A Character
                     AgathysDmg = self.check_for_armor_of_agathys() #returns the agathys dmg
                     if damage < self.THP: #Still THP
                         self.THP -= damage
-                        self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + 'now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP', True)
+                        self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP', True)
                         damage = 0
                     else: #THP gone
                         damage = damage - self.THP #substract THP
                         self.THP = 0
-                        self.DM.say('temporaray HP empty, ')
+                        self.DM.say('temporary HP empty, ')
 
                 #Change CHP
                 if damage > 0: #If still damage left
                     self.CHP -= damage
-                    self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + 'now at: ' + str(round(self.CHP,2)), True)
+                    self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now at: ' + str(round(self.CHP,2)), True)
 
         #---------Armor of Agathys 
         if AgathysDmg.abs_amount() > 0 and was_ranged == False:
@@ -1112,7 +1112,7 @@ class entity:                                          #A Character
                     return #return and end the turn
 
     def make_normal_attack_on(self, target, fight, is_off_hand=False):
-    #This is the function of a player trying to move to a target und making an attack
+    #This is the function of a player trying to move to a target and making an attack
     #It also checks for Dash and does opportunity attacks if necessary
 
     #First Check for attck_counter
@@ -1332,7 +1332,7 @@ class entity:                                          #A Character
                 
                 #Inititate Token
                 #This Token resolves at end of turn
-                #If target gets unconcious in this turn, the Token triggers and gives another attack to player
+                #If target gets unconscious in this turn, the token triggers and gives another attack to player
                 GreatWeaponToken(self.TM, GreatWeaponAttackToken(target.TM, subtype='gwa'))
 
         if target.is_combat_inspired and target.inspired > 0:
@@ -1469,7 +1469,7 @@ class entity:                                          #A Character
         self.tohit = ShapeDict['To_Hit']
         self.type = ShapeDict['Type']
 
-        #number auf Attacks
+        #number of attacks
         self.attacks = ShapeDict['Attacks']
         self.attack_counter = self.attacks
         self.dmg = ShapeDict['DMG']
@@ -1545,7 +1545,7 @@ class entity:                                          #A Character
             print('no action left for wildshape')
             quit()
 
-        #A Shape form is choosen and then initiated as entity to use their stats
+        #A shape form is chosen and then initiated as an entity to use its stats
         ShapeName = self.BeastForms[ShapeIndex]['Name']
         NewShape = entity(ShapeName, self.team, self.DM, archive=True)
         #Use Stats to create dict for shape change function
@@ -1625,7 +1625,7 @@ class entity:                                          #A Character
                 rage_text += ' eagle totem'
             if self.knows_frenzy:
                 self.is_in_frenzy = True
-                rage_text += ' franzy'
+                rage_text += ' frenzy'
             self.DM.say(rage_text + ' rage', True)
         else:
             if self.bonus_action == 0:
@@ -1644,7 +1644,7 @@ class entity:                                          #A Character
             print(self.name + ' tried to use frenzy attack without a bonus action')
             quit()
         elif self.is_in_frenzy == False:
-            print(self.name + ' tried to use franzy attack but is not in a frenzy rage')
+            print(self.name + ' tried to use frenzy attack but is not in a frenzy rage')
             quit()
 
     def end_rage(self):
@@ -1732,7 +1732,7 @@ class entity:                                          #A Character
                 targetnumber = 0 #only self
             if self.level >= 18: targetnumber += 1 #30ft at lv 18
 
-            #Now choose random targtes plus self
+            #Now choose random targets plus self
             targets = []
             targets.append(self)
             AllyChoice = [ally for ally in allies if ally != self]
@@ -2085,7 +2085,7 @@ class entity:                                          #A Character
         self.has_cast_left = True
         self.is_concentrating = False
 
-        self.restrained = False             #will be ckeckt wenn attack/ed 
+        self.restrained = False             #will be checked when attacked
         self.prone = 0
         self.is_blinded = False
         self.is_dodged = False

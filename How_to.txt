@@ -6,7 +6,7 @@ Character Classes:
 2.2 Totem Spirits, bear, eagle, wolf, done
 2.3 next: Aspect of the Beast
 3. Cleric
-3.1 Channel Devinity, turn undead, destroy undead
+3.1 Channel Divinity, turn undead, destroy undead
 4. Druid
 4.1 pretty far done, create more spells and Wild Shape Forms
 5.Paladin
@@ -17,7 +17,7 @@ Character Classes:
 6.2 Cutting Words
 
 
-Zu adden in Character Sheet: 
+To add in Character Sheet: 
 Legendary Action
 
 !!! If Team == 1 it is considered a Monster, every other tag like 0, 1, 2 is considered a PC for PvP for example
@@ -54,9 +54,9 @@ New BeastForms:
 2.add to Beast Forms in Entity Class
 
 New Abilities: 
-1.add Ability to Entity Class Init under special Abilites
-1.1 If you using recources, reset them in long rest
-1.2 If you add a recource, use exception to ensure backwards compatability
+1.add Ability to Entity Class Init under special abilities
+1.1 If you are using resources, reset them in long rest
+1.2 If you add a resource, use exception to ensure backwards compatibility
 2.Implement the feature in the Entity class
 2.1 If it involves a decision maybe add it to AI class
 2.2 If it is something to do as action or bonus action, add it as a choice class
@@ -67,7 +67,7 @@ Bool Attributes:
 1.Add the Name of the Ability to Controller self.All_Abilities
 1.1 Attention: this list must be ordered in classes, so keep the right order
 2. The Ability page is build according to the Controller self.Class dict:
-2.1 Increse the Number value for the class you just added an Ability
+2.1 Increase the Number value for the class you just added an Ability
 
 Entry Attributes:
 1.Add to Controller self.All_Other_Ability_Entries dict
@@ -93,14 +93,14 @@ New Token relation:
 1.1 if the token should set an attribute of the player, then add it to the TMs subtype_dict
 2. Initiate one or more Link Token
 3. Create a DockToken or a subclass of a DockToken
-3.1 wenn Initiateing the DockToken, give a List of the Link Tokens.
-3.2 The Link Tokens will be resolved if the Dock is, or vici verca if all links are resolved
+3.1 When initiating the DockToken, give a list of the Link Tokens.
+3.2 The Link Tokens will be resolved if the Dock is, or vice versa if all links are resolved
 3.3 For example: see Spell_class -> guiding_bolt.cast()
 4. You can add resolve conditions to the Tokens
 5. You might add smt to the update function of the TM
 6. You can add Trigger conditions that activate but not resolve the Token 
 
-New Chreature Type:
+New Creature Type:
 1. Add to Controller __init__ as all types
 
 New Conditional Choice
@@ -108,7 +108,7 @@ Conditional Choices are Choices that are added to the Choices list of the AI if 
 1. Create the new Choice
 2. Add Choice to AI and the self.conditionalChoicesList
 3. Add Choice via a function, or preferably a token (which later removes it aswell) to AI with AI.add_choice()
-3.1 Remember, the conditional Choices do not remove themselfs
+3.1 Remember, the conditional Choices do not remove themselves
 4. Use AI.remove_choice() to remove Choice
 4.1 remember, this function throws an error if Choice is not in Choices or not in conditional choices
 

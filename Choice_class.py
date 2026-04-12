@@ -7,7 +7,7 @@ if __name__ == '__main__':
 class choice:
     def __init__(self, player):
         self.player = player
-        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactived
+        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactivated
             self.player = entity('test', 0, 0)
   
 class do_attack(choice):
@@ -188,8 +188,8 @@ class go_wildshape(choice):
 
     def find_forms(self, Margin):
         #This function returns an Index List for the Beast Forms
-        #The returned forms are smaller then Cr but highter then Margin*CR
-        #Marget like 80% from CRmax: 0.8
+        #The returned forms are smaller than CR but higher than Margin*CR
+        #Target like 80% from CRmax: 0.8
         BeastForms = self.player.BeastForms
         FormList = [i for i in BeastForms if BeastForms[i]['Level'] <= self.player.DruidCR and BeastForms[i]['Level'] >= self.player.DruidCR*Margin]
         return FormList        
@@ -238,7 +238,7 @@ class do_turn_undead(choice):
 
         Score = sum([x.dps() for x in fight if x.type == 'undead' and x.state == 1])
         if 'undead' in [x.type for x in fight if x.team == self.player.team]:
-            #dont use if teammates undead
+            #don't use if teammate undead
             Score = 0
         return Score
 
@@ -250,17 +250,17 @@ class do_spellcasting(choice):
     def __init__(self, player):
         super().__init__(player)
         self.SpellScore = 0
-        self.ChoosenSpell = False
+        self.ChosenSpell = False
     
     def score(self, fight):
         player = self.player
         self.SpellScore = 0
-        self.ChoosenSpell = False
+        self.ChosenSpell = False
 
         if len(player.SpellBook) > 0:# check if player knows any spells
             if player.bonus_action == 1 or player.action == 1: #if you have still action left 
                 #print(self.choose_spell(fight))
-                self.ChoosenSpell, self.SpellScore = player.AI.choose_spell(fight)
+                self.ChosenSpell, self.SpellScore = player.AI.choose_spell(fight)
         return self.SpellScore
     
     def execute(self, fight):
@@ -277,8 +277,8 @@ class do_spellcasting(choice):
             Score = Score*(random()/2 + 0.75)
             if Score > 10:
                 player.use_empowered_spell()
-        if self.ChoosenSpell != False:
-            self.ChoosenSpell() #cast choosen Spell
+        if self.ChosenSpell != False:
+            self.ChosenSpell() #cast chosen spell
 
 class use_ki(choice):
     def __init__(self, player):
@@ -308,7 +308,7 @@ class do_monster_ability(choice):
         if player.dragons_breath_is_charged:
             Score += (20 + int(player.level*3.1))*3   #damn strong ability, at least 2-3 Targets
         if player.recharge_aoe_is_charged:
-            Score += player.aoe_recharge_dmg*2 #might hit 2-3 targts
+            Score += player.aoe_recharge_dmg*2 #might hit 2-3 targets
         if player.spider_web_is_charged:
             Score += player.dmg*player.attacks*1.5   #good Ability, better then simple attack
         return Score
@@ -456,10 +456,10 @@ class do_heal(choice):
                 return False, 0
 
     def execute(self, fight):
-        #This function is called as an AI Coice
-        #If it is is called there should be a heal option aviable for the player
-        #Also the Choose Heal Target function should already assigned a heal target
-        #The only thing to choose now is what king of Healing and how much, which SpellSlot 
+        #This function is called as an AI choice
+        #If it is called there should be a heal option available for the player
+        #Also the Choose Heal Target function should already have assigned a heal target
+        #The only thing to choose now is what kind of healing and how much, which spell slot 
         player = self.player
         target = self.HealTarget
 
@@ -497,8 +497,8 @@ class do_call_lightning(choice):
         super().__init__(player)
 
     def score(self, fight):
-        #This Score only apllies to the re-casting of the Spell, not the initial cast
-        #Tis is the reason why this score is rather generously calculated, to encourage using this
+        #This score only applies to the re-casting of the spell, not the initial cast
+        #This is the reason why this score is rather generously calculated, to encourage using this
         if self.player.action == 0: return 0
         recastDmg = self.player.SpellBook['CallLightning'].recast_damge  #recast dmg saved in spell at the last cast
         Score = 0

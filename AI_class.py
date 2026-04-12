@@ -9,9 +9,9 @@ if __name__ == '__main__':
               
 class AI:
     def __init__(self, player):
-    #this class is initialized in the Entity class to controll all the moves and decisions
+    #this class is initialized in the Entity class to control all the moves and decisions
         self.player = player
-        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactived
+        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactivated
             self.player = entity('test', 0, 0)
 
         #this is later filled in do_your_turn()
@@ -95,14 +95,14 @@ class AI:
                 if np.max(ChoiceScores) > 0:
                     ActionToDo.execute(fight) #Do the best Choice
                 #First Round Action and Attacks
-                #Secound Round Bonus Action
-                #Check if still smth to do, else return
+                #Second Round Bonus Action
+                #Check if there is still something to do, else return
                 if sum(ChoiceScores) == 0:
                     rules = [player.bonus_action == 1 and player.action == 1,
                         player.attack_counter > 0,
                         len([x for x in fight if x.team != player.team and x.state == 1]) == 0]
                     if all(rules):
-                        player.DM.say(player.name + ' count not decide what to do!', True)
+                        player.DM.say(player.name + ' could not decide what to do!', True)
                         quit()
                     return
 
@@ -135,7 +135,7 @@ class AI:
 
     def add_choice(self, newChoice):
         #This function is intended to add choices, which are conditional
-        #This can happen for spells that enable a choice, via their token mybe
+        #This can happen for spells that enable a choice, maybe via their token
         #It checks for a list of Choices that are expected to be added and removed, does not work for others
         if newChoice not in self.conditionalChoicesList:
             print(self.player + ' tried to add a choice (' + str(newChoice) + ') from AI that is not conditional')
@@ -209,7 +209,7 @@ class AI:
             self.player.attack(target, is_ranged, is_opportunity_attack = True, is_spell=False)
 
     def want_to_cast_shield(self, attacker, damage):
-        #This function is called in the attack function as a reaction, if Shild spell is known
+        #This function is called in the attack function as a reaction, if Shield spell is known
         if all([self.player.CHP < damage.abs_amount(), self.player.raged == False, self.player.is_shape_changed == False]):
             for i in range(9):
                 if self.player.spell_slot_counter[i] > 0:
@@ -231,7 +231,7 @@ class AI:
                 return hitProp**2
             else: return hitProp
 
-        #Calcualte the expectation value for the dmg
+        #Calculate the expectation value for the dmg
         dmgNoGWM = self.player.dmg*hitPropabilityAdvantage(hitPropability, advantage_disadvantage)
         dmgWithGWM = (self.player.dmg + 10)*hitPropabilityAdvantage(hitPropabilityGWM, advantage_disadvantage)
         if dmgWithGWM >= dmgNoGWM : return True
@@ -260,7 +260,7 @@ class AI:
         x = self.player.CHP / self.player.HP
         Score = Score * (3/(np.exp((x - 0.2)*10) + 1) + 1) #This factor starts at 1, at about 0.4 to 0 CHP/HP it goes steeply to about 3.5
         #We are scaling the likelihood of using reaction based on current HP vs max, making much more likely below 50% hp[add graph of function to docs]
-        if Score > self.player.dmg: #compare score to player.dmg as dmg would be dealed at opp.attack
+        if Score > self.player.dmg: #compare score to player.dmg as dmg would be dealt on opp. attack
             wants_to_return_attack = True
         if Dmg.abs_amount() >= self.player.CHP:
             wants_to_return_attack = True #If you would die, always use the feature
@@ -268,9 +268,9 @@ class AI:
 
 #---------Support
     def area_of_effect_chooser(self, fight, area):   #area in square feet
-    #The chooser takes all enemies and chooses amoung those to hit with the area of effect
-    #every target can only be hit once, regardless if it is alive or dead 
-    #how many targets wil be hit depends on the area and the density in that area from the Battlefield.txt
+        #The chooser takes all enemies and chooses among those to hit with the area of effect
+        #every target can only be hit once, regardless if it is alive or dead 
+        #how many targets will be hit depends on the area and the density in that area from the Battlefield.txt
         enemies = [x for x in fight if x.team != self.player.team and x.state != -1]
         DensityFaktor = 2
         if self.player.DM.density == 0: DensityFaktor = 1
@@ -301,7 +301,7 @@ class AI:
             targets = enemies[0:target_pool]
 
         #This returns: 
-        # 3 ebemies
+        # 3 enemies
         #    115: [1000.    0.    0.    0.    0.    0.    0.    0.    0.    0.]
         #    300: [366. 634.   0.   0.   0.   0.   0.   0.   0.   0.]
         #    450: [145. 767.  88.   0.   0.   0.   0.   0.   0.   0.]
@@ -383,7 +383,7 @@ class AI:
         else:
             dmg_type = other_dmg_type
         #function returns False if no target in reach
-        #this function takes all targets that are possible in reach and choosed which one is best to attack
+        #this function takes all targets that are possible in reach and chooses which one is best to attack
         #the AttackIsRanged is to manually tell the function that the Attack is ranged, even if the player might not have ranged attacks, for Spells for example
         EnemiesInReach = player.enemies_reachable_sort(fight, AttackIsRanged)
 
@@ -402,14 +402,14 @@ class AI:
             target_list = EnemiesInReach
             if self.player.strategy_level < 3:
                 return target_list[int(random()*len(target_list))] #if low strategy, attack random
-            #This function is the intelligence behind choosing the best target to hit from a List of given Targets. It chooses reguarding lowest Enemy and AC and so on
+            #This function is the intelligence behind choosing the best target to hit from a list of given targets. It chooses regarding lowest enemy, AC, and so on
             ThreatScore = np.zeros(len(target_list))
             for i in range(0, len(target_list)):
                 ThreatScore[i] = self.target_attack_score(fight, target_list[i], dmg_type, dmg)
             return target_list[np.argmax(ThreatScore)]
 
     def target_attack_score(self, fight, target, dmg_type, dmg):
-        #This functions helps in decision on a att taget by assining a score
+        #This function helps decide on an attack target by assigning a score
         player = self.player
         Score = 0
         RandomWeight = player.random_weight
@@ -444,7 +444,7 @@ class AI:
             Score += TargetDPS*(random()*RandomWeight + 1)
         elif (target.AC - player.tohit)/20 < 0.35:
             Score += TargetDPS/2*(random()*RandomWeight + 1) #Good to hit 
-        #Dont Attack high AC
+        #Don't attack high AC
         if (target.AC - player.tohit)/20 > 0.8: #90% no hit prop
             Score -= TargetDPS*(random()*RandomWeight + 1)
 
@@ -600,7 +600,7 @@ class AI:
         return False 
 
     def choose_player_to_protect(self, fight):
-        #Chooses one other allies, that is not self, which might be unconsious
+        #Chooses one other ally, that is not self, which might be unconscious
         player = self.player
         allies = [x for x in fight if x.team == player.team and x.state != -1 and x != player]       #which allies left alive
         if len(allies) == 0: return False #no allies
@@ -630,7 +630,7 @@ class AI:
 
 #---------Spells
     def choose_quickened_cast(self):
-        #This function is called once per trun to determine if player wants to use quickned cast this round
+        #This function is called once per turn to determine if player wants to use quickened cast this round
         player = self.player
         QuickScore = 100
         QuickScore = QuickScore*(1.5 - 0.5*(player.CHP/player.HP)) #encourage quickend cast if youre low, if CHP -> 0, Score -> 150
@@ -688,7 +688,7 @@ class AI:
 
         #In the following all Options will get a score, that roughly resembles their dmg or equal dmg value
         #This Score is assigned by a function of the spellcasting class 
-        #This function also evalues if it is good to use a quickened or twin cast
+        #This function also evaluates if it is good to use a quickened or twin cast
         #The evaluation of quickened Cast is currently not handled by these functions
             for x, spell in player.SpellBook.items():
                 if Choice == spell.cast:
@@ -697,7 +697,7 @@ class AI:
                     if cast_quickened_this_round == True:
                         Score, SpellTargets, CastLevel = spell.score(fight)
                     else:
-                        #Basically dont cast quickened this round
+                        #Basically don't cast quickened this round
                         Score = 0
                         SpellTargets = [player]
                         CastLevel = 0
@@ -709,8 +709,8 @@ class AI:
         #Now find best value and cast that
         ChoiceIndex = np.argmax(ChoiceScores)
 
-        #Before returning the Value check if it is even sensable to cast instaed of doing something else
-        #This part gives a Value of the possible alternatives and assignes a dmg equal value to compare with
+        #Before returning the value, check if it is even sensible to cast instead of doing something else
+        #This part gives a value of the possible alternatives and assigns a dmg equal value to compare with
         #This is the Score that will be compared for the action Spell, so assume an action is left
         if player.action == 1:
             #If the player has still its action, compete with this alternative score of just attacking
@@ -718,7 +718,7 @@ class AI:
                 SpellChoice = partial(Choices[ChoiceIndex],TargetList[ChoiceIndex],LevelList[ChoiceIndex])
                 return SpellChoice, ChoiceScores[ChoiceIndex]
             else:
-                return False, 0 #If you have action and cant beat this Score, dont cast spell
+                return False, 0 #If you have action and can't beat this score, don't cast spell
         elif player.bonus_action == 1:
             if np.max(ChoiceScores) > player.dmg/5 + 1:    #just a small threshold
                     SpellChoice = partial(Choices[ChoiceIndex],TargetList[ChoiceIndex],LevelList[ChoiceIndex])
