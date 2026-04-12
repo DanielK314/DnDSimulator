@@ -138,7 +138,7 @@ class TokenManager():
 
     def unconscious(self):
         for x in self.TokenList:
-            if x.resolveWhenUnconcious: x.resolve()
+            if x.resolveWhenUnconscious: x.resolve()
             if x.triggersWhenUnconscious: x.getUnconsciousTrigger()
 
     def endOfTurn(self):
@@ -166,7 +166,7 @@ class TokenManager():
         for x in self.TokenList:
             if x.triggersWhenAttackHasHits: x.hasHitWithAttackTrigger(target, Dmg, is_ranged, is_spell)
 
-    def washitWithAttack(self, attacker, Dmg, is_ranged, is_spell):
+    def wasHitWithAttack(self, attacker, Dmg, is_ranged, is_spell):
         #This function triggers all tokens with the trigger
         #Is called from the attack function if player was hit with an attack
         for x in self.TokenList:
@@ -174,7 +174,7 @@ class TokenManager():
 
     def death(self):
         for x in self.TokenList:
-            if x.resolveWhenUnconcious or x.resolveWhenDead:
+            if x.resolveWhenUnconscious or x.resolveWhenDead:
                 x.resolve()
             if x.triggersWhenUnconscious: x.getUnconsciousTrigger()
 
@@ -195,7 +195,7 @@ class Token():
             self.type = ''
         if hasattr(self, 'subtype') == False:
             self.subtype = ''
-        self.resolveWhenUnconcious = False
+        self.resolveWhenUnconscious = False
         self.resolveWhenDead = False
         self.resolveAtTurnStart = False
         self.resolveAtTurnEnd = False
@@ -327,7 +327,7 @@ class ConcentrationToken(DockToken):
 class EntangledToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
     
     def resolve(self):
         self.TM.player.DM.say(self.TM.player.name + ' breaks Entangle, ', True)
@@ -338,7 +338,7 @@ class HastedToken(LinkToken):
         super().__init__(TM, subtype)
         self.hasATimer = True
         self.resolveWhenDead = True
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
         self.timer = 10 #10 Rounds
     
     def resolve(self):
@@ -364,7 +364,7 @@ class LostHaseToken(Token):
 class HexedToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
         self.triggersWhenHitWithAttack = True #add hex dmg
 
     def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
@@ -402,7 +402,7 @@ class HexingToken(ConcentrationToken):
 class HuntersMarkedToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
         self.triggersWhenHitWithAttack = True #add HM dmg
 
     def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
@@ -464,13 +464,13 @@ class SummonerToken(ConcentrationToken):
         self.TM.player.has_summons = False
         return super().resolve()
     
-class SummenedToken(LinkToken):
+class SummonedToken(LinkToken):
     #This Sumclass is a token to give a summoned Creature
     #It will Vanish after it dies
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
         self.resolveWhenDead = True
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
         self.TM.player.is_summoned = True #Will be removed from fight if dead
     
     def resolve(self):
@@ -584,7 +584,7 @@ class CallLightningToken(ConcentrationToken):
 class EmittingProtectionAuraToken(DockToken):
     def __init__(self, TM, links):
         super().__init__(TM, links)
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
         self.resolveAtTurnStart = True
         #every Round other protected
 
@@ -624,7 +624,7 @@ class DodgeToken(Token):
         super().__init__(TM)
         self.resolveAtTurnStart = True
         self.resolveWhenDead = True
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
         self.TM.player.is_dodged = True
     
     def resolve(self):
@@ -636,7 +636,7 @@ class GreatWeaponToken(DockToken):
         super().__init__(TM, links)
         self.subtype = 'gw'
         self.resolveAtTurnEnd = True #after this turn, all tokens that were given for attacks are resolved
-        self.resolveWhenUnconcious = True #maybe unconscious before end of turn
+        self.resolveWhenUnconscious = True #maybe unconscious before end of turn
 
 class GreatWeaponAttackToken(LinkToken):
     def __init__(self, TM, subtype):
@@ -656,7 +656,7 @@ class GreatWeaponAttackToken(LinkToken):
 class FavFoeMarkToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
         self.triggersWhenHitWithAttack = True #add hex dmg
         self.triggersWhenEndOfTurn = True #regain one use at end of turn
         self.has_triggered_this_round = False
@@ -690,7 +690,7 @@ class FavFoeToken(ConcentrationToken):
 class StunningStrikedToken(LinkToken): #give this to target, Dock token will be done automatically
     def __init__(self, TM):
         super().__init__(TM, "st")
-        self.resolveWhenUnconcious = True
+        self.resolveWhenUnconscious = True
 
     def resolve(self):
         self.TM.player.DM.say(self.TM.player.name + ' is no longer Stunned, ', True)

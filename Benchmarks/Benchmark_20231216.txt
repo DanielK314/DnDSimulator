@@ -109,7 +109,7 @@ Sat Dec 16 14:38:34 2023    profile_results
     48146    0.012    0.000    0.017    0.000 /Users/danielkohl/git/DnDSimulator/Dmg_class.py:38(abs_amount)
    167610    0.017    0.000    0.017    0.000 /Users/danielkohl/git/DnDSimulator/Dm_class.py:35(say)
     16957    0.009    0.000    0.016    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:1307(pre_hit_modifier)
-    16968    0.009    0.000    0.016    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:253(save_sucess_propability)
+    16968    0.009    0.000    0.016    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:253(save_success_probability)
       269    0.000    0.000    0.016    0.000 /Users/danielkohl/git/DnDSimulator/Choice_class.py:315(execute)
      8337    0.016    0.000    0.016    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:387(<listcomp>)
     16957    0.015    0.000    0.016    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:1155(check_attack_advantage)
@@ -174,7 +174,7 @@ Sat Dec 16 14:38:34 2023    profile_results
     26044    0.004    0.000    0.004    0.000 /Users/danielkohl/git/DnDSimulator/Choice_class.py:124(score)
     24771    0.004    0.000    0.004    0.000 {method 'join' of 'str' objects}
       330    0.004    0.000    0.004    0.000 /opt/homebrew/Cellar/python@3.11/3.11.4_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/json/decoder.py:343(raw_decode)
-    10538    0.004    0.000    0.004    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:246(hit_propability)
+    10538    0.004    0.000    0.004    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:246(hit_probability)
       727    0.001    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Token_class.py:183(__init__)
     63270    0.003    0.000    0.003    0.000 {method 'getrandbits' of '_random.Random' objects}
      3800    0.001    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:744(make_check)

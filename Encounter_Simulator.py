@@ -68,7 +68,7 @@ def do_the_fighting(fighters_unsorted): #here a list of fighters from different 
     DM.say('', True)
     DM.say('Damage dealt:', True)
     for i in fighters_unsorted:
-        DM.say(str(i.name) + " " + str(round(i.dmg_dealed,2)), True)
+        DM.say(str(i.name) + " " + str(round(i.dmg_dealt,2)), True)
     DM.say('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', True)
     DM.say('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', True)
     DM.say('', True)
@@ -116,7 +116,7 @@ def run_simulation(repetition, fighters, progress = False):
         simulation_results = do_the_fighting(fighters)
         winner.append(simulation_results[0])         # do the fight and get the winner, list of 0 (heroes) or 1 (enemies)
         rounds_number.append(simulation_results[1])         # do the fight and get the rounds number
-        damage_statistic.append([k.dmg_dealed for k in fighters])  #get dmg statistic
+        damage_statistic.append([k.dmg_dealt for k in fighters])  #get dmg statistic
 
         for j in fighters:
             if j.state == -1:

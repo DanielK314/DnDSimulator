@@ -15,7 +15,7 @@ if __name__ == '__main__':
         if '.json' in x:
             File_List.append('./Archive/' + x)  #Use only .json files
     
-    File_List.append('./New Character.json')
+    File_List.append('./New_Character.json')
 
 
     for path in File_List:

@@ -242,17 +242,17 @@ class spell:
 #If a Score 0 is returned the spell will not be considered to be cast that way
 #The individual sores are in the subclasses
 
-    def hit_propability(self, target):
+    def hit_probability(self, target):
     #This function evaluetes how propable a hit with a spell attack will be
         SpellToHit = self.player.spell_mod + self.player.proficiency
         AC = target.AC
         prop = (20 - AC + SpellToHit)/20
         return prop
 
-    def save_sucess_propability(self, target):
+    def save_success_probability(self, target):
         SaveMod = target.modifier[self.spell_save_type]
         Advantage = target.check_advantage(self.spell_save_type, notSilent = False)
-        #Save Sucess Propability:
+        #Save Success Probability:
         prop = (20 - self.player.spell_dc + SaveMod)/20
         if Advantage < 0:
             prop = prop*prop  #Disadvantage, got to get it twice
@@ -267,9 +267,9 @@ class spell:
         for target in SpellTargets:
             target_dmg = dmg
             if SpellSave: #Prop that target makes save
-                target_dmg = dmg/2 + (dmg/2)*(1-self.save_sucess_propability(target))
+                target_dmg = dmg/2 + (dmg/2)*(1-self.save_success_probability(target))
             if SpellAttack:   #it you attack, account for hit propabiltiy
-                target_dmg = target_dmg*self.hit_propability(target)#accounts for AC
+                target_dmg = target_dmg*self.hit_probability(target)#accounts for AC
             #DMG Type, Resistances and stuff
             if self.dmg_type in target.damage_vulnerability:
                 target_dmg = target_dmg*2
@@ -659,7 +659,7 @@ class magic_missile(spell):
             Dmg = dmg(damage, 'force')
             #Check for Tokens Trigger
             self.player.TM.hasHitWithAttack(targets[target_counter], Dmg, is_ranged=True, is_spell=True)
-            targets[target_counter].TM.washitWithAttack(self.player, Dmg, is_ranged=True, is_spell=True)
+            targets[target_counter].TM.wasHitWithAttack(self.player, Dmg, is_ranged=True, is_spell=True)
 
             targets[target_counter].last_attacker = self.player    #target remembers last attacker
             targets[target_counter].changeCHP(Dmg, self.player, True)    #target takes damage
@@ -1034,10 +1034,10 @@ class scorching_ray(attack_spell):
         #Set the number of attacks, then let the super cast function handle the rest
         super().cast(targets, cast_level, twinned)
 
-class aganazzars_sorcher(aoe_dmg_spell):
+class aganazzars_scorcher(aoe_dmg_spell):
     def __init__(self, player):
         spell_save_type = 1 #Dex
-        self.spell_name = 'AganazzarsSorcher'
+        self.spell_name = 'AganazzarsScorcher'
         super().__init__(player, spell_save_type, dmg_type='fire', aoe_area=300) #30ft*10ft 
         self.spell_text = 'aganazzars scorcher'
         self.spell_level = 2
@@ -1244,7 +1244,7 @@ class conjure_animals(spell):
             animal.summoner = player
             fight.append(animal)
 
-            conjuredAnimals.append(SummenedToken(animal.TM, 'ca')) #add a SummonedToken to the animal
+            conjuredAnimals.append(SummonedToken(animal.TM, 'ca')) #add a SummonedToken to the animal
         #Add a Summoner Token to the Player
         SummonerToken(self.TM, conjuredAnimals)
 
@@ -1316,11 +1316,11 @@ class call_lightning(aoe_dmg_spell):
         self.spell_level = 3
         self.is_range_spell = True
         self.is_concentration_spell = True
-        self.recast_damge = 0
+        self.recast_damage = 0
 
     def cast(self, targets, cast_level=False, twinned=False):
-        if cast_level != False: self.recast_damge = self.spell_dmg(cast_level) #set damage for later recast
-        else: self.recast_damge = self.spell_dmg(self.spell_level) #level 3 spell
+        if cast_level != False: self.recast_damage = self.spell_dmg(cast_level) #set damage for later recast
+        else: self.recast_damage = self.spell_dmg(self.spell_level) #level 3 spell
         #Empowered spell does not affect recast, so it checks out 
         super().cast(targets, cast_level, twinned) #Cast Spell as simple AOE once
         #Add Token for late recast
@@ -1344,7 +1344,7 @@ class call_lightning(aoe_dmg_spell):
         self.player.action = 0 #uses action
         self.DM.say(self.player.name + ' recasts call lightning', True)
         for target in targets:
-            self.make_save_for(target, damage=self.recast_damge) #lets targets make saves and applies dmg
+            self.make_save_for(target, damage=self.recast_damage) #lets targets make saves and applies dmg
     
     def spell_dmg(self, cast_level):
         dmg = 16.5 + 5.5*(cast_level-3) #3d10 + 1d10 per lv over 3
@@ -1441,11 +1441,11 @@ class sickeningRadiance(aoe_dmg_spell):
         self.spell_level = 4
         self.is_range_spell = True
         self.is_concentration_spell = True
-        self.recast_damge = 0
+        self.recast_damage = 0
 
     def cast(self, targets, cast_level=False, twinned=False):
-        if cast_level != False: self.recast_damge = self.spell_dmg(cast_level) #set damage for later recast
-        else: self.recast_damge = self.spell_dmg(self.spell_level) #level 5 spell
+        if cast_level != False: self.recast_damage = self.spell_dmg(cast_level) #set damage for later recast
+        else: self.recast_damage = self.spell_dmg(self.spell_level) #level 5 spell
         #Empowered spell does not affect recast, so it checks out 
         super().cast(targets, cast_level, twinned) #Cast Spell as simple AOE once
         #Add Token for late recast
@@ -1468,7 +1468,7 @@ class sickeningRadiance(aoe_dmg_spell):
         #Recast for targets
         self.DM.say(self.player.name + 's sickening radiance is still on the field', True)
         for target in targets:
-            self.make_save_for(target, damage=self.recast_damge) #lets targets make saves and applies dmg
+            self.make_save_for(target, damage=self.recast_damage) #lets targets make saves and applies dmg
     
     def spell_dmg(self, cast_level):
         dmg = 22 #4d10 no upcast improvement
@@ -1620,11 +1620,11 @@ class cloudkill(aoe_dmg_spell):
         self.spell_level = 5
         self.is_range_spell = True
         self.is_concentration_spell = True
-        self.recast_damge = 0
+        self.recast_damage = 0
 
     def cast(self, targets, cast_level=False, twinned=False):
-        if cast_level != False: self.recast_damge = self.spell_dmg(cast_level) #set damage for later recast
-        else: self.recast_damge = self.spell_dmg(self.spell_level) #level 5 spell
+        if cast_level != False: self.recast_damage = self.spell_dmg(cast_level) #set damage for later recast
+        else: self.recast_damage = self.spell_dmg(self.spell_level) #level 5 spell
         #Empowered spell does not affect recast, so it checks out 
         super().cast(targets, cast_level, twinned) #Cast Spell as simple AOE once
         #Add Token for late recast
@@ -1640,7 +1640,7 @@ class cloudkill(aoe_dmg_spell):
         #Recast for targets
         self.DM.say(self.player.name + 's cloud kill is still on the field', True)
         for target in targets:
-            self.make_save_for(target, damage=self.recast_damge) #lets targets make saves and applies dmg
+            self.make_save_for(target, damage=self.recast_damage) #lets targets make saves and applies dmg
     
     def spell_dmg(self, cast_level):
         dmg = 22.5 + 4.5*(cast_level-5) #5d8 + 1d8 per lv over 5

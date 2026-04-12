@@ -124,7 +124,7 @@ Now it gets really interesting. In the following I will discuss the different sp
 
 **Rage** Is used via thw 'rage' function and will be activated directly when a player attacks and can rage, it will.
 
-**RecklessAttack** Is used via the 'rackless_attack' function and will be used for every attack, if activated.
+**RecklessAttack** Is used via the 'reckless_attack' function and will be used for every attack, if activated.
 
 **Frenzy** If a player goes into rage and knows frenzy, this will be activated in the 'rage' function. If a player attacks it will do an additional frenzy attack.
 
@@ -201,7 +201,7 @@ Shield
 
 False Life
 
-AganazzarsSorcher
+AganazzarsScorcher
 
 ScorchingRay
 
