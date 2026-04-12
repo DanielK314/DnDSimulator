@@ -85,7 +85,7 @@ class do_attack(choice):
         #This function then actually does the attack<<
         if player.action == 1: #if nothing else, attack
             if player.knows_reckless_attack:
-                player.rackless_attack()
+                player.reckless_attack()
             if player.knows_rage and player.bonus_action == 1 and player.raged == 0:
                 player.rage() #includes frenzy
             if player.is_in_frenzy and player.bonus_action == 1:
@@ -110,7 +110,7 @@ class do_offhand_attack(do_attack):
         #This function does a offhand attack as BA
         if player.bonus_action == 1:
             if player.knows_reckless_attack:
-                player.rackless_attack()
+                player.reckless_attack()
             target = player.AI.choose_att_target(fight) #choose a target
             if target == False: #there might be no target
                 return
@@ -500,7 +500,7 @@ class do_call_lightning(choice):
         #This score only applies to the re-casting of the spell, not the initial cast
         #This is the reason why this score is rather generously calculated, to encourage using this
         if self.player.action == 0: return 0
-        recastDmg = self.player.SpellBook['CallLightning'].recast_damge  #recast dmg saved in spell at the last cast
+        recastDmg = self.player.SpellBook['CallLightning'].recast_damage  #recast dmg saved in spell at the last cast
         Score = 0
         Score = recastDmg*(1.5+random()) #dmg*1.5-2.5 targets
         Score += 10 #a little bonus to encourage recasting this, because it does not cost extra cast

@@ -221,10 +221,10 @@ class AI:
         #take -5 to attack and +10 to dmg
         #advantage_disadvanteage > 0 - advantage, < 0 disadv.
 
-        hitPropability = (20 - target.AC + self.player.tohit)/20
-        hitPropabilityGWM = (20 - target.AC + self.player.tohit - 5)/20
+        hit_probability = (20 - target.AC + self.player.tohit)/20
+        hit_probability_gwm = (20 - target.AC + self.player.tohit - 5)/20
 
-        def hitPropabilityAdvantage(hitProp, advantage):
+        def hit_probability_with_advantage(hitProp, advantage):
             if advantage > 0: #has to get it once out of two
                 return 1 - (1-hitProp)**2
             if advantage < 0:  #disadvantage, has to succ twice
@@ -232,8 +232,8 @@ class AI:
             else: return hitProp
 
         #Calculate the expectation value for the dmg
-        dmgNoGWM = self.player.dmg*hitPropabilityAdvantage(hitPropability, advantage_disadvantage)
-        dmgWithGWM = (self.player.dmg + 10)*hitPropabilityAdvantage(hitPropabilityGWM, advantage_disadvantage)
+        dmgNoGWM = self.player.dmg*hit_probability_with_advantage(hit_probability, advantage_disadvantage)
+        dmgWithGWM = (self.player.dmg + 10)*hit_probability_with_advantage(hit_probability_gwm, advantage_disadvantage)
         if dmgWithGWM >= dmgNoGWM : return True
         else: return False
 

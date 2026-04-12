@@ -73,7 +73,7 @@ class Controller(Frame):
             'AOERechargeDmg':{'Text': 'Recharge AOE Dmg', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dmg', 'IsFLoatStat': True},
             'AOERechargeDC':{'Text': 'Recharge AOE DC', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_dc', 'IsFLoatStat': False},
             'AOERechargeArea':{'Text': 'Recharge AOE Area', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_area', 'IsFLoatStat': False},
-            'AOERechargePropability':{'Text': 'AOE Recharge Propability', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_propability', 'IsFLoatStat': True},
+            'AOERechargeProbability':{'Text': 'AOE Recharge Probability', 'ClassName': 'Monster', 'AttributeName': 'aoe_recharge_probability', 'IsFLoatStat': True},
             'Ki_Points':{'Text': 'Ki Points', 'ClassName': 'Monk', 'AttributeName': 'ki_points_base', 'IsFLoatStat': False}
         }
 
@@ -403,7 +403,7 @@ class OtherAbilityCombobox(Frame):
 class EntityPage_cl(Frame):
     def __init__(self, root):
         Frame.__init__(self, root)
-        self.name = 'New Character'
+        self.name = 'New_Character'
 
         #Style
         self.Entrybd = 2
@@ -868,9 +868,9 @@ class EntityPage_cl(Frame):
         elif __file__:
             application_path = os.path.dirname(__file__)
 
-        path = application_path + '/New Character.json'
+        path = application_path + '/New_Character.json'
         file = open(path)
-        self.name = 'New Character'
+        self.name = 'New_Character'
         self.stats = json.load(file)
         file.close()
 

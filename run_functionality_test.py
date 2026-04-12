@@ -430,11 +430,11 @@ if __name__ == '__main__':
     DM = DungeonMaster()
     DM.enable_print()
     Character = entity('Ape', 0, DM, archive=True)
-    Character.orignial_name = 'Hero'
+    Character.original_name = 'Hero'
     Character2 = entity('Ape', 0, DM, archive=True)
     Character3 = entity('Ape', 0, DM, archive=True)
     Enemy = entity('Ape', 1, DM, archive=True)
-    Enemy.orignial_name = 'Enemy'
+    Enemy.original_name = 'Enemy'
     Enemy2 = entity('Ape', 1, DM, archive=True)
     Enemy3 = entity('Ape', 1, DM, archive=True)
 

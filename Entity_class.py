@@ -37,7 +37,7 @@ class entity:                                          #A Character
 
     #Base Properties
         self.name = str(name)
-        self.orignial_name = str(name)        #restore name after wild shape
+        self.original_name = str(name)        #restore name after wild shape
         self.team = team                                      #which Team they fight for
         self.type = str(data['Type'])
         self.base_type = self.type
@@ -133,14 +133,14 @@ class entity:                                          #A Character
         #Keep this in Order of the Spell Level, so that it also fits for the GUI
         self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
                            'BurningHands', 'Thunderwave','MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds', 'HuntersMark',
-                           'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
+                           'AganazzarsScorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
                            'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals', 'CallLightning',
                            'Blight', 'SickeningRadiance', 'WallOfFire', 'Polymorph',
                            'Cloudkill']
         #Add here all Spell classes that are impemented
         self.Spell_classes = [firebolt, chill_touch, eldritch_blast,
                          burning_hands, thunderwave, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds, hunters_mark,
-                         aganazzars_sorcher, scorching_ray, shatter, spiritual_weapon,
+                         aganazzars_scorcher, scorching_ray, shatter, spiritual_weapon,
                          fireball, lightningBolt, haste, conjure_animals, call_lightning,
                          blight, sickeningRadiance, wallOfFire, polymorph,
                          cloudkill]
@@ -428,10 +428,10 @@ class entity:                                          #A Character
         try: self.aoe_recharge_area = int(data['AOERechargeArea'])
         except: self.aoe_recharge_area = 0
         try:
-            self.aoe_recharge_propability = float(data['AOERechargePropability'])
-            if self.aoe_recharge_propability > 1: self.aoe_recharge_propability = 1
-            if self.aoe_recharge_propability < 0: self.aoe_recharge_propability = 0
-        except: self.aoe_recharge_propability = 0
+            self.aoe_recharge_probability = float(data['AOERechargeProbability'])
+            if self.aoe_recharge_probability > 1: self.aoe_recharge_probability = 1
+            if self.aoe_recharge_probability < 0: self.aoe_recharge_probability = 0
+        except: self.aoe_recharge_probability = 0
         try: self.aoe_recharge_type = data['AOERechargeType']
         except: self.aoe_recharge_type = 'fire'
 
@@ -500,7 +500,7 @@ class entity:                                          #A Character
         self.is_invisible = False   #tokensubtype iv
 
         self.last_attacker = 0
-        self.dmg_dealed = 0
+        self.dmg_dealt = 0
         self.heal_given = 0
 
         self.dash_target = False
@@ -610,9 +610,9 @@ class entity:                                          #A Character
 
         #-----------Statistics
         if damage > 0:
-            attacker.dmg_dealed += damage
+            attacker.dmg_dealt += damage
             if attacker.is_summoned:   #Append the dmg of summons to summoner
-                attacker.summoner.dmg_dealed += damage
+                attacker.summoner.dmg_dealt += damage
             attacker.last_used_DMG_Type = Dmg.damage_type()
         elif damage < 0:
             attacker.heal_given -= damage
@@ -635,7 +635,7 @@ class entity:                                          #A Character
                         self.DM.say(self.name + ' takes DMG: ' + Dmg.text() + ' now: ' + str(round(self.CHP,2)) + ' + ' + str(round(self.THP,2)) + ' temporary HP', True)
                         damage = 0
                     else: #THP gone
-                        damage = damage - self.THP #substract THP
+                        damage = damage - self.THP #subtract THP
                         self.THP = 0
                         self.DM.say('temporary HP empty, ')
 
@@ -704,7 +704,7 @@ class entity:                                          #A Character
         #It is used by some AI functions to determine the value of the target in a fight
         #This Function returns a value for the dps
         #Heal is values 2 times dmg
-        return (self.dmg_dealed + self.heal_given*2)/self.DM.rounds_number
+        return (self.dmg_dealt + self.heal_given*2)/self.DM.rounds_number
 
     def value(self):
         #This function is designed to help decision making in AI
@@ -1413,7 +1413,7 @@ class entity:                                          #A Character
                     if target.is_stunned == False: #don't double stunn
                         self.use_stunning_strike(target)
         #Tokens
-            target.TM.washitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
+            target.TM.wasHitWithAttack(self, Dmg, is_ranged, is_spell) #trigger was hit Tokens
             self.TM.hasHitWithAttack(target, Dmg, is_ranged, is_spell) #trigger was hit Tokens
 
         #poison Bite
@@ -1435,7 +1435,7 @@ class entity:                                          #A Character
         #Interception
             if target.interception_amount > 0:
                 self.DM.say(' Attack was intercepted: -' + str(target.interception_amount))
-                Dmg.substract(target.interception_amount)
+                Dmg.subtract(target.interception_amount)
                 target.interception_amount = 0 #only once
         #Deflect Missile
             if target.knows_deflect_missiles and is_ranged:
@@ -1460,7 +1460,7 @@ class entity:                                          #A Character
         #Takes a dict as input for the shape properties
         #Shape Properties
         self.is_shape_changed = True
-        self.name = self.orignial_name + '(' + ShapeName + ')'
+        self.name = self.original_name + '(' + ShapeName + ')'
         self.shape_name = ShapeName
         self.shape_remark = Remark
         self.AC = ShapeDict['AC']
@@ -1496,7 +1496,7 @@ class entity:                                          #A Character
     def drop_shape(self):
         #If Shape Changed, reset all the changed attributes back to base
         if self.is_shape_changed:
-            self.name = self.orignial_name
+            self.name = self.original_name
             self.shape_remark = ''
             self.shape_AC = self.base_AC  #set the shape AC of Entity back to base AC (for more see __init__)
             self.AC = self.shape_AC #set current AC back
@@ -1604,7 +1604,7 @@ class entity:                                          #A Character
         self.bonus_action -= 1
 
 #------------------Special Abilities-----------------
-    def rackless_attack(self):
+    def reckless_attack(self):
         if self.knows_reckless_attack:
             self.reckless = 1
             self.DM.say(self.name + ' uses reckless Attack', True)
@@ -1884,7 +1884,7 @@ class entity:                                          #A Character
         #Reduce dmg
         self.DM.say(''.join([self.name, ' deflected ', target.name, '\'s ranged attack']), True)
         self.reaction = 0
-        Dmg.substract(5 + self.modifier[1] + self.ki_points_base) #this will reduce the dmg later when dmg is calculated and changed in changeCHP
+        Dmg.subtract(5 + self.modifier[1] + self.ki_points_base) #this will reduce the dmg later when dmg is calculated and changed in changeCHP
         #Wants to return Attack?
         if wants_to_return_attack:
             if Dmg.abs_amount() < 1 and self.ki_points > 0: #You can return attack
@@ -1943,7 +1943,7 @@ class entity:                                          #A Character
                 self.dragons_breath_is_charged = True
 
         if self.knows_recharge_aoe: #Charge aoe
-            if random() < self.aoe_recharge_propability:
+            if random() < self.aoe_recharge_probability:
                 self.recharge_aoe_is_charged = True
 
         if self.knows_spider_web: #charge Spider Web
@@ -2017,7 +2017,7 @@ class entity:                                          #A Character
         self.chill_touched = False
 
     def long_rest(self):       #resets everything to initial values
-        self.name = self.orignial_name
+        self.name = self.original_name
         self.AC = self.base_AC
         self.shape_AC = self.base_AC
         self.dmg = self.base_dmg
@@ -2099,7 +2099,7 @@ class entity:                                          #A Character
         self.dash_target = False
         self.has_dashed_this_round = False
         self.last_attacker = 0
-        self.dmg_dealed = 0
+        self.dmg_dealt = 0
         self.heal_given = 0
         self.unconscious_counter = 0
 

@@ -104,7 +104,7 @@ Sun Jun 25 06:14:56 2023    profile_results
     15449    0.017    0.000    0.017    0.000 /Users/danielkohl/git/DnDSimulator/Encounter_Simulator.py:32(<listcomp>)
    365410    0.017    0.000    0.017    0.000 {method 'append' of 'list' objects}
     22539    0.016    0.000    0.016    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:321(choose_highest_slot)
-    17444    0.009    0.000    0.015    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:253(save_sucess_propability)
+    17444    0.009    0.000    0.015    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:253(save_success_probability)
     51880    0.010    0.000    0.015    0.000 /Users/danielkohl/git/DnDSimulator/Dmg_class.py:38(abs_amount)
     19010    0.008    0.000    0.015    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:1221(pre_hit_modifier)
      3800    0.013    0.000    0.015    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:1827(long_rest)
@@ -183,7 +183,7 @@ Sun Jun 25 06:14:56 2023    profile_results
      1076    0.001    0.000    0.004    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:748(make_death_save)
     12996    0.003    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:872(<listcomp>)
       692    0.000    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Token_class.py:216(resolve)
-    10970    0.003    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:246(hit_propability)
+    10970    0.003    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:246(hit_probability)
     12996    0.003    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Entity_class.py:873(<listcomp>)
       350    0.000    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:914(cast)
      2004    0.001    0.000    0.003    0.000 /Users/danielkohl/git/DnDSimulator/Spell_class.py:452(__init__)

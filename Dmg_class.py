@@ -7,7 +7,7 @@ class dmg:
         self.types = ['acid', 'cold', 'fire', 'force' , 'lightning',
         'thunder', 'necrotic', 'poison', 'psychic' ,'radiant', 
         'bludgeoning', 'piercing', 'slashing', 'true', 'heal']
-        self.DMGSubstract = 0
+        self.DMGSubtract = 0
         #If a first dmg is passed:
         if amount != 0:
             self.add(amount, type)
@@ -31,12 +31,12 @@ class dmg:
         #All dmg entries are multiplied
         self.dmg_amount_list = [x*factor for x in self.dmg_amount_list]
 
-    def substract(self, amount):
+    def subtract(self, amount):
         #should be positive
-        self.DMGSubstract += amount
+        self.DMGSubtract += amount
 
     def abs_amount(self):
-        return sum(self.dmg_amount_list) - self.DMGSubstract
+        return sum(self.dmg_amount_list) - self.DMGSubtract
     
     def calculate_for(self, player):
             DMGTotal = 0
@@ -56,12 +56,12 @@ class dmg:
                     DMGTotal += self.dmg_amount_list[i]
                 else:
                     DMGTotal += self.dmg_amount_list[i]
-            if DMGTotal < 0: return DMGTotal  #It is heal, so return, do not substract from heal
+            if DMGTotal < 0: return DMGTotal  #It is heal, so return, do not subtract from heal
 
-            #If dmg was substracted from this amount, do it now; if < 0, do not heal
-            if self.DMGSubstract > DMGTotal: return 0
+            #If dmg was subtracted from this amount, do it now; if < 0, do not heal
+            if self.DMGSubtract > DMGTotal: return 0
             else:
-                DMGTotal -= self.DMGSubstract
+                DMGTotal -= self.DMGSubtract
                 return DMGTotal
         
     def damage_type(self):
@@ -74,8 +74,8 @@ class dmg:
             if self.dmg_amount_list[i] != 0:
                 string += str(round(self.dmg_amount_list[i],2))
                 string += ' ' + self.dmg_type_list[i] + ' '
-        if self.DMGSubstract > 0:
-            string += ' - ' + str(round(self.DMGSubstract,2))  #substracted
+        if self.DMGSubtract > 0:
+            string += ' - ' + str(round(self.DMGSubtract,2))  #subtracted
         return string
 
     def print(self):
