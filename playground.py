@@ -36,12 +36,12 @@ player = Character
 # for x in conditions:
 #     print(x)
 
-# #lear all spells
+# #learn all spells
 # Character.SpellBook = dict()
 # for x in Character.Spell_classes:
-#     spell_to_lern = x(Character)  #Initiate Spell
-#     spell_to_lern.is_known = True #Spell is known
-#     Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
+#     spell_to_learn = x(Character)  #Initiate spell
+#     spell_to_learn.is_known = True #Spell is known
+#     Character.SpellBook[spell_to_learn.spell_name] = spell_to_learn
 
 
 # Character.knows_stunning_strike = True

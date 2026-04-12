@@ -29,28 +29,28 @@ from Dmg_class import *
     #ca - conjured Animals
     #aop - is in aura of protection
     #gb - guiding Bolt
-    #prc - primal compantion
+    #prc - primal companion
     #gw - great weapon master dock
     #gwa - great weapon attack token 
     #fav - favored foeing
     #fm - fav foe marked
     #wf - Wall of Fire
 
-#All Token of a Entity are handled by its TM Token Manager
-#It has a list with all Token
-#If a Token uses .resolve() it is resolved with all its connections and removed from the list
-#If a Token is generated with a Creatures TM it is automatically added to that creatures List
+#All tokens of an Entity are handled by its TM Token Manager
+#It has a list with all tokens
+#If a token uses .resolve() it is resolved with all its connections and removed from the list
+#If a token is generated with a Creature's TM it is automatically added to that creature's list
 #The update function is called whenever a Token is removed or added
 
 class TokenManager():
-    #This Class handles all the Tokens a player might have
-    #The Tokens realate Player with each other and and checks for state changes
-    #If a Token is added, the Token Manager updates possible changes
+    #This class handles all the tokens a player might have
+    #The tokens relate players with each other and check for state changes
+    #If a token is added, the Token Manager updates possible changes
 
     def __init__(self, player):
         self.player = player
 
-        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactived
+        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactivated
             self.player = entity('test', 0, 0)
         self.TokenList = []
 
@@ -92,7 +92,7 @@ class TokenManager():
     def update(self):
         player = self.player
         #This is important for effects that could come from multiple sources
-        #That is why this can not be handled via the tokens, because they would not know, if the effect come from more then one token
+        #That is why this can not be handled via the tokens, because they would not know if the effect comes from more than one token
         #Concentration on the other hand is handled via the con token class
 
         #Got a new Token, Update Player Stats, like Concentration
@@ -142,7 +142,7 @@ class TokenManager():
             if x.triggersWhenUnconscious: x.getUnconsciousTrigger()
 
     def endOfTurn(self):
-        #This Function is called at the end of entities Turn and resolves timers
+        #This function is called at the end of an entity's turn and resolves timers
         for x in self.TokenList:
             #Timer
             if x.hasATimer:
@@ -154,21 +154,21 @@ class TokenManager():
             if x.triggersWhenEndOfTurn: x.endOfTurnTrigger()
 
     def startOfTurn(self):
-        #Attention, is called in entity class and this is calles in do_the_fighting
+        #Attention, is called in entity class and this is called in do_the_fighting
         #ONLY called if player.state == 1
         for x in self.TokenList:
             if x.resolveAtTurnStart: x.resolve()
             if x.triggersWhenStartOfTurn: x.startOfTurnTrigger()
 
     def hasHitWithAttack(self, target, Dmg, is_ranged, is_spell):
-        #This function triggers all Tokens with the Trigger
+        #This function triggers all tokens with the trigger
         #Is called from the attack function if player hit with an attack
         for x in self.TokenList:
             if x.triggersWhenAttackHasHits: x.hasHitWithAttackTrigger(target, Dmg, is_ranged, is_spell)
 
     def washitWithAttack(self, attacker, Dmg, is_ranged, is_spell):
-        #This function triggers all Tokens with the Trigger
-        #Is called from the attack function of player was hit with an attack
+        #This function triggers all tokens with the trigger
+        #Is called from the attack function if player was hit with an attack
         for x in self.TokenList:
             if x.triggersWhenHitWithAttack: x.wasHitWithAttackTrigger(attacker, Dmg, is_ranged, is_spell)
 
@@ -183,14 +183,14 @@ class TokenManager():
             if x.triggersWhenAttacked: x.wasAttackedTrigger(attacker, is_ranged, is_spell)
 
     def hasDroppedShape(self):
-        #called in drop_shape Entity function
+        #called in drop_shape entity function
         for x in self.TokenList:
             if x.triggersWhenShapeIsDropped: x.dropShapeTrigger()
 
 class Token():
     def __init__(self, TM):
         self.TM = TM
-        #Only Initiate these Vars if they are not already given by a subclass:
+        #Only initiate these vars if they are not already given by a subclass:
         if hasattr(self, 'type') == False:
             self.type = ''
         if hasattr(self, 'subtype') == False:
@@ -213,31 +213,31 @@ class Token():
         self.TM.add(self) #add and update the Token to TM
     
     def resolve(self):
-        #Is the Way to resolve a Token
+        #Is the way to resolve a token
         #Is then removed from TM list
         #Should be run last
         self.TM.resolve(self)
 
     def wasAttackedTrigger(self, attacker, is_ranged, is_spell):
-        #This is a function of a Token
-        #It is called if the Character at start of beeing attacked, before hit or miss check
-        #It is a function, that not automatically resolves the token
+        #This is a function of a token
+        #It is called if the character is being attacked, before hit or miss check
+        #It is a function that does not automatically resolve the token
         return
 
     def wasHitWithAttackTrigger(self, attacker, Dmg, is_ranged, is_spell):
-        #This is a function of a Token
-        #It is called if the Character was hit with an attack
-        #It is a function, that not automatically resolves the token
+        #This is a function of a token
+        #It is called if the character was hit with an attack
+        #It is a function that does not automatically resolve the token
         return
 
     def hasHitWithAttackTrigger(self, target, Dmg, is_ranged, is_spell):
-        #This is a function of a Token
-        #It is called if the Character has hit with an attack
-        #It is a function, that not automatically resolves the token
+        #This is a function of a token
+        #It is called if the character has hit with an attack
+        #It is a function that does not automatically resolve the token
         return 
 
     def getUnconsciousTrigger(self):
-        #this function is called if the target gets unconscious and has teh trigger
+        #this function is called if the target gets unconscious and has the trigger
         return
 
     def endOfTurnTrigger(self):
@@ -253,9 +253,9 @@ class Token():
         print(str(self))
 
 class LinkToken(Token):
-    #This is a token to give as a Token for a effect of any kind that is linked to another Token
-    #Link Tokens have an origin
-    #If the resolve, they unlink from origin
+    #This token is given for effect of any kind that is linked to another token
+    #Link tokens have an origin
+    #If they resolve, they unlink from the origin
     def __init__(self, TM, subtype):
         self.subtype = subtype
         self.type = 'l' #Concentration Link
@@ -267,33 +267,33 @@ class LinkToken(Token):
         return super().resolve()
 
 class DockToken(Token):
-    #this Kind of Token can accept Link Tokens
+    #this kind of token can accept link tokens
     #It will resolve
-    #It Accepts a List of Links
+    #It accepts a list of links
     def __init__(self, TM, links):
         super().__init__(TM)
 
         if type(links) != list: self.links = [links]
         else: self.links = links
 
-        #Now link this Spell as origin to thier links
+        #Now link this spell as origin to their links
         for x in self.links:
             x.origin = self
-        #Any Lined Tokens will be resolved if Dock token is resolved
+        #Any linked tokens will be resolved if dock token is resolved
 
     def addLink(self, Token):
-        #Add a Link and set this Dock as origin
+        #Add a link and set this dock as origin
         self.links.append(Token)
         Token.origin = self
 
     def resolve(self):
-        #If you resolve Dock Token, resolve all links to this Token
+        #If you resolve dock token, resolve all links to this token
         while len(self.links) > 0:
             self.links[0].resolve()#resolve all
         super().resolve()
 
     def unlink(self, CLToken):
-        #This function takes a Link Token out of the link list
+        #This function takes a link token out of the link list
         self.links.remove(CLToken)
         CLToken.origin = False #No origin anymore
         #Check if this was last link
@@ -303,12 +303,12 @@ class DockToken(Token):
 class ConcentrationToken(DockToken):
     #This is a token to give to a player when concentrating
     def __init__(self, TM, links):
-        #is a Dock Token, all linked Tokens are resolved, if this Token is resolved
+        #is a dock token, all linked tokens are resolved if this token is resolved
         self.type = 'con'
 
         #Check for concentration before initiating
         if TM.player.is_concentrating:
-            print(TM.player.name + ' tried to initiate concentration while concentrated')
+            print(TM.player.name + ' tried to initiate concentration while already concentrating')
             quit()
         TM.player.is_concentrating = True #set concentration
 
@@ -316,9 +316,9 @@ class ConcentrationToken(DockToken):
 
     def resolve(self):
         super().resolve()
-        #After the super().resolve from the dock token all link token are resolved aswell
+        #After super().resolve from the dock token all link tokens are resolved as well
         if self.TM.player.is_concentrating:
-            #The if statement is here, because, the resolve function might be called twice
+            #The if statement is here because the resolve function might be called twice
             #If the dock token is resolved, it resolves all links, which in turn resolve the dock token
             self.TM.player.is_concentrating = False #No longer concentrated
             self.TM.player.DM.say(self.TM.player.name + ' no longer concentrated')
@@ -342,7 +342,7 @@ class HastedToken(LinkToken):
         self.timer = 10 #10 Rounds
     
     def resolve(self):
-        self.TM.player.DM.say(self.TM.player.name + ' Haste wares of, ', True)
+        self.TM.player.DM.say(self.TM.player.name + ' Haste wears off, ', True)
         LostHaseToken(self.TM)
         #This Token will resolve at start of players Turn
         #Will take away action and bonus action
@@ -355,7 +355,7 @@ class LostHaseToken(Token):
         self.resolveAtTurnStart = True
     
     def resolve(self):
-        self.TM.player.DM.say(self.TM.player.name + ' is tiered from Haste', True)
+        self.TM.player.DM.say(self.TM.player.name + ' is tired from Haste', True)
         self.TM.player.action = 0
         self.TM.player.attack_counter = 0
         self.TM.player.bonus_action = 0
@@ -376,7 +376,7 @@ class HexedToken(LinkToken):
     def resolve(self):
         self.TM.player.DM.say(', hex of ' + self.TM.player.name + ' is unbound ')
         if self.origin.TM.player.CurrentHexToken != False:
-            #Only set new hex, is orgin still concentrated on hex
+            #Only set new hex if origin is still concentrating on hex
             self.origin.TM.player.can_choose_new_hex = True
         super().resolve()
 
@@ -393,7 +393,7 @@ class HexingToken(ConcentrationToken):
         #The Spell Function creates a new link, the old link is unlinked but the Hex Token not resolved
 
     def resolve(self):
-        #If concentration breaks, before plyer choose a new hex, then can_choose_new_hex might still be True
+        #If concentration breaks before player chooses a new hex, then can_choose_new_hex might still be True
         self.TM.player.can_choose_new_hex = False
         self.TM.player.CurrentHexToken = False
         self.TM.player.is_hexing = False
@@ -414,7 +414,7 @@ class HuntersMarkedToken(LinkToken):
     def resolve(self):
         self.TM.player.DM.say(', hunters mark of ' + self.TM.player.name + ' is unbound ')
         if self.origin.TM.player.CurrentHuntersMarkToken != False:
-            #Only set new hunters Mark, if orgin still concentrated on HM
+            #Only set new hunters mark if origin is still concentrating on HM
             self.origin.TM.player.can_choose_new_hunters_mark = True
         super().resolve()
 
@@ -431,7 +431,7 @@ class HuntersMarkingToken(ConcentrationToken):
         #The Spell Function creates a new link, the old link is unlinked but the hunters mark Token not resolved
 
     def resolve(self):
-        #If concentration breaks, before plyer choose a new hunters mark, then can_choose_new_hunters_mark might still be True
+        #If concentration breaks before player chooses a new hunters mark, then can_choose_new_hunters_mark might still be True
         self.TM.player.can_choose_new_hunters_mark = False
         self.TM.player.CurrentHuntersMarkToken = False
         return super().resolve()
@@ -549,7 +549,7 @@ class PolymorphedToken(LinkToken):
     def __init__(self, TM, subtype):
         super().__init__(TM, subtype)
         self.triggersWhenShapeIsDropped = True #To resolve when shape drops
-        #It does not handle the reshaping if drop to 0, because this is handled for all alternate shapes in ChangeCHP function of entity
+        #It does not handle the reshaping if it drops to 0, because this is handled for all alternate shapes in ChangeCHP function of entity
 
     def dropShapeTrigger(self):
         super().dropShapeTrigger()
@@ -636,7 +636,7 @@ class GreatWeaponToken(DockToken):
         super().__init__(TM, links)
         self.subtype = 'gw'
         self.resolveAtTurnEnd = True #after this turn, all tokens that were given for attacks are resolved
-        self.resolveWhenUnconcious = True #maybe unconcious before end of turn
+        self.resolveWhenUnconcious = True #maybe unconscious before end of turn
 
 class GreatWeaponAttackToken(LinkToken):
     def __init__(self, TM, subtype):

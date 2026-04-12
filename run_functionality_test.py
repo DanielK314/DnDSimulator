@@ -440,12 +440,12 @@ if __name__ == '__main__':
 
     fight = [Character, Character2, Character3, Enemy, Enemy2, Enemy3]
 
-    #Character lerns all spells 
+    #Character learns all spells
     Character.SpellBook = dict()
     for x in Character.Spell_classes:
-        spell_to_lern = x(Character)  #Initiate Spell
-        spell_to_lern.is_known = True #Spell is known
-        Character.SpellBook[spell_to_lern.spell_name] = spell_to_lern
+        spell_to_learn = x(Character)  #Initiate spell
+        spell_to_learn.is_known = True #Spell is known
+        Character.SpellBook[spell_to_learn.spell_name] = spell_to_learn
 
     tests = [
         ConcentrationTest1,

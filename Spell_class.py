@@ -11,7 +11,7 @@ class spell:
         self.DM = player.DM
         self.player = player            #the Player that is related to this spell Object and which will cast this spell
         self.TM = self.player.TM       #Token Manager of player 
-        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactived, AI_blank should be false
+        if self.player.DM.AI_blank: #this is only a dirty trick so that VScode shows me the attributes of player and MUST be deactivated, AI_blank should be false
             self.player = entity('test', 0, 0)
 
 
@@ -73,7 +73,7 @@ class spell:
     def score(self, fight, twinned_cast = False):
         #The Score function is called in the Choices Class
         #It is supposed to return a dmg equal score
-        #It also returns the choosen SpellTargts and the CastLevel
+        #It also returns the chosen spell targets and the cast level
         #If this spell is not soposed to be considered as an option this turn, return 0 score
         #This function should be overwritten in the subclassses
         return self.return_0_score()
@@ -97,7 +97,7 @@ class spell:
         #Is reaction Spell break here
         if self.is_reaction_spell:
             if self.player.reaction == 0:
-                print(self.player.name + ' tired to cast ' + self.spell_name + ', but hast no reaction')
+                print(self.player.name + ' tried to cast ' + self.spell_name + ', but has no reaction')
                 quit()
             else:
                 self.player.reaction = 0
@@ -238,7 +238,7 @@ class spell:
 #This Scores are returned to the choose_spell_AI function and should resemble about 
 #the dmg that the spell makes or an appropriate counter value if the spell does not 
 #make direkt dmg, like haste or entangle
-#The Function must also return the choosen Targets and Cast Level
+#The function must also return the chosen targets and cast level
 #If a Score 0 is returned the spell will not be considered to be cast that way
 #The individual sores are in the subclasses
 
@@ -357,17 +357,17 @@ class attack_spell(spell):
     def make_spell_attack(self,targets, dmg, tohit):
         #This function is called in cast function and makes the spell attacks
         #all specifications for this spell are given to the attack function
-        #Can attack multiple targts, if one target is passed and num of attacks == 1 this is just one attack
+        #Can attack multiple targets; if one target is passed and num of attacks == 1 this is just one attack
         target_counter = 0
         attack_counter = self.number_of_attacks
-        dmg_dealed = 0
+        dmg_dealt = 0
         while attack_counter > 0:
-            dmg_dealed += self.player.attack(targets[target_counter], is_ranged=self.is_range_spell, other_dmg=dmg, damage_type=self.dmg_type, tohit=tohit, is_spell=True)
+            dmg_dealt += self.player.attack(targets[target_counter], is_ranged=self.is_range_spell, other_dmg=dmg, damage_type=self.dmg_type, tohit=tohit, is_spell=True)
             attack_counter -= 1
             target_counter += 1
             if target_counter == len(targets):
                 target_counter = 0  #if all targets were attacked once, return to first
-        return dmg_dealed
+        return dmg_dealt
 
     def spell_dmg(self, cast_level):
         #This function will return the dmg according to Cast Level
@@ -375,14 +375,14 @@ class attack_spell(spell):
 
     def score(self, fight, twinned_cast=False):
         #This function takes an attack spell and chooses targets and a cast level
-        #It then returns an expactation damage score for the choice class
+        #It then returns an expectation damage score for the choice class
         #Choose CastLevel:
         if self.is_cantrip: CastLevel = 0
         else:
             CastLevel = self.choose_highest_slot(self.spell_level,9) #Choose highest Spell Slot
             if CastLevel == False: return self.return_0_score()
 
-        #Find a suitable target/targts for this spell
+        #Find suitable targets for this spell
         Choices = [x for x in fight if x.team != self.player.team]
         SpellTargets = []
         for i in range(0,self.number_of_attacks):
@@ -413,7 +413,7 @@ class attack_spell(spell):
 
 class save_spell(spell):
     #This Class is a spell that makes one target make a spell save check
-    #If it fails the save, an effect occures
+    #If it fails the save, an effect occurs
     def __init__(self, player, spell_save_type):
         #spell save type is what check they make
         super().__init__(player)
@@ -445,7 +445,7 @@ class save_spell(spell):
         quit()
 
 class aoe_dmg_spell(spell):
-    #This class is a spell that targts multiple targts with a AOE dmg spell
+    #This class is a spell that targets multiple targets with an AOE dmg spell
     #On a Save the target gets half dmg
     def __init__(self, player, spell_save_type, dmg_type, aoe_area):
         super().__init__(player)
@@ -478,7 +478,7 @@ class aoe_dmg_spell(spell):
         else: self.apply_dmg(target, damage=damage)
 
     def apply_dmg(self, target, damage):
-        #This finally applies the dmg dealed
+        #This finally applies the dmg dealt
         dmg_to_apply = dmg(damage, self.dmg_type)
         target.last_attacker = self.player
         target.changeCHP(dmg_to_apply, self.player, True)
@@ -489,14 +489,14 @@ class aoe_dmg_spell(spell):
 
     def score(self, fight, twinned_cast=False):
         #This function takes an AOE spell and chooses targets and a cast level
-        #It then returns an expactation damage score for the choice class
+        #It then returns an expectation damage score for the choice class
         #Choose CastLevel:
         if self.is_cantrip: CastLevel = 0
         else:
             CastLevel = self.choose_highest_slot(self.spell_level,9) #Choose highest Spell Slot
             if CastLevel == False: return self.return_0_score()
 
-        #Find suitable targts for this spell
+        #Find suitable targets for this spell
         SpellTargets = self.player.AI.area_of_effect_chooser(fight, self.aoe_area)
 
         #DMG Score
@@ -555,11 +555,11 @@ class chill_touch(attack_spell):
         return self.chill_touch_dmg
     
     def cast(self, target, cast_level=0, twinned=False):
-        #class cast function returns dealed dmg
-        dmg_dealed = super().cast(target, cast_level, twinned)
+        #class cast function returns dealt dmg
+        dmg_dealt = super().cast(target, cast_level, twinned)
 
         if type(target) == list: target = target[0]
-        if dmg_dealed > 0:
+        if dmg_dealt > 0:
             target.chill_touched = True
             self.DM.say(str(target.name) + ' was chill touched', True)
     
@@ -593,7 +593,7 @@ class eldritch_blast(attack_spell):
     
     def spell_dmg(self, cast_level):
         damage = 5.5 #1d10
-        #Aganizing Blast
+        #Agonizing Blast
         if self.player.knows_agonizing_blast:
             damage += self.player.modifier[5] #Add Cha Mod
         return damage
@@ -671,8 +671,8 @@ class magic_missile(spell):
         CastLevel = self.choose_highest_slot(1,9)
         if CastLevel == False: return self.return_0_score()
 
-        TargetNumer = CastLevel + 2
-        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='force') for i in range(0, TargetNumer)]
+        TargetNumber = CastLevel + 2
+        SpellTargets = [self.player.AI.choose_att_target(fight, AttackIsRanged=True, other_dmg=3.5, other_dmg_type='force') for i in range(0, TargetNumber)]
         if False in SpellTargets:
             return self.return_0_score()
 
@@ -697,10 +697,10 @@ class guiding_bolt(attack_spell):
 
     def cast(self, target, cast_level=False, twinned=False):
         if type(target) == list: target = target[0]
-        dmg_dealed = super().cast(target, cast_level, twinned)
+        dmg_dealt = super().cast(target, cast_level, twinned)
 
         #On hit:
-        if dmg_dealed > 0:
+        if dmg_dealt > 0:
             LinkToken = GuidingBoltedToken(target.TM) #Target gets guiding bolted token
             GuidingBoltToken(self.TM, [LinkToken]) #Timer Dock Token for player
    
@@ -996,7 +996,7 @@ class shield(spell):
     def cast(self, target=False, cast_level=False, twinned=False):
         super().cast(target, cast_level, twinned)
         self.player.AC += 5
-        #Shield does not ware of when unconscious, but I think that is actually correct
+        #Shield does not wear off when unconscious, but I think that is actually correct
 
     def announce_cast(self):
         super().announce_cast()
@@ -1226,11 +1226,11 @@ class conjure_animals(spell):
 
     def cast(self, fight, cast_level=False, twinned=False):
         #Im am using a trick here, ususally only a target is passed, but this spell needs the fight
-        #As a solution the score function of this spell passes the fight as 'targtes' 
-        #The cunjured Animals are initiated as fully functunal entity objects
+        #As a solution the score function of this spell passes the fight as 'targets'
+        #The conjured animals are initiated as fully functional entity objects
         #The Stats are loaded from the Archive
         #If they reach 0 CHP they will die and not participate in the fight anymore
-        #The do_the_fighting function will then pic them out and delete them from the fight list
+        #The do_the_fighting function will then pick them out and delete them from the fight list
         super().cast(fight, cast_level, twinned)
 
         Number, AnimalName = self.choose_animal()
@@ -1327,7 +1327,7 @@ class call_lightning(aoe_dmg_spell):
         CallLightningToken(self.TM, [], cast_level) #no links
         #Okay so this has some layers:
         #1. The ClalLightningToken adds the callLightningChoice to the AI (and removes it aswell, when resolved)
-        #2. The AI then can use the CallLightningChoice for score and use the Choice to call lighning as recast
+        #2. The AI then can use the CallLightningChoice for score and use the choice to call lightning as recast
         #3. The Choice then uses the players call_lightning spell to recast, which brings it back to this call here
         #Okay not thaaaat many layers, but still
 
@@ -1342,7 +1342,7 @@ class call_lightning(aoe_dmg_spell):
         ifstatements(rules, errors, self.DM).check()
         #Recast for targets
         self.player.action = 0 #uses action
-        self.DM.say(self.player.name + ' recasts call lighning', True)
+        self.DM.say(self.player.name + ' recasts call lightning', True)
         for target in targets:
             self.make_save_for(target, damage=self.recast_damge) #lets targets make saves and applies dmg
     
@@ -1404,7 +1404,7 @@ class blight(aoe_dmg_spell):
         if SpellTargets == [False]: #No Target
             return self.return_0_score()
         if twinned_cast:
-            #Secound Target for Twin Cast
+            #Second target for Twin Cast
             Choices.remove(SpellTargets[0]) #Do not double cast
             twin_target = self.player.AI.choose_att_target(Choices, AttackIsRanged=True, other_dmg = dmg, other_dmg_type=self.dmg_type, is_silent=True)
             if twin_target == False:
@@ -1567,7 +1567,7 @@ class polymorph(spell):
             #Reshaping is handled via th ChangeCHP Function or the Concentration Token
 
         ConcentrationToken(self.TM, PolymorphTokens)
-        #Player is now concentrated on 1-2 Polymoph Tokens
+        #Player is now concentrating on 1-2 polymorph tokens
 
     def score(self, fight, twinned_cast=False):
         CastLevel = self.choose_smallest_slot(4,7) #Try to use low slot, higher does not make sense as polymorph does not scale
@@ -1580,7 +1580,7 @@ class polymorph(spell):
         
         SpellTargets = [self.choose_polymorph_target(potentialTargetList)]
         if twinned_cast: #choose second target
-            potentialTargetList.remove(SpellTargets[0]) #remove the already choosen
+            potentialTargetList.remove(SpellTargets[0]) #remove the already chosen
             SpellTargets.append(self.choose_polymorph_target(potentialTargetList))
 
         Score = 0
@@ -1599,14 +1599,14 @@ class polymorph(spell):
         return target_list[argmax(scoreList)]
 
     def polymorph_target_score(self, target):
-        #This Score here is not dmg euqal, becaus I did not know how to gauge it
+        #This score here is not dmg equal, because I did not know how to gauge it
         Score = 0
         if target.is_shape_changed: return 0
         Score += 100*(1-target.CHP/target.HP) #higher for low HP
         if target == self.player:
             if self.player.CHP < self.player.HP/3:
                 Score = Score*1.5 #Cast on self preferably
-        if target.heal_given > 0: Score*0.75 #rather dont polymorph healer
+        if target.heal_given > 0: Score*0.75 #rather don't polymorph healer
         return Score*self.random_score_scale()
 
 #5-Level Spell

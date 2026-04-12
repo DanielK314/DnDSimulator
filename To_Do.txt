@@ -1,7 +1,7 @@
 ToDoList:
 20. Legendary Action
-30. bessere/mehr Monster
-40. Make it possible to simulate 2 or more encounters after one another, mybe short rest
+30. better/more monsters
+40. Make it possible to simulate 2 or more encounters after one another, maybe short rest
 41. Maybe one day, the Entities are Initiated with Items, which then are their own class
 
 61. implement better Smart Heal, is already pretty good I think
@@ -10,7 +10,7 @@ ToDoList:
 68. Update the GUI that the Spell Book displays Casting Time for the Spell
 75. Progress Bar improve
 87. Improve the Performance Calculation in Statistical Recap
-88. Spider Web targets remain restreained
+88. Spider Web targets remain restrained
 89. make a Benchmark, meaning a variety of fight Situations for the Attacking Player to do their turn
 89.1 make an analysis of their choices, an analysis of their Attack targets
 
@@ -42,7 +42,7 @@ ToDoList:
 125.3 maybe improve the score system in polymorph a bit more
 125.4 Polymorph Wis save for unwilling creatures
 126. Make random spell score value dependent on the strategy level of caster
-127. Just quick Idea, Characters could also have something of a self evalued Score. They could calculate at the end of thier turn, how good they are holding up, if they need help and how thier recources are depleated and save that in a score. Other AIs could then use this score for thier decision making. Would be more time efficient then letting the AI calculate it for every singe decision. But on the other hand, things change between turns
+127. Just a quick idea, characters could also have something like a self-evaluated score. They could calculate at the end of their turn how well they are holding up, if they need help, and how their resources are depleted, and save that in a score. Other AIs could then use this score for their decision making. That would be more time efficient than letting the AI calculate it for every single decision. But on the other hand, things change between turns
 129. Magic Missile adds a death save fail for each individual missile (seems hard/unfixable for now)
 130. Cast Con Spell before going into wild shape would be good, did some imporvement here to AI
 131. Wall of Fire fixed, but could be smarter, and protect more player
@@ -56,7 +56,7 @@ Spells to do
 -Hold Person
 
 Game Test:
-1. You should be testing if the position management and attack choosing is sensable
+1. You should be testing if the position management and attack choosing is sensible
 2. The Choose Att Target Function was been redone and need checking
 5. Test driven programming, pytest
 6. Are unconscious player attacked to often?

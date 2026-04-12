@@ -15,7 +15,7 @@ class DungeonMaster:
         elif __file__:
             application_path = os.path.dirname(__file__)
 
-        self.Battlefield = np.genfromtxt(application_path + '/Battlefield.txt', delimiter= ',')      #load Informations from Battlefield
+        self.Battlefield = np.genfromtxt(application_path + '/Battlefield.txt', delimiter= ',')      #load information from Battlefield
         self.density = self.Battlefield[0][1]
         #density: 0 - loose, 1 - normal, 2 - dense
         self.rounds_number = 1
@@ -23,7 +23,7 @@ class DungeonMaster:
         self.text = ''
 
     def reset(self):
-        #This function is called a the start of the fighting and resets the DM
+        #This function is called at the start of the fight and resets the DM
         self.rounds_number = 1
     
     def block_print(self):
@@ -34,7 +34,7 @@ class DungeonMaster:
 
     def say(self, text_to_say, this_is_new_line=False):
         if self.printing_on:
-            if False:                       #This is a hard coded, disabled developer Function 
+            if False:                       #This is a hard-coded, disabled developer function 
                 if False:#total diff in ms
                     print(str(round((datetime.now() - self.start_time).total_seconds()*1000, 3)), end=': ')
                 if True:#diff to last 
