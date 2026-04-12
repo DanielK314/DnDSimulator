@@ -132,14 +132,14 @@ class entity:                                          #A Character
         #If this updates, the All_Spells in the GUI will load this
         #Keep this in Order of the Spell Level, so that it also fits for the GUI
         self.SpellNames = ['FireBolt', 'ChillTouch', 'EldritchBlast',
-                           'BurningHands', 'MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds', 'HuntersMark',
+                           'BurningHands', 'Thunderwave','MagicMissile', 'GuidingBolt', 'Entangle', 'CureWounds', 'HealingWord', 'Hex', 'ArmorOfAgathys', 'FalseLife', 'Shield', 'InflictWounds', 'HuntersMark',
                            'AganazzarsSorcher', 'ScorchingRay', 'Shatter', 'SpiritualWeapon',
                            'Fireball', 'LightningBolt', 'Haste', 'ConjureAnimals', 'CallLightning',
                            'Blight', 'SickeningRadiance', 'WallOfFire', 'Polymorph',
                            'Cloudkill']
         #Add here all Spell classes that are impemented
         self.Spell_classes = [firebolt, chill_touch, eldritch_blast,
-                         burning_hands, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds, hunters_mark,
+                         burning_hands, thunderwave, magic_missile, guiding_bolt, entangle, cure_wounds, healing_word, hex, armor_of_agathys, false_life, shield, inflict_wounds, hunters_mark,
                          aganazzars_sorcher, scorching_ray, shatter, spiritual_weapon,
                          fireball, lightningBolt, haste, conjure_animals, call_lightning,
                          blight, sickeningRadiance, wallOfFire, polymorph,

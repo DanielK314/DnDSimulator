@@ -709,7 +709,7 @@ class EntityPage_cl(Frame):
             self.SpellList[i].trace('w', self.UpdateKnownSpells)
         for i in range(0, len(self.SpellList)):
             self.SpellButton[i].grid(row=1 + i, column=0, sticky='w', pady=5, padx = 5)
-        #Arrange all the Spell Level Frames 
+        #Arrange all the Spell Level Frames
 
         for i, x in enumerate(Spellframes):
             x.grid(row=i, column=0, sticky='ew', pady=3) #ew ensures that they all have the same width

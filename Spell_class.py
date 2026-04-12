@@ -608,7 +608,7 @@ class burning_hands(aoe_dmg_spell):
     def __init__(self, player):
         spell_save_type = 1 #Dex
         self.spell_name = 'BurningHands'
-        super().__init__(player, spell_save_type, dmg_type='fire', aoe_area=115) #15ft^2/2
+        super().__init__(player, spell_save_type, dmg_type='fire', aoe_area=112.5) #15ft^2/2
         self.spell_text = 'burning hands'
         self.spell_level = 1
         self.is_range_spell = True
@@ -616,6 +616,20 @@ class burning_hands(aoe_dmg_spell):
     def spell_dmg(self, cast_level):
         #Return the spell dmg
         damage = 10.5 + 3.5*(cast_level-1)   #upcast dmg 3d6 + 1d6 per level over 2
+        return damage
+
+class thunderwave(aoe_dmg_spell):
+    def __init__(self, player):
+        spell_save_type = 2 #Con
+        self.spell_name = 'Thunderwave'
+        super().__init__(player, spell_save_type, dmg_type='thunder', aoe_area=225) #15ft^2/2
+        self.spell_text = 'thunderwave'
+        self.spell_level = 1
+        self.is_range_spell = True
+
+    def spell_dmg(self, cast_level):
+        #Return the spell dmg
+        damage = 9 + 4.5*(cast_level-1)   #upcast dmg 2d8 + 1d8 per level over 2
         return damage
 
 class magic_missile(spell):
