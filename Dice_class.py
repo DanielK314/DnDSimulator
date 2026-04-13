@@ -27,3 +27,4 @@ class dice:
                 rolltotal = + random.randint(1, size)
             rolls.append(rolltotal)
         return min(rolls)
+    #sneaky comment
